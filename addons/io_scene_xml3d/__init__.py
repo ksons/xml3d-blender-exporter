@@ -42,8 +42,6 @@ from bpy_extras.io_utils import (ExportHelper,
                                  axis_conversion,
                                  )
 
-
-
 class ExportXML3D(bpy.types.Operator, ExportHelper):
     """Export to XML3D (.xml3d)"""
     bl_idname = "export_scene.xml3d"
@@ -55,6 +53,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
             options={'HIDDEN'},
             )
 
+    # TODO: Feature: Export selected objects only
     use_selection = BoolProperty(
             name="Selection Only",
             description="Export selected objects only",
@@ -80,6 +79,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default='xml3d',
         )
 
+    # TODO: Format selection nicely (see FBX exporter)
     xml3d_minimzed  = BoolProperty(
         name="Minimized",
         description="Uses minimized version of xml3d.js",
@@ -87,42 +87,40 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
     )
 
 
-    axis_forward = EnumProperty(
-            name="Forward",
-            items=(('X', "X Forward", ""),
-                   ('Y', "Y Forward", ""),
-                   ('Z', "Z Forward", ""),
-                   ('-X', "-X Forward", ""),
-                   ('-Y', "-Y Forward", ""),
-                   ('-Z', "-Z Forward", ""),
-                   ),
-            default='Y',
-            )
+    # axis_forward = EnumProperty(
+    #         name="Forward",
+    #         items=(('X', "X Forward", ""),
+    #                ('Y', "Y Forward", ""),
+    #                ('Z', "Z Forward", ""),
+    #                ('-X', "-X Forward", ""),
+    #                ('-Y', "-Y Forward", ""),
+    #                ('-Z', "-Z Forward", ""),
+    #                ),
+    #         default='Y',
+    #         )
 
-    axis_up = EnumProperty(
-            name="Up",
-            items=(('X', "X Up", ""),
-                   ('Y', "Y Up", ""),
-                   ('Z', "Z Up", ""),
-                   ('-X', "-X Up", ""),
-                   ('-Y', "-Y Up", ""),
-                   ('-Z', "-Z Up", ""),
-                   ),
-            default='Z',
-            )
+    # axis_up = EnumProperty(
+    #         name="Up",
+    #         items=(('X', "X Up", ""),
+    #                ('Y', "Y Up", ""),
+    #                ('Z', "Z Up", ""),
+    #                ('-X', "-X Up", ""),
+    #                ('-Y', "-Y Up", ""),
+    #                ('-Z', "-Z Up", ""),
+    #                ),
+    #         default='Z',
+    #         )
 
     def execute(self, context):
         from . import export_xml3d
 
-        keywords = self.as_keywords(ignore=("axis_forward",
-                                            "axis_up",
-                                            "filter_glob",
+        keywords = self.as_keywords(ignore=("filter_glob",
                                             "check_existing",
                                             ))
-        global_matrix = axis_conversion(to_forward=self.axis_forward,
-                                        to_up=self.axis_up,
-                                        ).to_4x4()
-        keywords["global_matrix"] = global_matrix
+        # global_matrix = axis_conversion(to_forward=self.axis_forward,
+        #                                 to_up=self.axis_up,
+        #                                 ).to_4x4()
+        #keywords["global_matrix"] = global_matrix
         return export_xml3d.save(self, context, **keywords)
 
 
