@@ -2,6 +2,7 @@ import os, io, re
 from . import xml_writer, export_asset
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from .tools import Stats, isIdentity
+from shutil import copytree
 
 ASSETDIR = "assets"
 
@@ -203,6 +204,9 @@ def save(operator,
          context, filepath="",
          use_selection=True,
          global_matrix=None,
+         template_selection="preview",
+         xml3djs_selection = "",
+         xml3d_minimzed = False
          ):
 
     import bpy
@@ -214,19 +218,28 @@ def save(operator,
 
     """Save the Blender scene to a XML3D/HTML file."""
 
-    # Time the export
-    time1 = time.clock()
+    # TODO: Time the export
+    # time1 = time.clock()
+
+    version = "%s%s.js" % (xml3djs_selection, "-min" if xml3d_minimzed else "")
 
     dirName = os.path.dirname(__file__)
-    templatePath = os.path.join(dirName, 'templates\\index.html')
+    outputDir = os.path.dirname(filepath)
+    templatePath = os.path.join(dirName, 'templates\\%s.html' % template_selection)
+    #TODO: Handle case if template file does not exist
     with open (templatePath, "r") as templateFile:
         data=Template(templateFile.read())
         file = open(filepath, 'w')
         xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath))
         scene = xml3d_exporter.scene()
-        file.write(data.substitute(title=context.scene.name,xml3d=scene))
+        file.write(data.substitute(title=context.scene.name,xml3d=scene,version=version))
         file.close()
 
+        # TODO: Write out stats (optionally)
         print(xml3d_exporter._stats.to_JSON())
+
+    publicDir = os.path.join(outputDir, "public")
+    if not os.path.exists(publicDir):
+        copytree(os.path.join(dirName, "public"), publicDir)
 
     return {'FINISHED'}

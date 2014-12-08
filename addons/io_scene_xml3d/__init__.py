@@ -61,6 +61,32 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
             default=False,
             )
 
+    template_selection = EnumProperty(
+            name="Template",
+            items=(('html', "HTML", ""),
+                   ('xml3d', "XML3D only", ""),
+                   ('preview', "Blender Preview", ""),
+                   ),
+            default='preview',
+            )
+
+    xml3djs_selection = EnumProperty(
+        name="xml3d.js Version",
+        items=(('xml3d', "Latest Stable", ""),
+               ('xml3d-dev', "Development", ""),
+               ('xml3d-4.7', "4.7", ""),
+               ('xml3d-4.6', "4.6", ""),
+               ),
+        default='xml3d',
+        )
+
+    xml3d_minimzed  = BoolProperty(
+        name="Minimized",
+        description="Uses minimized version of xml3d.js",
+        default=False,
+    )
+
+
     axis_forward = EnumProperty(
             name="Forward",
             items=(('X', "X Forward", ""),
@@ -97,7 +123,6 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
                                         to_up=self.axis_up,
                                         ).to_4x4()
         keywords["global_matrix"] = global_matrix
-
         return export_xml3d.save(self, context, **keywords)
 
 

@@ -44,7 +44,6 @@ class AssetExporter:
 	def addMesh(self, meshObject, derivedObject):
 		if derivedObject:
 			for obj, mat in derivedObject:
-				print(obj, mat)
 				if obj.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
 					continue
 
@@ -79,6 +78,7 @@ class AssetExporter:
 
 		# print("Faces: %i" % len(mesh.polygons))
 
+		# TODO: Support for UV coordinates
 		uvTexture = mesh.uv_textures.active
 		if uvTexture :
 			pass
@@ -160,7 +160,6 @@ class AssetExporter:
 
 
 		for materialIndex, material in enumerate(mesh.materials if materialCount else [None]) :
-			print(materialIndex)
 			if len(indices[materialIndex]) == 0:
 				continue
 
