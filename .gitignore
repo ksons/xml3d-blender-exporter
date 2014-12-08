@@ -53,5 +53,8 @@ docs/_build/
 # PyBuilder
 target/
 
+# Exporter output directory
+output/
+
 # IDE specific
 *.sublime-*
