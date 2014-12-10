@@ -56,5 +56,8 @@ target/
 # Exporter output directory
 output/
 
+# Install directory for usefull node modules
+node_modules
+
 # IDE specific
 *.sublime-*
