@@ -48,7 +48,7 @@ class AssetExporter:
 					continue
 
 				try:
-					data = obj.to_mesh(self._scene, True, 'RENDER')
+					data = obj.to_mesh(self._scene, True, 'RENDER', True)
 				except:
 					data = None
 
@@ -56,79 +56,85 @@ class AssetExporter:
 					self.addMeshData(data)
 
 		else:
+			print ("no derived")
 			self.addMeshData(meshObject.data)
 
-	def addMeshData(self, mesh):
-		if len(mesh.polygons) == 0 :
+
+
+	def export_tessfaces(self, mesh):
+		if not len(mesh.tessfaces):
+			print("Found mesh without tessfaces: %s" % mesh.name)
 			return
 
-		meshName = mesh.name
 		materialCount = len(mesh.materials)
 
-		#print("Writing mesh %s" % meshName)
-
-		# Mesh indices
-
-		# Speichert für jedes Material die entsprechenden Vertexindices
+		# Mesh indices:
+		# For each material allocate an array
 		indices = [[] for m in range(1 if materialCount == 0 else materialCount)] #@UnusedVariable
-		# Speichert alle Vertices des Meshes in einer aufbereiteten Form
+
+		# All vertices of the mesh, trying to keep the number of vertices small
 		vertices = []
-		# Stellt sicher, dass keine Vertices doppelt aufgenommen werden
+		# Vertex cache
 		vertex_dict = {}
 
-		# print("Faces: %i" % len(mesh.polygons))
+		print("type tessfaces: %s" % type(mesh.tessfaces[0]))
 
 		# TODO: Support for UV coordinates
 		uvTexture = mesh.uv_textures.active
 		if uvTexture :
-			pass
-			#print("Active UV Texture: " + uvTexture.name)
+			print("Active UV map: " + uvTexture.name)
 
-        #meshTextureFaceLayerData = None
-       #if mesh.tessface_uv_textures.active :
-       #    meshTextureFaceLayerData = mesh.tessface_uv_textures.active.data
+		meshTextureFaceLayerData = None
+		if mesh.tessface_uv_textures.active :
+			meshTextureFaceLayerData = mesh.tessface_uv_textures.active.data
+		print("texure layer: %s" % meshTextureFaceLayerData)
 
-		for faceIndex, face in enumerate(mesh.polygons) :
+		'''	@type bpytypes.MeshTessFace '''
+		faces = mesh.tessfaces
+		for faceIndex, face in enumerate(faces) :
 			mv = None
 			uvFace = None
 			#if uvTexture and uvTexture.data[faceIndex] :
-		 	#	uvFaceData = uvTexture.data[faceIndex]
-		 	#	uvFace = uvFaceData.uv1, uvFaceData.uv2, uvFaceData.uv3, uvFaceData.uv4
+		 #		uvFaceData = uvTexture.data[faceIndex]
+		 #		uvFace = uvFaceData.uv1, uvFaceData.uv2, uvFaceData.uv3, uvFaceData.uv4
 
-			newFaceVertices = []
+			faceIndices = []
 
 			for i, vertexIndex in enumerate(face.vertices):
-				if face.use_smooth:
-					#if uvFace:
-					#	mv = Vertex(vertexIndex, mesh.vertices[vertexIndex].normal, uvFace[i])
-					#else:
-					mv = Vertex(vertexIndex, mesh.vertices[vertexIndex].normal, None)
-				else :
-					#if uvFace :
-					#	meshTexturePolyLayer = mesh.uv_textures.active
-					#	mv = Vertex(vertexIndex, face.normal, uvFace[i])
-					#else:
-					mv = Vertex(vertexIndex, face.normal)
+				normal = mesh.vertices[vertexIndex].normal if face.use_smooth else face.normal
+				if uvFace:
+					mv = Vertex(vertexIndex, normal, uvFace[i])
+				else:
+					mv = Vertex(vertexIndex, normal, None)
 
 				index, added = appendUnique(vertex_dict, mv)
-				newFaceVertices.append(index)
+				faceIndices.append(index)
 				#print("enumerate: %d -> %d (%d)" % (i, vertexIndex, index))
 				if added :
 					vertices.append(mv)
 
-			if len(newFaceVertices) == 3 :
-				#print("3 vertices found")
-				for vertexIndex in newFaceVertices :
-					indices[face.material_index].append(vertexIndex)
-			elif len(newFaceVertices) == 4 :
-				#print("4 vertices found")
-				indices[face.material_index].append(newFaceVertices[0])
-				indices[face.material_index].append(newFaceVertices[1])
-				indices[face.material_index].append(newFaceVertices[2])
-				indices[face.material_index].append(newFaceVertices[2])
-				indices[face.material_index].append(newFaceVertices[3])
-				indices[face.material_index].append(newFaceVertices[0])
+			if len(faceIndices) == 3 :
+				indices[face.material_index].extend(faceIndices)
+			elif len(faceIndices) == 4 :
+				face2 = [faceIndices[2], faceIndices[3], faceIndices[0]]
+				faceIndices[3:] = face2
+				indices[face.material_index].extend(faceIndices)
+			else:
+				print("Found %s vertices" % len(newFaceVertices))
 
+		return vertices, indices
+
+
+	def addMeshData(self, mesh):
+		meshName = mesh.name
+		#print("Writing mesh %s" % meshName)
+		materialCount = len(mesh.materials)
+
+
+
+		# Export based on tess_faces:
+		vertices, indices = self.export_tessfaces(mesh)
+		# print("Faces: %i" % len(mesh.polygons))
 
 		content = []
 		# Vertex positions and normals
@@ -142,7 +148,6 @@ class AssetExporter:
 		content.append({ "type": "float3", "name": "normal", "value": normals})
 
 		self._asset['data'][meshName] = { "content": content }
-#		print("materialIndex", len(indices[0]))
 
  #        # Vertex texCoord
  #        if uvTexture :

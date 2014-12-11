@@ -1,10 +1,15 @@
-import os, io, re
+import os, io, re, bpy
 from . import xml_writer, export_asset
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from .tools import Stats, isIdentity
 from shutil import copytree
 
 ASSETDIR = "assets"
+LIGHTMODELMAP = {
+    "POINT": "point",
+    "SPOT": "spot",
+    "SUN": "directional"
+}
 
 def dump(obj):
     for attr in dir(obj):
@@ -12,6 +17,21 @@ def dump(obj):
 
 def clamp_color(col):
     return tuple([max(min(c, 1.0), 0.0) for c in col])
+
+def escape_html_id(_id):
+    # HTML: ID tokens must begin with a letter ([A-Za-z])
+    if not _id[:1].isalpha():
+        _id = "a" + _id
+
+    # and may be followed by any number of letters, digits ([0-9]),
+    # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
+    _id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', _id)
+    return _id
+
+def bender_lamp_to_xml3d_light(model):
+    if model in LIGHTMODELMAP:
+        return LIGHTMODELMAP[model]
+    return Null
 
 class XML3DExporter:
     def __init__(self, context, dirname):
@@ -32,7 +52,7 @@ class XML3DExporter:
         mesh_data_name = mesh_object.data.name
         path = self.create_asset_directory()
         path = os.path.join(path, mesh_data_name + ".xml")
-        url  = "./%s/%s.xml" % (ASSETDIR, mesh_data_name)
+        url  = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
         exporter = export_asset.AssetExporter(path, self._context.scene)
         exporter.addMesh(mesh_object, derived_object)
@@ -86,15 +106,7 @@ class XML3DExporter:
 
 
     def write_id(self, obj, prefix = ""):
-        id = prefix + obj.name
-        # HTML: ID tokens must begin with a letter ([A-Za-z])
-        if not id[:1].isalpha():
-            id = "a" + id
-
-        # and may be followed by any number of letters, digits ([0-9]),
-        # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
-        id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', id)
-        self._writer.attribute("id", id)
+        self._writer.attribute("id", escape_html_id(prefix + obj.name))
 
     def write_CSS_transform(self, obj) :
         #try:
@@ -136,22 +148,13 @@ class XML3DExporter:
 
     def create_lamp(self, obj):
 
-        lightModel = None
         lightdata = obj.data
-        if lightdata.type == "POINT":
-            lightModel = "point"
-        elif lightdata.type == "SPOT":
-            lightModel = "spot"
-        elif lightdata.type == "SUN":
-            lightModel = "directional"
-        else:
-            print("Warning: Unknown light type '%s'." % lightdata.type)
+
+        if not bender_lamp_to_xml3d_light(lightdata.type):
+            # Warning already reported in lightshader
             return
 
-        self._writer.startElement("light", model=lightModel, id=obj.name)
-        self.write_defaults(obj)
-        self._writer.element("float3", name="color", _content="%.4f %.4f %.4f" % tuple(lightdata.color))
-        self._writer.element("float", name="energy", _content="%.4f" % lightdata.energy)
+        self._writer.startElement("light", shader="#"+escape_html_id("ls_"+lightdata.name))
         self._writer.endElement("light")
         self._stats.lights += 1
 
@@ -175,6 +178,25 @@ class XML3DExporter:
         self._writer.endElement("group")
         self._stats.groups += 1
 
+    def create_def(self):
+        self._writer.startElement("defs")
+        for lamp_data in bpy.data.lamps:
+            light_model = bender_lamp_to_xml3d_light(lamp_data.type)
+
+            if not light_model:
+                print("Warning: Lamp '%s' is of type '%s', which is not (yet) supported.", lamp_data.name, lamp_data.type)
+                return
+
+            self._writer.startElement("lightshader", script="urn:xml3d:lightshader:" + light_model)
+            self.write_id(lamp_data, "ls_")
+
+            self._writer.element("float3", name="color", _content="%.4f %.4f %.4f" % tuple(lamp_data.color))
+            self._writer.element("float", name="energy", _content="%.4f" % lamp_data.energy)
+            self._writer.endElement("lightshader")
+
+        self._writer.endElement("defs")
+
+
     def create_scene(self, scene):
         self._writer.startElement("xml3d", id=scene.name)
         if scene.camera:
@@ -189,6 +211,7 @@ class XML3DExporter:
 
         self._writer.attribute("style", style)
 
+        self.create_def()
         hierarchy = self.build_hierarchy(scene.objects)
         for obj, children in hierarchy:
             self.create_object(obj, None, children)
@@ -209,7 +232,6 @@ def save(operator,
          xml3d_minimzed = False
          ):
 
-    import bpy
     import mathutils
 
     import time
