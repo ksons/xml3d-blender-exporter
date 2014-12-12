@@ -2,8 +2,15 @@ import mathutils, json
 
 IDENTITY = mathutils.Matrix.Identity(4)
 
-def isIdentity(matrix):
+def is_identity(matrix):
     return matrix == IDENTITY
+
+def is_identity_scale(vector):
+    return vector[0] == 1.0 and vector[1] == 1.0 and vector[2] == 1.0
+
+def is_identity_translate(vector):
+    return vector[0] == 0.0 and vector[1] == 0.0 and vector[2] == 0.0
+
 
 class Stats(object):
     def __init__(self, **kwargs):

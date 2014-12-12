@@ -1,7 +1,7 @@
-import os, io, re, bpy
+import os, io, re, bpy, math
 from . import xml_writer, export_asset
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
-from .tools import Stats, isIdentity
+from .tools import *
 from shutil import copytree
 
 ASSETDIR = "assets"
@@ -38,12 +38,13 @@ def bender_lamp_to_xml3d_light(model):
     return None, None
 
 class XML3DExporter:
-    def __init__(self, context, dirname):
+    def __init__(self, context, dirname,transform):
         self._context = context
         self._output = io.StringIO()
         self._writer = xml_writer.XMLWriter(self._output, 0)
         self._resource = {}
         self._dirname = dirname
+        self._transform = transform
         self._stats = Stats(assets = [], lights = 0, views = 0, groups = 0)
 
     def create_asset_directory(self):
@@ -53,6 +54,7 @@ class XML3DExporter:
         return assetDir
 
     def create_resource_from_mesh(self, mesh_object, derived_object = None):
+        print("here")
         mesh_data_name = mesh_object.data.name
         path = self.create_asset_directory()
         path = os.path.join(path, mesh_data_name + ".xml")
@@ -70,7 +72,7 @@ class XML3DExporter:
         free = None
         url = ""
 
-        if obj.type == "MESH":
+        if obj.type in {"MESH", "FONT"}:
             meshData = obj.data
             key = "mesh." + meshData.name
             if key in self._resource:
@@ -83,6 +85,8 @@ class XML3DExporter:
 
             url = self.create_resource_from_mesh(obj, derived)
             self._resource[key] = url
+        else:
+            print("Warning: Object '%s' is of type '%s', which is not (yet) supported." % (obj.name, obj.type))
 
         if free:
             free_derived_objects(obj)
@@ -116,14 +120,24 @@ class XML3DExporter:
         #try:
         matrix = obj.matrix_basis
 
-        if isIdentity(matrix):
+        if is_identity(matrix):
             return
 
-        # TODO: Write individual transformations instead (make matrix notation optional)
-        transform = "matrix3d("
-        transform += ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0],col[1],col[2],col[3])
-                for col in matrix.col])
-        transform += ")"
+        if self._transform == "css":
+            matrices = []
+            if not is_identity_translate(obj.location):
+                matrices.append("translate3d(%.6f,%.6f,%.6f)" % tuple(obj.location))
+            rot = obj.rotation_axis_angle
+            if rot[0] != 0.0:
+                matrices.append("rotate3d(%.6f,%.6f,%.6f,%.2fdeg)" % (rot[1],rot[2],rot[3],math.degrees(rot[0])))
+            if not is_identity_scale(obj.scale):
+                matrices.append("scale3d(%.6f,%.6f,%.6f)" % tuple(obj.scale))
+            transform = " ".join(matrices);
+        else:
+            transform = "matrix3d("
+            transform += ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0],col[1],col[2],col[3])
+                    for col in matrix.col])
+            transform += ")"
         self._writer.attribute("style", "transform:" + transform + ";")
 
     def write_class(self,obj):
@@ -252,7 +266,8 @@ def save(operator,
          global_matrix=None,
          template_selection="preview",
          xml3djs_selection = "",
-         xml3d_minimzed = False
+         xml3d_minimzed = False,
+         transform_representation = "css"
          ):
     """Save the Blender scene to a XML3D/HTML file."""
 
@@ -274,7 +289,7 @@ def save(operator,
     with open (templatePath, "r") as templateFile:
         data=Template(templateFile.read())
         file = open(filepath, 'w')
-        xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath))
+        xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation)
         scene = xml3d_exporter.scene()
         file.write(data.substitute(title=context.scene.name,xml3d=scene,version=version))
         file.close()

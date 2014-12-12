@@ -9,11 +9,12 @@
 
 ## addons/io_scene_xml3d/export_asset.py
 
--  [ ] **TODO** `(line 82)` : Support for UV coordinates
+-  [ ] **TODO** `(line 54)` : Support uses of textures other than diffuse
+-  [ ] **TODO** `(line 89)` : extension/clamp, filtering, sampling parameters
 
 ## addons/io_scene_xml3d/export_xml3d.py
 
--  [ ] **TODO** `(line 106)` : Write individual transformations instead (make matrix notation optional)
--  [ ] **TODO** `(line 221)` : Time the export
--  [ ] **TODO** `(line 229)` : Handle case if template file does not exist
--  [ ] **TODO** `(line 238)` : Write out stats (optionally)
+-  [ ] **TODO** `(line 122)` : Write individual transformations instead (make matrix notation optional)
+-  [ ] **TODO** `(line 265)` : Time the export
+-  [ ] **TODO** `(line 273)` : Handle case if template file does not exist
+-  [ ] **TODO** `(line 282)` : Write out stats (optionally)

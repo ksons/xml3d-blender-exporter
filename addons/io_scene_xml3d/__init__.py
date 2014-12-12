@@ -79,6 +79,14 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default='xml3d',
         )
 
+    transform_representation = EnumProperty(
+        name="Transforms",
+        items=(('css', "CSS Combination", ""),
+               ('css-matrix', "CSS Matrix", "")
+               ),
+        default='css',
+        )
+
     # TODO: Format selection nicely (see FBX exporter)
     xml3d_minimzed  = BoolProperty(
         name="Minimized",
