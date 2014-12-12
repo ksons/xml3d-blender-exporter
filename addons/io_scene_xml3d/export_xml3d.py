@@ -72,7 +72,7 @@ class XML3DExporter:
         free = None
         url = ""
 
-        if obj.type in {"MESH", "FONT"}:
+        if obj.type in {"MESH", "FONT", "SURFACE"}:
             meshData = obj.data
             key = "mesh." + meshData.name
             if key in self._resource:
@@ -125,6 +125,8 @@ class XML3DExporter:
 
         if self._transform == "css":
             matrices = []
+            old_rotation_mode = obj.rotation_mode
+            obj.rotation_mode = "AXIS_ANGLE"
             if not is_identity_translate(obj.location):
                 matrices.append("translate3d(%.6f,%.6f,%.6f)" % tuple(obj.location))
             rot = obj.rotation_axis_angle
@@ -133,6 +135,7 @@ class XML3DExporter:
             if not is_identity_scale(obj.scale):
                 matrices.append("scale3d(%.6f,%.6f,%.6f)" % tuple(obj.scale))
             transform = " ".join(matrices);
+            obj.rotation_mode = old_rotation_mode
         else:
             transform = "matrix3d("
             transform += ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0],col[1],col[2],col[3])
