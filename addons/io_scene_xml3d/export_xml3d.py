@@ -6,10 +6,13 @@ from shutil import copytree
 
 ASSETDIR = "assets"
 LIGHTMODELMAP = {
-    "POINT": "point",
-    "SPOT": "spot",
-    "SUN": "directional"
+    "POINT": ("point", "intensity = xflow.blenderPoint(color, energy)"),
+    "SPOT": ("spot", "intensity = xflow.blenderSpot(color, energy)"),
+    "SUN": ("directional", "intensity = xflow.blenderSun(color, energy)")
 }
+
+def gamma(color):
+    return [pow(c, 1.0 / 2.2) * 255 for c in color]
 
 def dump(obj):
     for attr in dir(obj):
@@ -30,8 +33,9 @@ def escape_html_id(_id):
 
 def bender_lamp_to_xml3d_light(model):
     if model in LIGHTMODELMAP:
-        return LIGHTMODELMAP[model]
-    return Null
+        result = LIGHTMODELMAP[model]
+        return result[0], result[1]
+    return None, None
 
 class XML3DExporter:
     def __init__(self, context, dirname):
@@ -170,7 +174,7 @@ class XML3DExporter:
         elif this_object.type == "LAMP":
             self.create_lamp(this_object)
         else:
-            print("Warning: Unhandled type '%s'.", this_object.type)
+            print("Warning: Object '%s' is of type '%s', which is not (yet) supported." % (this_object.name, this_object.type))
 
         for obj, object_children in children:
             self.create_object(obj, this_object, object_children)
@@ -181,17 +185,36 @@ class XML3DExporter:
     def create_def(self):
         self._writer.startElement("defs")
         for lamp_data in bpy.data.lamps:
-            light_model = bender_lamp_to_xml3d_light(lamp_data.type)
+            light_model, compute = bender_lamp_to_xml3d_light(lamp_data.type)
 
             if not light_model:
                 print("Warning: Lamp '%s' is of type '%s', which is not (yet) supported.", lamp_data.name, lamp_data.type)
                 return
 
-            self._writer.startElement("lightshader", script="urn:xml3d:lightshader:" + light_model)
+            self._writer.startElement("lightshader", script="urn:xml3d:lightshader:" + light_model, compute= compute)
             self.write_id(lamp_data, "ls_")
+
+            if lamp_data.type in {"POINT", "SPOT"}:
+                attens = [1.0, 0.0, 0.0]
+                if lamp_data.falloff_type == 'CONSTANT' :
+                    attens = [1.0, 0.0, 0.0]
+                elif lamp_data.falloff_type == 'INVERSE_LINEAR' :
+                    attens = [1.0, 1.0 / light.distance, 0.0]
+                elif lamp_data.falloff_type == 'INVERSE_SQUARE' :
+                    attens = [1.0, 0.0, 1.0 / (lamp_data.distance * lamp_data.distance)]
+                elif light.falloff_type == 'LINEAR_QUADRATIC_WEIGHTED' :
+                    attens = [1.0, lamp_data.linear_attenuation, lamp_data.quadratic_attenuation]
+                else :
+                    print("WARNING: Lamp '%s' has falloff type '%s', which is not (yet) supported. Using CONSTANT instead." % (lamp_data.name, light.falloff_type))
+
+                self._writer.element("float3", name="attenuation", _content="%.4f %.4f %.4f" % tuple(attens))
 
             self._writer.element("float3", name="color", _content="%.4f %.4f %.4f" % tuple(lamp_data.color))
             self._writer.element("float", name="energy", _content="%.4f" % lamp_data.energy)
+
+            #if lamp_data.shadow_method == 'RAY_SHADOW':
+            #    self._writer.element("bool", name="castShadow", _content="true")
+
             self._writer.endElement("lightshader")
 
         self._writer.endElement("defs")
@@ -207,7 +230,7 @@ class XML3DExporter:
         style = "width: 100%; height: 100%;" #% (resolution[1])
         if scene.world :
             bgColor = scene.world.horizon_color
-            style += " background-color:rgb(%i,%i,%i);" % (bgColor[0] * 255, bgColor[1] * 255, bgColor[2] * 255)
+            style += " background-color:rgb(%i,%i,%i);" % tuple(gamma(bgColor))
 
         self._writer.attribute("style", style)
 
@@ -231,14 +254,13 @@ def save(operator,
          xml3djs_selection = "",
          xml3d_minimzed = False
          ):
+    """Save the Blender scene to a XML3D/HTML file."""
 
     import mathutils
 
     import time
     from bpy_extras.io_utils import create_derived_objects, free_derived_objects
     from string import Template
-
-    """Save the Blender scene to a XML3D/HTML file."""
 
     # TODO: Time the export
     # time1 = time.clock()

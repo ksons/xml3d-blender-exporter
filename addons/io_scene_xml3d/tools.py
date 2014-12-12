@@ -37,10 +37,10 @@ class Vertex :
             return None
         return mathutils.Vector((round(v[0], 8), round(v[1], 8)))
 
-    def __init__(self, index, normal = None, texcoord = None, color = None):
+    def __init__(self, index, normal = None, uvs = None, color = None):
         self.index = index
         self.normal = self.veckey3d(normal)
-        self.texcoord = self.veckey2d(texcoord)
+        self.texcoord = self.veckey2d(uvs)
 
     def __str__( self ) :
         return "i: " + str(self.index) + ", n: " + str(self.normal) + ", t: " + str(self.texcoord)
