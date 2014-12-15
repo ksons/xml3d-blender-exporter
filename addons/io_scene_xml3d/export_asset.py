@@ -40,11 +40,17 @@ class AssetExporter:
 			return
 		data = []
 		data.append({ "type": "float", "name": "diffuse_intensity", "value": material.diffuse_intensity })
-		data.append({ "type": "float3", "name": "diffuse_color", "value": [tuple(material.specular_color)] })
+		data.append({ "type": "float3", "name": "diffuse_color", "value": [tuple(material.diffuse_color)] })
 		data.append({ "type": "float", "name": "specular_intensity", "value": material.specular_intensity })
 		data.append({ "type": "float3", "name": "specular_color", "value": [tuple(material.specular_color)] })
 		data.append({ "type": "float", "name": "specular_hardness", "value": material.specular_hardness })
 		data.append({ "type": "float", "name": "ambient", "value": material.ambient })
+
+		self._material[materialName] = { "content": { "data": data }, "script": "urn:xml3d:shader:phong", "compute": BLENDER2XML_MATERIAL }
+
+		#if material.use_face_texture:
+			#print("Warning: Material '%s' uses 'Face Textures', which are not (yet) supported. Skipping texture..." % materialName)
+			#return
 
 
 		for texture_index, texture_slot in enumerate(material.texture_slots) :
@@ -53,6 +59,7 @@ class AssetExporter:
 
 			# TODO: Support uses of textures other than diffuse
 			if not texture_slot.use_map_color_diffuse or texture_slot.diffuse_color_factor < 0.0001 :
+				print("No use")
 				continue
 
 			if texture_slot.texture_coords != 'UV' :
@@ -66,57 +73,56 @@ class AssetExporter:
 				% (texture_slot.name, materialName, texture.type))
 				continue
 
-			image = texture.image
-			if not image.source in {'FILE', 'VIDEO'}:
-				print("Warning: Texture '%s' of material '%s' is from source '%s' which is not (yet) supported. Skipping texture..."
-				% (texture_slot.name, materialName, image.source))
-				continue
-
-			if image.packed_file:
-				mime_type = "image/png"
-				image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
-				image_src = "data:%s;base64,%s" % (mime_type, image_data)
-			else:
-				image_src = path_reference(image.filepath,
-					os.path.dirname(bpy.data.filepath),
-					os.path.dirname(self._path),
-					'COPY',
-					"../textures",
-					self._copy_set,
-					image.library)
-				image_src = re.sub('\\\\', '/', image_src)
-
-			# TODO: extension/clamp, filtering, sampling parameters
-			# FEATURE: Resize / convert / optimize texture
-			data.append({ "type": "texture", "name": "diffuseTexture", "value": image_src })
-
-		self._material[materialName] = { "content": { "data": data }, "script": "urn:xml3d:shader:phong", "compute": BLENDER2XML_MATERIAL }
+			image_src = self.export_image(texture.image)
+			if image_src:
+				# TODO: extension/clamp, filtering, sampling parameters
+				# FEATURE: Resize / convert / optimize texture
+				data.append({ "type": "texture", "name": "diffuseTexture", "value": image_src })
 
 
+	def export_image(self, image):
+		if not image.source in {'FILE', 'VIDEO'}:
+			print("Warning: Image '%s' is of source '%s' which is not (yet) supported. Skipping texture..."
+			% (image.name, image.source))
+			return None
 
-	def addMesh(self, meshObject, derivedObject):
-		if derivedObject:
-			for obj, mat in derivedObject:
-				if obj.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
-					continue
-
-				try:
-					data = obj.to_mesh(self._scene, True, 'RENDER', True)
-				except:
-					data = None
-
-				if data:
-					self.addMeshData(data)
-
+		if image.packed_file:
+			mime_type = "image/png"
+			image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
+			image_src = "data:%s;base64,%s" % (mime_type, image_data)
 		else:
-			print ("no derived")
-			self.addMeshData(meshObject.data)
+			image_src = path_reference(image.filepath,
+				os.path.dirname(bpy.data.filepath),
+				os.path.dirname(self._path),
+				'COPY',
+				"../img/",
+				self._copy_set,
+				image.library)
+			#print("image", image_src, image.filepath, self._copy_set)
+			image_src = re.sub('\\\\', '/', image_src)
+
+		return image_src
+
+
+
+	def add_mesh(self, original_object, derived_object):
+		if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+			return
+
+		try:
+			data = derived_object.to_mesh(self._scene, True, 'RENDER', True)
+		except:
+			data = None
+
+		if data:
+			self.addMeshData(data)
+
 
 
 
 	def export_tessfaces(self, mesh):
 		if not len(mesh.tessfaces):
-			print("Found mesh without tessfaces: %s" % mesh.name)
+			print("Warning: Mesh '%s' has no triangles. Pure line geometry not (yet) supported. Try extruding a little." % mesh.name)
 			return None, None
 
 		materialCount = len(mesh.materials)
@@ -172,8 +178,18 @@ class AssetExporter:
 		return vertices, indices
 
 
+	def export_mesh_textures(self, mesh):
+		textures = [None] * len(mesh.materials)
+		for i, material in enumerate(mesh.materials):
+			if material.use_face_texture:
+				try:
+					textures[i] = { "image": mesh.tessface_uv_textures[i].data[0].image, "alpha": material.use_face_texture_alpha }
+				except:
+					textures[i] = None
+		return textures
+
 	def addMeshData(self, mesh):
-		meshName = mesh.name
+		meshName = self.safe_include_name(mesh.name)
 		#print("Writing mesh %s" % meshName)
 		materialCount = len(mesh.materials)
 
@@ -184,7 +200,7 @@ class AssetExporter:
 
 		if not (vertices and indices):
 			return
-		# print("Faces: %i" % len(mesh.polygons))
+
 
 		content = []
 		# Vertex positions and normals
@@ -206,6 +222,8 @@ class AssetExporter:
 		self._asset['data'][meshName] = { "content": content }
 
 
+		mesh_textures = self.export_mesh_textures(mesh)
+
 		for materialIndex, material in enumerate(mesh.materials if materialCount else [None]) :
 			if len(indices[materialIndex]) == 0:
 				continue
@@ -215,6 +233,16 @@ class AssetExporter:
 			data = []
 			data.append({ "type": "int", "name": "index", "value": indices[materialIndex]})
 
+			if material and mesh_textures[materialIndex] and mesh_textures[materialIndex]["image"]:
+				image_src = self.export_image(mesh_textures[materialIndex]["image"])
+				if image_src:
+					# TODO: extension/clamp, filtering, sampling parameters
+					# FEATURE: Resize / convert / optimize texture
+					data.append({ "type": "texture", "name": "diffuseTexture", "value": image_src })
+				if mesh_textures[materialIndex]["alpha"]:
+					data.append({ "type": "float", "name": "transparency", "value": "0.002" })
+
+
 			submeshName = meshName + "_" + materialName
 			self._asset['mesh'].append( {"name": submeshName, "includes": meshName, "data": data, "shader": "#"+materialName })
 
@@ -222,6 +250,9 @@ class AssetExporter:
 				self.add_material(material)
 			else:
 				self.add_default_material()
+
+	def safe_include_name(self, name):
+		return re.sub('[\.]+', '-', name)
 
 	def saveXML(self, f, stats):
 		doc = Document()
@@ -250,7 +281,7 @@ class AssetExporter:
 			assetData.setAttribute("name", name)
 			asset.appendChild(assetData)
 			for entry in value["content"]:
-				entryElement = AssetExporter.writeGenericContent(doc, entry)
+				entryElement = AssetExporter.writeGenericContent(doc, entry, stats)
 				assetData.appendChild(entryElement)
 
 		for mesh in self._asset["mesh"]:
@@ -260,7 +291,7 @@ class AssetExporter:
 			assetMesh.setAttribute("shader", mesh["shader"])
 			asset.appendChild(assetMesh)
 			for entry in mesh["data"]:
-				entryElement = AssetExporter.writeGenericContent(doc, entry)
+				entryElement = AssetExporter.writeGenericContent(doc, entry, stats)
 				assetMesh.appendChild(entryElement)
 			stats.meshes.append(mesh["name"])
 

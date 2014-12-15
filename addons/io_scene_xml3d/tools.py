@@ -11,6 +11,10 @@ def is_identity_scale(vector):
 def is_identity_translate(vector):
     return vector[0] == 0.0 and vector[1] == 0.0 and vector[2] == 0.0
 
+def matrix_to_ccs_matrix3d(matrix):
+    return "matrix3d(%s)" %  ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0],col[1],col[2],col[3])
+                    for col in matrix.col])
+
 
 class Stats(object):
     def __init__(self, **kwargs):
