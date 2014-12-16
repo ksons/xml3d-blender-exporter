@@ -313,7 +313,7 @@ def save(operator,
         file = open(filepath, 'w')
         xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation, object_progress())
         scene = xml3d_exporter.scene()
-        file.write(data.substitute(title=context.scene.name,xml3d=scene,version=version))
+        file.write(data.substitute(title=context.scene.name,xml3d=scene,version=version,generator="xml3d-blender-exporter v0.1.0"))
         file.close()
 
         # TODO: Write out stats (optionally)
