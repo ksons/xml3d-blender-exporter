@@ -64,3 +64,4 @@ node_modules
 
 # IDE specific
 *.sublime-*
+.idea

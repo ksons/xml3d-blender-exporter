@@ -7,6 +7,7 @@
   },
   "devDependencies": {
     "grunt": "~0.4.5",
+    "grunt-flake8": "^0.1.3",
     "grunt-todo": "^0.4.0"
   }
 }
