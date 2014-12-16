@@ -6,9 +6,8 @@ class XMLWriter:
         self._ident = ident
         self._hasChildElements = [False]
 
-
     def hasChildElements(self):
-        self._hasChildElements[len(self._hasChildElements)-1] = True
+        self._hasChildElements[len(self._hasChildElements) - 1] = True
         self._hasChildElements.append(False)
 
     def start_element(self, _name, **attr):
@@ -29,7 +28,6 @@ class XMLWriter:
         if content != None:
             self._stream.write(">%s" % content)
             self._isElementOpen = False
-
 
     def end_element(self, _name):
         if(self._isElementOpen):
