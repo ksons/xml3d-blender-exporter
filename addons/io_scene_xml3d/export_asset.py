@@ -8,6 +8,7 @@ from .tools import Vertex, Stats
 
 BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensity) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness)"
 
+TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
 def appendUnique(mlist, value):
     if value in mlist:
@@ -21,6 +22,7 @@ def appendUnique(mlist, value):
 class AssetExporter:
     def __init__(self, path, scene):
         self._path = path
+        self._dir = os.path.dirname(path)
         self._scene = scene
         self._asset = {u"mesh": [], u"data": {}}
         self._material = {}
@@ -89,33 +91,41 @@ class AssetExporter:
                 continue
 
             image_src = self.export_image(texture.image)
+
+            if texture.extension in {'REPEAT', 'EXTEND'}:
+                wrap = TEXTURE_EXTENSION_MAP[texture.extension]
+            else:
+                wrap = None
+                self.warn(
+                    u"Warning: Texture '{0:s}' of material '{1:s}' has extension '{2:s}' which is not (yet) supported. Using default 'Extend' instead..."
+                    .format(texture_slot.name, materialName, texture.extension))
+
             if image_src:
                 # TODO: extension/clamp, filtering, sampling parameters
                 # FEATURE: Resize / convert / optimize texture
                 data.append(
-                    {"type": "texture", "name": "diffuseTexture", "value": image_src})
+                    {"type": "texture", "name": "diffuseTexture", "wrap": wrap, "value": image_src})
+
+    def warn(self, message):
+        print(message)
 
     def export_image(self, image):
         if image.source not in {'FILE', 'VIDEO'}:
-            print("Warning: Image '%s' is of source '%s' which is not (yet) supported. Skipping texture..."
+            print("Warning: Image '%s' is of source '%s' which is not (yet) supported. Using default ..."
                   % (image.name, image.source))
             return None
 
         if image.packed_file:
             mime_type = "image/png"
-            image_data = base64.b64encode(
-                image.packed_file.data).decode("utf-8")
+            image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
             image_src = "data:%s;base64,%s" % (mime_type, image_data)
         else:
-            image_src = path_reference(image.filepath,
-                                       os.path.dirname(bpy.data.filepath),
-                                       os.path.dirname(self._path),
-                                       'COPY',
-                                       "../img/",
-                                       self._copy_set,
-                                       image.library)
+            base_src = os.path.dirname(bpy.data.filepath)
+            filepath_full = bpy.path.abspath(image.filepath, library=image.library)
+            image_src = path_reference(filepath_full, base_src, self._dir, 'COPY', "textures", self._copy_set, image.library)
+
             # print("image", image_src, image.filepath, self._copy_set)
-            image_src = re.sub('\\\\', '/', image_src)
+            image_src = image_src.replace('\\', '/')
 
         return image_src
 
@@ -325,6 +335,11 @@ class AssetExporter:
         if entry_type == "int":
             value_str = " ".join(str(e) for e in value)
         elif entry_type == "texture":
+
+            if entry["wrap"] is not None:
+                entryElement.setAttribute("wrapS", entry["wrap"])
+                entryElement.setAttribute("wrapT", entry["wrap"])
+
             imgElement = doc.createElement("img")
             imgElement.setAttribute("src", value)
             entryElement.appendChild(imgElement)

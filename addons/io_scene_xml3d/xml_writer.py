@@ -25,7 +25,7 @@ class XMLWriter:
             else:
                 self.attribute(key, attr[key])
 
-        if content != None:
+        if content is not None:
             self._stream.write(">%s" % content)
             self._isElementOpen = False
 
