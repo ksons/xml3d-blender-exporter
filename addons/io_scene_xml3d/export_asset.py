@@ -10,6 +10,7 @@ BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensit
 
 TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
+
 def appendUnique(mlist, value):
     if value in mlist:
         return mlist[value], False
@@ -27,18 +28,15 @@ class AssetExporter:
         self._asset = {u"mesh": [], u"data": {}}
         self._material = {}
         self._copy_set = set()
+        self._stats = Stats(materials=0, meshes=[], assets=[], textures=0, warnings=[])
 
     def add_default_material(self):
         if "defaultMaterial" in self._material:
             return
 
-        data = []
-        data.append(
-            {"type": "float3", "name": "diffuseColor", "value": "0.8 0.8 0.8"})
-        data.append(
-            {"type": "float3", "name": "specularColor", "value": "1.0 1.0 0.1"})
-        data.append(
-            {"type": "float", "name": "ambientIntensity", "value": "0.5"})
+        data = [{"type": "float3", "name": "diffuseColor", "value": "0.8 0.8 0.8"},
+                {"type": "float3", "name": "specularColor", "value": "1.0 1.0 0.1"},
+                {"type": "float", "name": "ambientIntensity", "value": "0.5"}]
 
         self._material["defaultMaterial"] = {
             "content": {"data": data}, "script": "urn:xml3d:shader:phong"}
@@ -78,9 +76,9 @@ class AssetExporter:
                 continue
 
             if texture_slot.texture_coords != 'UV':
-                print(
+                self.warn(
                     "Warning: Texture '%s' of material '%s' uses '%s' mapping, which is not (yet) supported. Skipping texture..."
-                    % (texture_slot.name, materialName, texture_slot.texture_coords))
+                    % (texture_slot.name, materialName, texture_slot.texture_coords), None)
                 continue
 
             texture = texture_slot.texture
@@ -98,7 +96,7 @@ class AssetExporter:
                 wrap = None
                 self.warn(
                     u"Warning: Texture '{0:s}' of material '{1:s}' has extension '{2:s}' which is not (yet) supported. Using default 'Extend' instead..."
-                    .format(texture_slot.name, materialName, texture.extension))
+                    .format(texture_slot.name, materialName, texture.extension), None)
 
             if image_src:
                 # TODO: extension/clamp, filtering, sampling parameters
@@ -106,7 +104,8 @@ class AssetExporter:
                 data.append(
                     {"type": "texture", "name": "diffuseTexture", "wrap": wrap, "value": image_src})
 
-    def warn(self, message):
+    def warn(self, message, issue):
+        self._stats.warnings.append({"message": message, "issue": issue})
         print(message)
 
     def export_image(self, image):
@@ -255,14 +254,14 @@ class AssetExporter:
             data.append(
                 {"type": "int", "name": "index", "value": indices[materialIndex]})
 
+            # Mesh Textures
             if material and mesh_textures[materialIndex] and mesh_textures[materialIndex]["image"]:
-                image_src = self.export_image(
-                    mesh_textures[materialIndex]["image"])
+                image_src = self.export_image(mesh_textures[materialIndex]["image"])
                 if image_src:
-                    # TODO: extension/clamp, filtering, sampling parameters
+                    # TODO: Image Sampling parameters
                     # FEATURE: Resize / convert / optimize texture
                     data.append(
-                        {"type": "texture", "name": "diffuseTexture", "value": image_src})
+                        {"type": "texture", "name": "diffuseTexture", "value": image_src, "wrap": None})
                 if mesh_textures[materialIndex]["alpha"]:
                     data.append(
                         {"type": "float", "name": "transparency", "value": "0.002"})
@@ -363,7 +362,7 @@ class AssetExporter:
         print("Report: " + str)
 
     def save(self):
-        stats = Stats(materials=0, meshes=[], assets=[], textures=0)
+        stats = self._stats
         stats.assets.append({"url": self._path})
 
         with open(self._path, "w") as assetFile:

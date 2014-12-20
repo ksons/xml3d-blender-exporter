@@ -3,6 +3,7 @@ import io
 import re
 import bpy
 import math
+import json
 from . import xml_writer, export_asset
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d, Stats
@@ -58,6 +59,9 @@ class XML3DExporter:
         self._transform = transform
         self._object_progress = progress
         self._stats = Stats(assets=[], lights=0, views=0, groups=0)
+
+    def stats(self):
+        return self._stats
 
     def create_asset_directory(self):
         assetDir = os.path.join(self._dirname, ASSETDIR)
@@ -297,6 +301,20 @@ class XML3DExporter:
         return self._output.getvalue()
 
 
+def write_xml3d_info(dir, stats):
+    with open(os.path.join(dir, "xml3d-info.json"), "w") as stats_file:
+        stats_file.write(stats.to_JSON())
+        stats_file.close()
+
+
+def write_blender_config(dir, context):
+    with open(os.path.join(dir, "blender-config.json"), "w") as stats_file:
+        stats_file.write(json.dumps({
+            "layers": [e for e in context.scene.layers]
+        }))
+        stats_file.close()
+
+
 def save(operator,
          context, filepath="",
          use_selection=True,
@@ -326,24 +344,31 @@ def save(operator,
     version = "%s%s.js" % (xml3djs_selection, "-min" if xml3d_minimzed else "")
 
     dirName = os.path.dirname(__file__)
-    outputDir = os.path.dirname(filepath)
-    templatePath = os.path.join(
-        dirName, 'templates\\%s.html' % template_selection)
+    output_dir = os.path.dirname(filepath)
+
+    # export the scene with all its assets
+    xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation, object_progress())
+    scene = xml3d_exporter.scene()
+
+    templatePath = os.path.join(dirName, 'templates\\%s.html' % template_selection)
     # TODO: Handle case if template file does not exist
     with open(templatePath, "r") as templateFile:
         data = Template(templateFile.read())
         file = open(filepath, 'w')
-        xml3d_exporter = XML3DExporter(
-            context, os.path.dirname(filepath), transform_representation, object_progress())
-        scene = xml3d_exporter.scene()
         file.write(data.substitute(title=context.scene.name, xml3d=scene,
                                    version=version, generator="xml3d-blender-exporter v0.1.0"))
         file.close()
 
-        # TODO: Write out stats (optionally)
-        # print(xml3d_exporter._stats.to_JSON())
+    # TODO: Make writing out stats optional
+    info_dir = os.path.join(output_dir, "info")
+    if not os.path.exists(info_dir):
+        os.makedirs(info_dir)
 
-    publicDir = os.path.join(outputDir, "public")
+    write_xml3d_info(info_dir, xml3d_exporter.stats())
+    write_blender_config(info_dir, context)
+
+    # copy all the accompanying files
+    publicDir = os.path.join(output_dir, "public")
     if not os.path.exists(publicDir):
         copytree(os.path.join(dirName, "public"), publicDir)
 

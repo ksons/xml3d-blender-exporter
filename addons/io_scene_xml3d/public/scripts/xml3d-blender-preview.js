@@ -2,7 +2,7 @@ $(function(){
 
 	var generator = $("meta[name=generator]").attr("content");
 	var version = generator.split(" ")[1];
-	console.log("Scene exporter with", generator);
+	console.log("Scene exported with", generator);
 
 	var c_layers = [];
 	var li = $("<li class='divider'></li><li><svg class='layers' width='125' height='45'></svg></li><li class='divider'></li>");
@@ -60,13 +60,11 @@ $(function(){
 
 		svg.append(rect);
 	}
-	updateLayers();
+
 
 
 	$(".top-bar-section .right").append($("<li class='divider'></li><li><a class='renderStats' href=''#'></a></li>")) ;
 	var renderStats = $(".renderStats");
-
-	console.log(renderStats)
 
     if (window.Stats) {
     	var statsLocation = $("<li class='divider'></li><li class='stats'></li>");
@@ -82,11 +80,15 @@ $(function(){
         loop();
     };
 
-
+	$.get( "./info/blender-config.json", function( data ) {
+	  data.layers.forEach(function(on,i) {
+		c_layers[i].active = on;
+	  })
+	  updateLayers();
+	});
 
 	var xml3d = document.querySelector("xml3d");
 	xml3d.addEventListener("framedrawn", function(e) {
-		//console.log(e.detail.count)
 		var count = e.detail.count;
 		renderStats.text(version + " | Tris:" + count.primitives + " | Objects:" + count.objects);
 	});
