@@ -6,7 +6,7 @@ import math
 import json
 from . import xml_writer, export_asset
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
-from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d, Stats
+from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d, Stats, EntityExporter
 from shutil import copytree
 
 ASSETDIR = "assets"
@@ -48,9 +48,10 @@ def bender_lamp_to_xml3d_light(model):
     return None, None
 
 
-class XML3DExporter:
+class XML3DExporter(EntityExporter):
 
     def __init__(self, context, dirname, transform, progress):
+        super().__init__(Stats(assets=[], lights=0, views=0, groups=0, warnings=[]))
         self._context = context
         self._output = io.StringIO()
         self._writer = xml_writer.XMLWriter(self._output, 0)
@@ -58,7 +59,6 @@ class XML3DExporter:
         self._dirname = dirname
         self._transform = transform
         self._object_progress = progress
-        self._stats = Stats(assets=[], lights=0, views=0, groups=0)
 
     def stats(self):
         return self._stats
@@ -95,8 +95,7 @@ class XML3DExporter:
             url = self.create_resource_from_mesh(obj, derived)
             self._resource[key] = url
         else:
-            print("Warning: Object '%s' is of type '%s', which is not (yet) supported." % (
-                obj.name, obj.type))
+            self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
 
         return url
 
@@ -216,8 +215,7 @@ class XML3DExporter:
             elif this_object.type == "LAMP":
                 self.create_lamp(derived_object)
             else:
-                print("Warning: Object '%s' is of type '%s', which is not (yet) supported." % (
-                    this_object.name, this_object.type))
+                self.warning("Object '%s' is of type '%s', which is not (yet) supported." % (this_object.name, this_object.type))
 
             for obj, object_children in children:
                 self.create_object(obj, this_object, object_children)
@@ -234,8 +232,7 @@ class XML3DExporter:
             light_model, compute = bender_lamp_to_xml3d_light(lamp_data.type)
 
             if not light_model:
-                print("Warning: Lamp '%s' is of type '%s', which is not (yet) supported." % (
-                    lamp_data.name, lamp_data.type))
+                self.warning("Lamp '%s' is of type '%s', which is not (yet) supported. Skipped lamp." % (lamp_data.name, lamp_data.type))
                 continue
 
             self._writer.start_element(
@@ -255,8 +252,7 @@ class XML3DExporter:
                     attens = [
                         1.0, lamp_data.linear_attenuation, lamp_data.quadratic_attenuation]
                 else:
-                    print("WARNING: Lamp '%s' has falloff type '%s', which is not (yet) supported. Using CONSTANT instead." % (
-                        lamp_data.name, lamp_data.falloff_type))
+                    self.warning("Lamp '%s' has falloff type '%s', which is not (yet) supported. Using CONSTANT instead." % (lamp_data.name, lamp_data.falloff_type))
 
                 self._writer.element(
                     "float3", name="attenuation", _content="%.4f %.4f %.4f" % tuple(attens))

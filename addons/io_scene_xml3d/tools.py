@@ -21,6 +21,15 @@ def matrix_to_ccs_matrix3d(matrix):
                                       for col in matrix.col])
 
 
+class EntityExporter(object):
+    def __init__(self, stats):
+        self._stats = stats
+
+    def warning(self, message, category=None, issue=None, object=None):
+        self._stats.warnings.append({"message": message, "issue": issue, "object": object, "category": category})
+        print("Warning:", message)
+
+
 class Stats(object):
 
     def __init__(self, **kwargs):

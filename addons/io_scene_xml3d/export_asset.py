@@ -4,7 +4,7 @@ import re
 import base64
 from xml.dom.minidom import Document
 from bpy_extras.io_utils import path_reference, path_reference_copy
-from .tools import Vertex, Stats
+from .tools import Vertex, Stats, EntityExporter
 
 BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensity) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness)"
 
@@ -20,15 +20,15 @@ def appendUnique(mlist, value):
     return index, True
 
 
-class AssetExporter:
+class AssetExporter(EntityExporter):
     def __init__(self, path, scene):
+        super().__init__(Stats(materials=0, meshes=[], assets=[], textures=0, warnings=[]))
         self._path = path
         self._dir = os.path.dirname(path)
         self._scene = scene
         self._asset = {u"mesh": [], u"data": {}}
         self._material = {}
         self._copy_set = set()
-        self._stats = Stats(materials=0, meshes=[], assets=[], textures=0, warnings=[])
 
     def add_default_material(self):
         if "defaultMaterial" in self._material:
@@ -76,16 +76,16 @@ class AssetExporter:
                 continue
 
             if texture_slot.texture_coords != 'UV':
-                self.warn(
-                    "Warning: Texture '%s' of material '%s' uses '%s' mapping, which is not (yet) supported. Skipping texture..."
-                    % (texture_slot.name, materialName, texture_slot.texture_coords), None)
+                self.warning(
+                    u"Texture '{0:s}' of material '{1:s}' uses '{2:s}' mapping, which is not (yet) supported. Dropped Texture."
+                    .format(texture_slot.name, materialName, texture_slot.texture_coords), "texture")
                 continue
 
             texture = texture_slot.texture
             if texture.type != 'IMAGE':
                 print(
-                    "Warning: Texture '%s' of material '%s' is of type '%s' which is not (yet) supported. Skipping texture..."
-                    % (texture_slot.name, materialName, texture.type))
+                    "Warning: Texture '%s' of material '%s' is of type '%s' which is not (yet) supported. Dropped Texture."
+                    % (texture_slot.name, materialName, texture.type), "texture")
                 continue
 
             image_src = self.export_image(texture.image)
@@ -94,9 +94,9 @@ class AssetExporter:
                 wrap = TEXTURE_EXTENSION_MAP[texture.extension]
             else:
                 wrap = None
-                self.warn(
-                    u"Warning: Texture '{0:s}' of material '{1:s}' has extension '{2:s}' which is not (yet) supported. Using default 'Extend' instead..."
-                    .format(texture_slot.name, materialName, texture.extension), None)
+                self.warning(
+                    u"Texture '{0:s}' of material '{1:s}' has extension '{2:s}' which is not (yet) supported. Using default 'Extend' instead..."
+                    .format(texture_slot.name, materialName, texture.extension), "texture")
 
             if image_src:
                 # TODO: extension/clamp, filtering, sampling parameters
@@ -104,14 +104,9 @@ class AssetExporter:
                 data.append(
                     {"type": "texture", "name": "diffuseTexture", "wrap": wrap, "value": image_src})
 
-    def warn(self, message, issue):
-        self._stats.warnings.append({"message": message, "issue": issue})
-        print(message)
-
     def export_image(self, image):
         if image.source not in {'FILE', 'VIDEO'}:
-            print("Warning: Image '%s' is of source '%s' which is not (yet) supported. Using default ..."
-                  % (image.name, image.source))
+            self.warning(u"Image '{0:s}' is of source '{1:s}' which is not (yet) supported. Using default ...".format(image.name, image.source), "texture")
             return None
 
         if image.packed_file:
@@ -142,8 +137,7 @@ class AssetExporter:
 
     def export_tessfaces(self, mesh):
         if not len(mesh.tessfaces):
-            print(
-                "Warning: Mesh '%s' has no triangles. Pure line geometry not (yet) supported. Try extruding a little." % mesh.name)
+            self.warning(u"Mesh '{0:s}' has no triangles. Pure line geometry not (yet) supported. Try extruding a little.".format(mesh.name), "geometry")
             return None, None
 
         materialCount = len(mesh.materials)
