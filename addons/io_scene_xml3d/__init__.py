@@ -71,12 +71,12 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
 
     xml3djs_selection = EnumProperty(
         name="xml3d.js Version",
-        items=(('xml3d', "Latest Stable", ""),
+        items=(('xml3d-4.8', "Latest Stable", ""),
                ('xml3d-dev', "Development", ""),
                ('xml3d-4.7', "4.7", ""),
                ('xml3d-4.6', "4.6", ""),
                ),
-        default='xml3d',
+        default='xml3d-4.8',
     )
 
     transform_representation = EnumProperty(
