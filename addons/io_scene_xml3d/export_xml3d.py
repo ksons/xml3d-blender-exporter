@@ -303,10 +303,25 @@ def write_xml3d_info(dir, stats):
         stats_file.close()
 
 
+def create_active_views(context):
+    result = []
+    for area in context.screen.areas:
+        if area.type == "VIEW_3D":
+            for space in area.spaces:
+                if space.type == "VIEW_3D":
+                    result.append({
+                        "view_matrix": matrix_to_ccs_matrix3d(space.region_3d.view_matrix),
+                        "perspective_matrix": matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix)
+                    })
+
+    return result
+
+
 def write_blender_config(dir, context):
     with open(os.path.join(dir, "blender-config.json"), "w") as stats_file:
         stats_file.write(json.dumps({
-            "layers": [e for e in context.scene.layers]
+            "layers": [e for e in context.scene.layers],
+            "views": create_active_views(context)
         }))
         stats_file.close()
 
