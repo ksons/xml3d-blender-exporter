@@ -274,6 +274,9 @@ class XML3DExporter(EntityExporter):
         if scene.camera:
             self._writer.attribute(
                 "activeView", "#v_%s" % escape_html_id(scene.camera.name))
+        else:
+            self.warning("Scene '{0:s}' has no active camera set.".format(scene.name), "camera")
+
 
         # render = scene.render
         # resolution = render.resolution_x * render.resolution_percentage / 100, render.resolution_y * render.resolution_percentage / 100
