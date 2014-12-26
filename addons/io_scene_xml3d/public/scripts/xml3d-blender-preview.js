@@ -93,7 +93,11 @@ $(function () {
             var list = $(".warningsList");
             //drop.append("<h4>Warnings</h4><hr>")
             warnings.forEach(function (warning) {
-                list.append("<div data-alert class='alert-box secondary'><span class=''></span>" + warning.message + "</div>");
+                var message = warning.message;
+                if(typeof warning.issue == "number") {
+                    message = message + " <a href='https://github.com/ksons/xml3d-blender-exporter/issues/"+ warning.issue + "'>Issue</a>";
+                }
+                list.append("<div data-alert class='alert-box secondary'><span class=''></span>" + message + "</div>");
             });
             $(document).on('opened.fndtn.reveal', '[data-reveal]', function () {
                 $("#bell").children(".message-position").remove();

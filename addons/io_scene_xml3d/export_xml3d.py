@@ -41,7 +41,7 @@ def escape_html_id(_id):
     return _id
 
 
-def bender_lamp_to_xml3d_light(model):
+def blender_lamp_to_xml3d_light(model):
     if model in LIGHTMODELMAP:
         result = LIGHTMODELMAP[model]
         return result[0], result[1]
@@ -184,7 +184,7 @@ class XML3DExporter(EntityExporter):
 
         lightdata = obj.data
 
-        if not bender_lamp_to_xml3d_light(lightdata.type)[0]:
+        if not blender_lamp_to_xml3d_light(lightdata.type)[0]:
             # Warning already reported in lightshader
             return
 
@@ -229,10 +229,10 @@ class XML3DExporter(EntityExporter):
     def create_def(self):
         self._writer.start_element("defs")
         for lamp_data in bpy.data.lamps:
-            light_model, compute = bender_lamp_to_xml3d_light(lamp_data.type)
+            light_model, compute = blender_lamp_to_xml3d_light(lamp_data.type)
 
             if not light_model:
-                self.warning("Lamp '%s' is of type '%s', which is not (yet) supported. Skipped lamp." % (lamp_data.name, lamp_data.type))
+                self.warning("Lamp '%s' is of type '%s', which is not (yet) supported. Skipped lamp." % (lamp_data.name, lamp_data.type), "lamp", 4)
                 continue
 
             self._writer.start_element(
@@ -276,7 +276,6 @@ class XML3DExporter(EntityExporter):
                 "activeView", "#v_%s" % escape_html_id(scene.camera.name))
         else:
             self.warning("Scene '{0:s}' has no active camera set.".format(scene.name), "camera")
-
 
         # render = scene.render
         # resolution = render.resolution_x * render.resolution_percentage / 100, render.resolution_y * render.resolution_percentage / 100
