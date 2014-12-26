@@ -239,6 +239,11 @@ class XML3DExporter(EntityExporter):
                 "lightshader", script="urn:xml3d:lightshader:" + light_model, compute=compute)
             self.write_id(lamp_data, "ls_")
 
+            if lamp_data.type == "SPOT":
+                self._writer.element("float", name="falloffAngle", _content="%.4f" % (lamp_data.spot_size / 2.0))
+                # TODO: How do spot light softness and blend correlate?
+                self._writer.element("float", name="softness", _content="%.4f" % lamp_data.spot_blend)
+
             if lamp_data.type in {"POINT", "SPOT"}:
                 attens = [1.0, 0.0, 0.0]
                 if lamp_data.falloff_type == 'CONSTANT':
