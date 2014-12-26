@@ -110,9 +110,18 @@ class AssetExporter(EntityExporter):
             return None
 
         if image.packed_file:
-            mime_type = "image/png"
-            image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
-            image_src = "data:%s;base64,%s" % (mime_type, image_data)
+            image_data = image.packed_file.data
+            image_src = os.path.join("textures", image.name)
+            file_path = os.path.join(self._dir, image_src)
+            if not os.path.exists(file_path):
+                with open(file_path, "wb") as image_file:
+                    image_file.write(image_data)
+                    image_file.close()
+
+            # TODO: Optionally pack images base 64 encoded
+            #mime_type = "image/png"
+            #image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
+            #image_src = "data:%s;base64,%s" % (mime_type, image_data)
         else:
             base_src = os.path.dirname(bpy.data.filepath)
             filepath_full = bpy.path.abspath(image.filepath, library=image.library)
