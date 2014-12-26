@@ -78,7 +78,7 @@ class AssetExporter(EntityExporter):
             if texture_slot.texture_coords != 'UV':
                 self.warning(
                     u"Texture '{0:s}' of material '{1:s}' uses '{2:s}' mapping, which is not (yet) supported. Dropped Texture."
-                    .format(texture_slot.name, materialName, texture_slot.texture_coords), "texture")
+                    .format(texture_slot.name, materialName, texture_slot.texture_coords), "texture", 5)
                 continue
 
             texture = texture_slot.texture
