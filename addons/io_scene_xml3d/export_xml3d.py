@@ -279,8 +279,7 @@ class XML3DExporter():
     def create_scene(self, scene):
         self._writer.start_element("xml3d", id=scene.name)
         if scene.camera:
-            self._writer.attribute(
-                "activeView", "#v_%s" % escape_html_id(scene.camera.name))
+            self._writer.attribute("activeView", "#v_view") # %s" % escape_html_id(scene.camera.name))
         else:
             self.warning("Scene '{0:s}' has no active camera set.".format(scene.name), "camera")
 
@@ -294,6 +293,7 @@ class XML3DExporter():
         self._writer.attribute("style", style)
 
         self.create_def()
+        self._writer.element("view", id="v_view")
         hierarchy = self.build_hierarchy(scene.objects)
         for obj, children in hierarchy:
             self.create_object(obj, None, children)
@@ -312,15 +312,26 @@ def write_xml3d_info(dir, stats):
         stats_file.close()
 
 
-def create_active_views(context):
+def create_active_views(blender_context):
     result = []
-    for area in context.screen.areas:
+    camera = blender_context.scene.camera
+    if camera:
+        result.append({
+           "view_matrix": matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
+           "perspective_matrix": "", # TODO: Perspective matrix
+           "translation": [e for e in camera.matrix_world.translation],
+           "rotation": [e for e in camera.matrix_world.to_quaternion()]
+        })
+
+    for area in blender_context.screen.areas:
         if area.type == "VIEW_3D":
             for space in area.spaces:
                 if space.type == "VIEW_3D":
                     result.append({
                         "view_matrix": matrix_to_ccs_matrix3d(space.region_3d.view_matrix),
-                        "perspective_matrix": matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix)
+                        "perspective_matrix": matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix),
+                        "translation": [e for e in space.region_3d.view_matrix.inverted().translation],
+                        "rotation": [e for e in space.region_3d.view_matrix.inverted().to_quaternion()]
                     })
 
     return result

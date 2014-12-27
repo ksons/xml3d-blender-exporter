@@ -83,6 +83,13 @@ $(function () {
         data.layers.forEach(function (on, i) {
             c_layers[i].active = on;
         });
+        if (data.views.length) {
+            var firstView = data.views[0];
+            $("#v_view").attr("position", firstView.translation.join(" "));
+            var rot = new XML3DRotation();
+            rot.setQuaternion(new XML3DVec3(firstView.rotation[1],firstView.rotation[2],firstView.rotation[3]), firstView.rotation[0])
+            $("#v_view").get(0).orientation.set(rot);
+        }
         updateLayers();
     });
 
