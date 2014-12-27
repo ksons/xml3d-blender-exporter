@@ -3,7 +3,7 @@ import bpy
 from bpy_extras.io_utils import path_reference
 from .tools import safe_query_selector_id
 
-BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensity) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness)"
+BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensity, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)"
 
 TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
@@ -44,6 +44,12 @@ class Material:
                      "value": material.specular_hardness})
         data.append(
             {"type": "float", "name": "ambient", "value": material.ambient})
+
+        if material.use_transparency:
+            data.append({"type": "float", "name": "alpha", "value": material.alpha})
+        else:
+            data.append({"type": "float", "name": "alpha", "value": 1})
+
 
         # if material.use_face_texture:
         # print("Warning: Material '%s' uses 'Face Textures', which are not (yet) supported. Skipping texture..." % materialName)
