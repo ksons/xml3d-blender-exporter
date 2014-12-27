@@ -1,17 +1,18 @@
 import os
 import bpy
 from bpy_extras.io_utils import path_reference
+from .tools import safe_query_selector_id
 
 BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensity) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness)"
 
 TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
 
-class Material():
+class Material:
     context = None
     id = ""
     script = "urn:xml3d:shader:phong"
-    data = []
+    data = None
     compute = BLENDER2XML_MATERIAL
     dir = None
     copy_set = set()
@@ -20,10 +21,12 @@ class Material():
         self.id = name
         self.context = context
         self.path = path
+        self.data = []
 
     @staticmethod
     def from_blender_material(material, context, path):
-        mat = Material(material.name, context, path)
+        material_id = safe_query_selector_id(material.name)
+        mat = Material(material_id, context, path)
         mat.from_material(material)
         return mat
 

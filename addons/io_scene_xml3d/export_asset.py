@@ -3,7 +3,7 @@ import re
 from xml.dom.minidom import Document
 from bpy_extras.io_utils import path_reference_copy
 from .export_material import Material, DefaultMaterial, export_image
-from .tools import Vertex
+from .tools import Vertex, safe_query_selector_id
 
 
 def appendUnique(mlist, value):
@@ -114,7 +114,7 @@ class AssetExporter:
         return textures
 
     def addMeshData(self, mesh):
-        meshName = self.safe_include_name(mesh.name)
+        meshName = safe_query_selector_id(mesh.name)
         # print("Writing mesh %s" % meshName)
         materialCount = len(mesh.materials)
 
@@ -170,17 +170,19 @@ class AssetExporter:
                         {"type": "float", "name": "transparency", "value": "0.002"})
 
             submeshName = meshName + "_" + materialName
-            self._asset['mesh'].append(
-                {"name": submeshName, "includes": meshName, "data": data, "shader": "#" + materialName})
 
+            material_url = "#"
             if material:
                 converted = Material.from_blender_material(material, self.context, self._dir)
                 self.add_material(converted)
+                material_url += converted.id
             else:
                 self.add_material(DefaultMaterial)
+                material_url += DefaultMaterial.id
 
-    def safe_include_name(self, name):
-        return re.sub('[\.]+', '-', name)
+            self._asset['mesh'].append(
+                {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
+
 
     def saveXML(self, f, stats):
         doc = Document()
