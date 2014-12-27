@@ -85,10 +85,11 @@ $(function () {
         });
         if (data.views.length) {
             var firstView = data.views[0];
-            $("#v_view").attr("position", firstView.translation.join(" "));
+            view.attr("position", firstView.translation.join(" "));
             var rot = new XML3DRotation();
             rot.setQuaternion(new XML3DVec3(firstView.rotation[1],firstView.rotation[2],firstView.rotation[3]), firstView.rotation[0])
-            $("#v_view").get(0).orientation.set(rot);
+            console.log("view", view.get(0).orientation)
+            view.get(0).orientation.set(rot);
         }
         updateLayers();
     });
@@ -121,4 +122,9 @@ $(function () {
         var count = e.detail.count;
         renderStats.text(version + " | Tris:" + count.primitives + " | Objects:" + count.objects);
     });
+
+    var view = $("<view id='v_pview'></view>");
+    xml3d.appendChild(view.get(0));
+    xml3d.setAttribute("activeView", "#v_pview");
+
 });
