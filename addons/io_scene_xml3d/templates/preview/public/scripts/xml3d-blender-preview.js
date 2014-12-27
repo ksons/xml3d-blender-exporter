@@ -114,12 +114,29 @@ $(function () {
 
 
     var xml3d = document.querySelector("xml3d");
+    var activeObject = "";
+    var renderStatText = "";
+
+    function updateRenderText() {
+        renderStats.text(version + " | " + renderStatText + (activeObject ? (" | " + activeObject) : ""));
+    }
+
     xml3d.addEventListener("load", function () {
         $("span.fa-spin").removeClass("fa-spin fa-circle-o-notch").addClass("fa-check");
     });
     xml3d.addEventListener("framedrawn", function (e) {
         var count = e.detail.count;
-        renderStats.text(version + " | Tris:" + count.primitives + " | Objects:" + count.objects);
+        renderStatText = "Tris:" + count.primitives + " | Objects:" + count.objects;
+        updateRenderText();
+    });
+    xml3d.addEventListener("mouseover", function (e) {
+        //console.log("mouseover", e.target);
+        if (e.target.nodeName == "MODEL") {
+            activeObject = e.target.parentElement.id;
+        } else {
+            activeObject = "";
+        }
+        updateRenderText();
     });
 
     var view = $("<view id='v_pview'></view>");
