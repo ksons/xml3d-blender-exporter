@@ -4,9 +4,9 @@ import re
 import bpy
 import math
 import json
-from . import xml_writer, export_asset
+from . import xml_writer, export_asset, context
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
-from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d, Stats, EntityExporter
+from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d
 from shutil import copytree
 
 ASSETDIR = "assets"
@@ -48,23 +48,20 @@ def blender_lamp_to_xml3d_light(model):
     return None, None
 
 
-class XML3DExporter(EntityExporter):
+class XML3DExporter():
+    context = context.Context()
 
     def __init__(self, context, dirname, transform, progress):
-        super().__init__(Stats(assets=[], lights=0, views=0, groups=0, warnings=[]))
-        self._context = context
+        self.blender_context = context
         self._output = io.StringIO()
         self._writer = xml_writer.XMLWriter(self._output, 0)
         self._resource = {}
-        self._dirname = dirname
         self._transform = transform
         self._object_progress = progress
-
-    def stats(self):
-        return self._stats
+        self.context.set_base_path(dirname)
 
     def create_asset_directory(self):
-        assetDir = os.path.join(self._dirname, ASSETDIR)
+        assetDir = os.path.join(self.context.base_path, ASSETDIR)
         if not os.path.exists(assetDir):
             os.makedirs(assetDir)
         return assetDir
@@ -75,13 +72,18 @@ class XML3DExporter(EntityExporter):
         path = os.path.join(path, mesh_data_name + ".xml")
         url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
-        exporter = export_asset.AssetExporter(path, self._context.scene)
+        exporter = export_asset.AssetExporter(self.context, path, self.blender_context.scene)
         exporter.add_mesh(original_object, derived_object)
-        stats = exporter.save()
+        exporter.save()
 
-        stats.assets[0]["url"] = url
-        self._stats.join(stats)
+        # stats.assets[0]["url"] = url
         return url + "#root"
+
+    def stats(self):
+        return self.context.stats
+
+    def warning(self, message, category=None, issue=None):
+        self.context.warning(message, category, issue)
 
     def create_resource(self, obj, derived):
         url = ""
@@ -171,7 +173,7 @@ class XML3DExporter(EntityExporter):
         self._writer.start_element("view")
         self.write_id(obj, "v_")
         self._writer.end_element("view")
-        self._stats.views += 1
+        self.context.stats.views += 1
 
     def create_geometry(self, derived_object, original_obj):
         self._writer.start_element(
@@ -191,12 +193,12 @@ class XML3DExporter(EntityExporter):
         self._writer.start_element(
             "light", shader="#" + escape_html_id("ls_" + lightdata.name))
         self._writer.end_element("light")
-        self._stats.lights += 1
+        self.context.stats.lights += 1
 
     def create_object(self, this_object, parent, children):
 
         free, derived_objects = create_derived_objects(
-            self._context.scene, this_object)
+            self.blender_context.scene, this_object)
         if derived_objects is None:
             return
 
@@ -224,7 +226,7 @@ class XML3DExporter(EntityExporter):
                 free_derived_objects(this_object)
 
             self._writer.end_element("group")
-            self._stats.groups += 1
+            self.context.stats.groups += 1
 
     def create_def(self):
         self._writer.start_element("defs")
@@ -300,7 +302,7 @@ class XML3DExporter(EntityExporter):
         self._writer.end_element("xml3d")
 
     def scene(self):
-        self.create_scene(self._context.scene)
+        self.create_scene(self.blender_context.scene)
         return self._output.getvalue()
 
 

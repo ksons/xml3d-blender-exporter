@@ -1,14 +1,9 @@
 import os
-import bpy
 import re
-import base64
 from xml.dom.minidom import Document
-from bpy_extras.io_utils import path_reference, path_reference_copy
-from .tools import Vertex, Stats, EntityExporter
-
-BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensity) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness)"
-
-TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
+from bpy_extras.io_utils import path_reference_copy
+from .export_material import Material, DefaultMaterial, export_image
+from .tools import Vertex
 
 
 def appendUnique(mlist, value):
@@ -20,117 +15,22 @@ def appendUnique(mlist, value):
     return index, True
 
 
-class AssetExporter(EntityExporter):
-    def __init__(self, path, scene):
-        super().__init__(Stats(materials=0, meshes=[], assets=[], textures=0, warnings=[]))
+class AssetExporter:
+    context = None
+
+    def __init__(self, context, path, scene):
+        self.context = context
         self._path = path
         self._dir = os.path.dirname(path)
         self._scene = scene
         self._asset = {u"mesh": [], u"data": {}}
         self._material = {}
-        self._copy_set = set()
-
-    def add_default_material(self):
-        if "defaultMaterial" in self._material:
-            return
-
-        data = [{"type": "float3", "name": "diffuseColor", "value": "0.8 0.8 0.8"},
-                {"type": "float3", "name": "specularColor", "value": "1.0 1.0 0.1"},
-                {"type": "float", "name": "ambientIntensity", "value": "0.5"}]
-
-        self._material["defaultMaterial"] = {
-            "content": {"data": data}, "script": "urn:xml3d:shader:phong"}
 
     def add_material(self, material):
-        materialName = material.name
-        if materialName in self._material:
+        if material.id in self._material:
             return
-        data = []
-        data.append({"type": "float", "name": "diffuse_intensity",
-                     "value": material.diffuse_intensity})
-        data.append({"type": "float3", "name": "diffuse_color",
-                     "value": [tuple(material.diffuse_color)]})
-        data.append({"type": "float", "name": "specular_intensity",
-                     "value": material.specular_intensity})
-        data.append({"type": "float3", "name": "specular_color",
-                     "value": [tuple(material.specular_color)]})
-        data.append({"type": "float", "name": "specular_hardness",
-                     "value": material.specular_hardness})
-        data.append(
-            {"type": "float", "name": "ambient", "value": material.ambient})
 
-        self._material[materialName] = {"content": {
-            "data": data}, "script": "urn:xml3d:shader:phong", "compute": BLENDER2XML_MATERIAL}
-
-        # if material.use_face_texture:
-        # print("Warning: Material '%s' uses 'Face Textures', which are not (yet) supported. Skipping texture..." % materialName)
-        # return
-
-        for texture_index, texture_slot in enumerate(material.texture_slots):
-            if not material.use_textures[texture_index] or texture_slot is None:
-                continue
-
-            # TODO: Support uses of textures other than diffuse
-            if not texture_slot.use_map_color_diffuse or texture_slot.diffuse_color_factor < 0.0001:
-                print("No use")
-                continue
-
-            if texture_slot.texture_coords != 'UV':
-                self.warning(
-                    u"Texture '{0:s}' of material '{1:s}' uses '{2:s}' mapping, which is not (yet) supported. Dropped Texture."
-                    .format(texture_slot.name, materialName, texture_slot.texture_coords), "texture", 5)
-                continue
-
-            texture = texture_slot.texture
-            if texture.type != 'IMAGE':
-                print(
-                    "Warning: Texture '%s' of material '%s' is of type '%s' which is not (yet) supported. Dropped Texture."
-                    % (texture_slot.name, materialName, texture.type), "texture")
-                continue
-
-            image_src = self.export_image(texture.image)
-
-            if texture.extension in {'REPEAT', 'EXTEND'}:
-                wrap = TEXTURE_EXTENSION_MAP[texture.extension]
-            else:
-                wrap = None
-                self.warning(
-                    u"Texture '{0:s}' of material '{1:s}' has extension '{2:s}' which is not (yet) supported. Using default 'Extend' instead..."
-                    .format(texture_slot.name, materialName, texture.extension), "texture")
-
-            if image_src:
-                # TODO: extension/clamp, filtering, sampling parameters
-                # FEATURE: Resize / convert / optimize texture
-                data.append(
-                    {"type": "texture", "name": "diffuseTexture", "wrap": wrap, "value": image_src})
-
-    def export_image(self, image):
-        if image.source not in {'FILE', 'VIDEO'}:
-            self.warning(u"Image '{0:s}' is of source '{1:s}' which is not (yet) supported. Using default ...".format(image.name, image.source), "texture")
-            return None
-
-        if image.packed_file:
-            image_data = image.packed_file.data
-            image_src = os.path.join("textures", image.name)
-            file_path = os.path.join(self._dir, image_src)
-            if not os.path.exists(file_path):
-                with open(file_path, "wb") as image_file:
-                    image_file.write(image_data)
-                    image_file.close()
-
-            # TODO: Optionally pack images base 64 encoded
-            #mime_type = "image/png"
-            #image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
-            #image_src = "data:%s;base64,%s" % (mime_type, image_data)
-        else:
-            base_src = os.path.dirname(bpy.data.filepath)
-            filepath_full = bpy.path.abspath(image.filepath, library=image.library)
-            image_src = path_reference(filepath_full, base_src, self._dir, 'COPY', "textures", self._copy_set, image.library)
-
-            # print("image", image_src, image.filepath, self._copy_set)
-            image_src = image_src.replace('\\', '/')
-
-        return image_src
+        self._material[material.id] = material
 
     def add_mesh(self, original_object, derived_object):
         if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
@@ -146,7 +46,7 @@ class AssetExporter(EntityExporter):
 
     def export_tessfaces(self, mesh):
         if not len(mesh.tessfaces):
-            self.warning(u"Mesh '{0:s}' has no triangles. Pure line geometry not (yet) supported. Try extruding a little.".format(mesh.name), "geometry")
+            self.context.warning(u"Mesh '{0:s}' has no triangles. Pure line geometry not (yet) supported. Try extruding a little.".format(mesh.name), "geometry")
             return None, None
 
         materialCount = len(mesh.materials)
@@ -259,7 +159,7 @@ class AssetExporter(EntityExporter):
 
             # Mesh Textures
             if material and mesh_textures[materialIndex] and mesh_textures[materialIndex]["image"]:
-                image_src = self.export_image(mesh_textures[materialIndex]["image"])
+                image_src = export_image(mesh_textures[materialIndex]["image"], self._dir, self.context)
                 if image_src:
                     # TODO: Image Sampling parameters
                     # FEATURE: Resize / convert / optimize texture
@@ -274,9 +174,10 @@ class AssetExporter(EntityExporter):
                 {"name": submeshName, "includes": meshName, "data": data, "shader": "#" + materialName})
 
             if material:
-                self.add_material(material)
+                converted = Material.from_blender_material(material, self.context, self._dir)
+                self.add_material(converted)
             else:
-                self.add_default_material()
+                self.add_material(DefaultMaterial)
 
     def safe_include_name(self, name):
         return re.sub('[\.]+', '-', name)
@@ -293,12 +194,11 @@ class AssetExporter(EntityExporter):
         for name, material in self._material.items():
             shader = doc.createElement("shader")
             shader.setAttribute("id", name)
-            shader.setAttribute("script", material["script"])
-            if "compute" in material:
-                shader.setAttribute("compute", material["compute"])
+            shader.setAttribute("script", material.script)
+            if material.compute:
+                shader.setAttribute("compute", material.compute)
             xml3d.appendChild(shader)
-            content = material["content"]
-            for entry in content["data"]:
+            for entry in material.data:
                 entryElement = AssetExporter.writeGenericContent(
                     doc, entry, stats)
                 shader.appendChild(entryElement)
@@ -365,7 +265,7 @@ class AssetExporter(EntityExporter):
         print("Report: " + str)
 
     def save(self):
-        stats = self._stats
+        stats = self.context.stats
         stats.assets.append({"url": self._path})
 
         with open(self._path, "w") as assetFile:
@@ -375,8 +275,6 @@ class AssetExporter(EntityExporter):
             stats.assets[0]["size"] = os.path.getsize(self._path)
 
         try:
-            path_reference_copy(self._copy_set, self.copy_report)
+            path_reference_copy(self.context.copy_set, self.copy_report)
         except PermissionError:
-            print('ERROR: While copying textures: %s' % self._copy_set)
-
-        return stats
+            print('ERROR: While copying textures: %s' % self.context.copy_set)

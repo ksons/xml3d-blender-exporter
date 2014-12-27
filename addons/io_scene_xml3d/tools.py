@@ -1,5 +1,4 @@
 import mathutils
-import json
 
 IDENTITY = mathutils.Matrix.Identity(4)
 
@@ -19,32 +18,6 @@ def is_identity_translate(vector):
 def matrix_to_ccs_matrix3d(matrix):
     return "matrix3d(%s)" % ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0], col[1], col[2], col[3])
                                       for col in matrix.col])
-
-
-class EntityExporter(object):
-    def __init__(self, stats):
-        self._stats = stats
-
-    def warning(self, message, category=None, issue=None, object=None):
-        self._stats.warnings.append({"message": message, "issue": issue, "object": object, "category": category})
-        print("Warning:", message)
-
-
-class Stats(object):
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    def join(self, other):
-        pass
-        for key, val in other.__dict__.items():
-            if key in self.__dict__:
-                self.__dict__[key] += val  # You can custom it here
-            else:
-                self.__dict__[key] = val
-
-    def to_JSON(self):
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
 class Vertex:
