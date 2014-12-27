@@ -88,7 +88,6 @@ $(function () {
             view.attr("position", firstView.translation.join(" "));
             var rot = new XML3DRotation();
             rot.setQuaternion(new XML3DVec3(firstView.rotation[1],firstView.rotation[2],firstView.rotation[3]), firstView.rotation[0])
-            console.log("view", view.get(0).orientation)
             view.get(0).orientation.set(rot);
         }
         updateLayers();
