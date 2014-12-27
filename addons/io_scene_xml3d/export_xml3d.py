@@ -372,7 +372,7 @@ def save(operator,
     # TODO: Time the export
     # time1 = time.clock()
 
-    version = "%s%s.js" % (xml3djs_selection, "-min" if xml3d_minimzed else "")
+    version = xml3djs_selection + ("-min" if xml3d_minimzed else "") + ".js"
 
     dirName = os.path.dirname(__file__)
     output_dir = os.path.dirname(filepath)

@@ -54,15 +54,15 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
     )
 
     # TODO: Feature: Export selected objects only
-    use_selection = BoolProperty(
-        name="Selection Only",
-        description="Export selected objects only",
-        default=False,
-    )
+    # use_selection = BoolProperty(
+    #     name="Selection Only",
+    #     description="Export selected objects only",
+    #     default=False,
+    # )
 
     template_selection = EnumProperty(
         name="Template",
-        items=(('html', "HTML", ""),
+        items=(('html', "Simple HTML", ""),
                ('xml3d', "XML3D only", ""),
                ('preview', "Blender Preview", ""),
                ),
@@ -70,13 +70,13 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
     )
 
     xml3djs_selection = EnumProperty(
-        name="xml3d.js Version",
-        items=(('xml3d-4.8', "Latest Stable", ""),
-               ('xml3d-dev', "Development", ""),
-               ('xml3d-4.7', "4.7", ""),
-               ('xml3d-4.6', "4.6", ""),
+        name="xml3d.js",
+        items=(('http://www.xml3d.org/xml3d/scripts/xml3d', "Latest Stable (online)", "Latest Stable from xml3d.org"),
+               ('http://www.xml3d.org/xml3d/scripts/xml3d-dev', "Development (online)", "Development Snapshot from xml3d.org"),
+               ('./public/scripts/xml3d/xml3d-4.8', "4.8", "Local version 4.8"),
+               ('./public/scripts/xml3d/xml3d-4.7', "4.7", "Local version 4.8"),
                ),
-        default='xml3d-4.8',
+        default='./public/scripts/xml3d/xml3d-4.8',
     )
 
     transform_representation = EnumProperty(
@@ -91,7 +91,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
     xml3d_minimzed = BoolProperty(
         name="Minimized",
         description="Uses minimized version of xml3d.js",
-        default=False,
+        default=True,
     )
 
     # axis_forward = EnumProperty(
