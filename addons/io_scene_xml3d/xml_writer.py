@@ -1,3 +1,5 @@
+from xml.sax.saxutils import quoteattr
+
 class XMLWriter:
     """ An very simpe XML writer """
     def __init__(self, stream, ident=0):
@@ -41,7 +43,7 @@ class XMLWriter:
         print("</%s>\n" % _name, file=self._stream, end="")
 
     def attribute(self, name, value):
-        self._stream.write(" " + name + "=\"" + value + "\"")
+        self._stream.write(" " + name + "=" + quoteattr(value))
 
     def element(self, _name, **attr):
         self.start_element(_name, **attr)

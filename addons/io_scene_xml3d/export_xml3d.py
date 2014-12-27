@@ -125,6 +125,11 @@ class XML3DExporter():
     def write_id(self, obj, prefix=""):
         self._writer.attribute("id", escape_html_id(prefix + obj.name))
 
+    def write_event_attributes(self, obj):
+        for event in {"click", "dblclick", "mousedown", "mouseup", "mouseover", "mousemove", "mouseout", "mousewheel"}:
+            if event in obj:
+                self._writer.attribute("on" + event, obj[event]);
+
     def write_transformation(self, obj, derived_matrix):
         # try:
         matrix = obj.matrix_basis
@@ -209,6 +214,7 @@ class XML3DExporter():
             self._writer.start_element("group")
             self.write_defaults(derived_object, prefix="")
             self.write_transformation(derived_object, derived_matrix)
+            self.write_event_attributes(derived_object)
 
             if this_object.type == "CAMERA":
                 self.create_camera(derived_object)
