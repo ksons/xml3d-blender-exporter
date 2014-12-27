@@ -103,6 +103,11 @@ def export_image(image, path, context):
 
     if image.packed_file:
         image_data = image.packed_file.data
+
+        # Create texture directory if it not already exists
+        texture_path = os.path.join(path, "textures")
+        os.makedirs(texture_path, exist_ok=True)
+
         image_src = os.path.join("textures", image.name)
         file_path = os.path.join(path, image_src)
         if not os.path.exists(file_path):
