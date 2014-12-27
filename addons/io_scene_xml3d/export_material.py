@@ -13,7 +13,7 @@ class Material:
     id = ""
     script = "urn:xml3d:shader:phong"
     data = None
-    compute = BLENDER2XML_MATERIAL
+    compute = None
     dir = None
     copy_set = set()
 
@@ -28,6 +28,7 @@ class Material:
         material_id = safe_query_selector_id(material.name)
         mat = Material(material_id, context, path)
         mat.from_material(material)
+        mat.compute = BLENDER2XML_MATERIAL
         return mat
 
     def from_material(self, material):
