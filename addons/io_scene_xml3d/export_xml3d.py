@@ -72,7 +72,7 @@ class XML3DExporter():
         path = os.path.join(path, mesh_data_name + ".xml")
         url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
-        exporter = export_asset.AssetExporter(self.context, path, self.blender_context.scene)
+        exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
         exporter.add_mesh(original_object, derived_object)
         exporter.save()
 

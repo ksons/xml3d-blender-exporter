@@ -16,8 +16,10 @@ def appendUnique(mlist, value):
 
 class AssetExporter:
     context = None
+    name = ""
 
-    def __init__(self, context, path, scene):
+    def __init__(self, name, context, path, scene):
+        self.name = name
         self.context = context
         self._path = path
         self._dir = os.path.dirname(path)
@@ -266,13 +268,15 @@ class AssetExporter:
 
     def save(self):
         stats = self.context.stats
-        stats.assets.append({"url": self._path})
+        size = 0
 
         with open(self._path, "w") as assetFile:
             self.saveXML(assetFile, stats)
             assetFile.close()
             os.path.getsize(self._path)
-            stats.assets[0]["size"] = os.path.getsize(self._path)
+            size = os.path.getsize(self._path)
+
+        stats.assets.append({"url": self._path, "size": size, "name": self.name})
 
         try:
             path_reference_copy(self.context.copy_set, self.copy_report)
