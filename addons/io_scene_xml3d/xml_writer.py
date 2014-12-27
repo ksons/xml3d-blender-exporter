@@ -1,5 +1,6 @@
 from xml.sax.saxutils import quoteattr
 
+
 class XMLWriter:
     """ An very simpe XML writer """
     def __init__(self, stream, ident=0):

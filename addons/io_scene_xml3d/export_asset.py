@@ -2,7 +2,7 @@ import os
 from xml.dom.minidom import Document
 from bpy_extras.io_utils import path_reference_copy
 from .export_material import Material, DefaultMaterial, export_image
-from .tools import Vertex, safe_query_selector_id
+from . import tools
 
 
 def appendUnique(mlist, value):
@@ -28,10 +28,14 @@ class AssetExporter:
         self._material = {}
 
     def add_material(self, material):
-        if material.id in self._material:
-            return
+        url = self.context.materials.add_material(material)
+        if url is not None:
+            # TODO: Good URL handling
+            return "../materials.xml#" + material.id
 
-        self._material[material.id] = material
+        if material.id not in self._material:
+            self._material[material.id] = material
+        return "#" + material.id
 
     def add_mesh(self, original_object, derived_object):
         if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
@@ -84,7 +88,7 @@ class AssetExporter:
                     vertexIndex].normal if face.use_smooth else face.normal
                 uv_vertex = uv_vertices[i][0] if uv_data else None
 
-                mv = Vertex(vertexIndex, normal, uv_vertex)
+                mv = tools.Vertex(vertexIndex, normal, uv_vertex)
 
                 index, added = appendUnique(vertex_dict, mv)
                 faceIndices.append(index)
@@ -115,7 +119,7 @@ class AssetExporter:
         return textures
 
     def addMeshData(self, mesh):
-        meshName = safe_query_selector_id(mesh.name)
+        meshName = tools.safe_query_selector_id(mesh.name)
         # print("Writing mesh %s" % meshName)
         materialCount = len(mesh.materials)
 
@@ -160,26 +164,24 @@ class AssetExporter:
 
             # Mesh Textures
             if material and mesh_textures[materialIndex] and mesh_textures[materialIndex]["image"]:
-                image_src = export_image(mesh_textures[materialIndex]["image"], self._dir, self.context)
+                image_src = export_image(mesh_textures[materialIndex]["image"], self.context)
                 if image_src:
                     # TODO: Image Sampling parameters
                     # FEATURE: Resize / convert / optimize texture
                     data.append(
-                        {"type": "texture", "name": "diffuseTexture", "value": image_src, "wrap": None})
+                        {"type": "texture", "name": "diffuseTexture", "value": "../" + image_src, "wrap": None})
                 if mesh_textures[materialIndex]["alpha"]:
                     data.append(
                         {"type": "float", "name": "transparency", "value": "0.002"})
 
             submeshName = meshName + "_" + materialName
 
-            material_url = "#"
+            material_url = ""
             if material:
                 converted = Material.from_blender_material(material, self.context, self._dir)
-                self.add_material(converted)
-                material_url += converted.id
+                material_url = self.add_material(converted)
             else:
-                self.add_material(DefaultMaterial)
-                material_url += DefaultMaterial.id
+                material_url = self.add_material(DefaultMaterial)
 
             self._asset['mesh'].append(
                 {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
@@ -199,11 +201,10 @@ class AssetExporter:
             shader.setAttribute("script", material.script)
             if material.compute:
                 shader.setAttribute("compute", material.compute)
-            xml3d.appendChild(shader)
             for entry in material.data:
-                entryElement = AssetExporter.writeGenericContent(
-                    doc, entry, stats)
+                entryElement = tools.write_generic_entry(doc, entry, stats)
                 shader.appendChild(entryElement)
+            xml3d.appendChild(shader)
             stats.materials += 1
 
         for name, value in self._asset["data"].items():
@@ -211,8 +212,7 @@ class AssetExporter:
             assetData.setAttribute("name", name)
             asset.appendChild(assetData)
             for entry in value["content"]:
-                entryElement = AssetExporter.writeGenericContent(
-                    doc, entry, stats)
+                entryElement = tools.write_generic_entry(doc, entry, stats)
                 assetData.appendChild(entryElement)
 
         for mesh in self._asset["mesh"]:
@@ -222,46 +222,11 @@ class AssetExporter:
             assetMesh.setAttribute("shader", mesh["shader"])
             asset.appendChild(assetMesh)
             for entry in mesh["data"]:
-                entryElement = AssetExporter.writeGenericContent(
-                    doc, entry, stats)
+                entryElement = tools.write_generic_entry(doc, entry, stats)
                 assetMesh.appendChild(entryElement)
             stats.meshes.append(mesh["name"])
 
         doc.writexml(f, "", "  ", "\n", "UTF-8")
-
-    def writeGenericContent(doc, entry, stats=None):
-        entry_type = entry["type"]
-        entryElement = doc.createElement(entry_type)
-        entryElement.setAttribute("name", entry["name"])
-
-        value = entry["value"]
-        value_str = None
-        if entry_type == "int":
-            value_str = " ".join(str(e) for e in value)
-        elif entry_type == "texture":
-
-            if entry["wrap"] is not None:
-                entryElement.setAttribute("wrapS", entry["wrap"])
-                entryElement.setAttribute("wrapT", entry["wrap"])
-
-            imgElement = doc.createElement("img")
-            imgElement.setAttribute("src", value)
-            entryElement.appendChild(imgElement)
-            stats.textures += 1
-        else:
-            if not isinstance(value, list):
-                value_str = str(value)
-            else:
-                value_str = ""
-                for t in value:
-                    length = len(t) if isinstance(t, tuple) else 1
-                    fs = length * "%.6f "
-                    value_str += fs % t
-
-        if value_str:
-            textNode = doc.createTextNode(value_str)
-            entryElement.appendChild(textNode)
-        return entryElement
 
     def copy_report(self, str):
         print("Report: " + str)

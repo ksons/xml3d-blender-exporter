@@ -49,19 +49,19 @@ def blender_lamp_to_xml3d_light(model):
 
 
 class XML3DExporter():
-    context = context.Context()
+    context = None
 
-    def __init__(self, context, dirname, transform, progress):
-        self.blender_context = context
+    def __init__(self, blender_context, dirname, transform, progress):
+        self.blender_context = blender_context
+        self.context = context.Context(dirname)
         self._output = io.StringIO()
         self._writer = xml_writer.XMLWriter(self._output, 0)
         self._resource = {}
         self._transform = transform
         self._object_progress = progress
-        self.context.set_base_path(dirname)
 
     def create_asset_directory(self):
-        assetDir = os.path.join(self.context.base_path, ASSETDIR)
+        assetDir = os.path.join(self.context.base_url, ASSETDIR)
         if not os.path.exists(assetDir):
             os.makedirs(assetDir)
         return assetDir
@@ -128,7 +128,7 @@ class XML3DExporter():
     def write_event_attributes(self, obj):
         for event in {"click", "dblclick", "mousedown", "mouseup", "mouseover", "mousemove", "mouseout", "mousewheel"}:
             if event in obj:
-                self._writer.attribute("on" + event, obj[event]);
+                self._writer.attribute("on" + event, obj[event])
 
     def write_transformation(self, obj, derived_matrix):
         # try:
@@ -311,6 +311,9 @@ class XML3DExporter():
         self.create_scene(self.blender_context.scene)
         return self._output.getvalue()
 
+    def finalize(self):
+        self.context.finalize()
+
 
 def write_xml3d_info(dir, stats):
     with open(os.path.join(dir, "xml3d-info.json"), "w") as stats_file:
@@ -386,6 +389,7 @@ def save(operator,
     # export the scene with all its assets
     xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation, object_progress())
     scene = xml3d_exporter.scene()
+    xml3d_exporter.finalize()
 
     template_dir = os.path.join(dirName, "templates\\%s\\" % template_selection)
     template_path = os.path.join(template_dir, 'index.html')

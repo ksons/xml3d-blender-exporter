@@ -1,4 +1,5 @@
 import json
+from .export_material import MaterialLibrary
 
 
 class Stats(object):
@@ -20,12 +21,17 @@ class Stats(object):
 
 class Context():
     stats = Stats(assets=[], lights=0, views=0, groups=0, materials=0, textures=0, meshes=[], warnings=[])
-    base_path = None
+    base_url = None
     copy_set = set()
+    materials = None
+
+    def __init__(self, base_url):
+        self.base_url = base_url
+        self.materials = MaterialLibrary(base_url + "/materials.xml")
 
     def warning(self, message, category=None, issue=None, obj=None):
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
         print("Warning:", message)
 
-    def set_base_path(self, base_path):
-        self.base_path = base_path
+    def finalize(self):
+        self.materials.save()

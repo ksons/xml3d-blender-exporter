@@ -25,6 +25,42 @@ def safe_query_selector_id(id):
     return re.sub('[\.]+', '-', id)
 
 
+def write_generic_entry(doc, entry, stats=None):
+    entry_type = entry["type"]
+    entry_element = doc.createElement(entry_type)
+    entry_element.setAttribute("name", entry["name"])
+
+    value = entry["value"]
+    value_str = None
+    if entry_type == "int":
+        value_str = " ".join(str(e) for e in value)
+    elif entry_type == "texture":
+
+        if entry["wrap"] is not None:
+            entry_element.setAttribute("wrapS", entry["wrap"])
+            entry_element.setAttribute("wrapT", entry["wrap"])
+
+        img_element = doc.createElement("img")
+        img_element.setAttribute("src", value)
+        entry_element.appendChild(img_element)
+        if stats is not None:
+            stats.textures += 1
+    else:
+        if not isinstance(value, list):
+            value_str = str(value)
+        else:
+            value_str = ""
+            for t in value:
+                length = len(t) if isinstance(t, tuple) else 1
+                fs = length * "%.6f "
+                value_str += fs % t
+
+    if value_str:
+        text_node = doc.createTextNode(value_str)
+        entry_element.appendChild(text_node)
+    return entry_element
+
+
 class Vertex:
     index = None
     normal = None
