@@ -73,10 +73,10 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         name="xml3d.js",
         items=(('http://www.xml3d.org/xml3d/scripts/xml3d', "Latest Stable (online)", "Latest Stable from xml3d.org"),
                ('http://www.xml3d.org/xml3d/scripts/xml3d-dev', "Development (online)", "Development Snapshot from xml3d.org"),
-               ('./public/scripts/xml3d/xml3d-4.8', "4.8", "Local version 4.8"),
-               ('./public/scripts/xml3d/xml3d-4.7', "4.7", "Local version 4.8"),
+               ('./common/scripts/xml3d/xml3d-4.8', "4.8", "Local version 4.8"),
+               ('./common/scripts/xml3d/xml3d-4.7', "4.7", "Local version 4.8"),
                ),
-        default='./public/scripts/xml3d/xml3d-4.8',
+        default='./common/scripts/xml3d/xml3d-4.8',
     )
 
     transform_representation = EnumProperty(

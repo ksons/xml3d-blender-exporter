@@ -317,10 +317,10 @@ def create_active_views(blender_context):
     camera = blender_context.scene.camera
     if camera:
         result.append({
-           "view_matrix": matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
-           "perspective_matrix": "", # TODO: Perspective matrix
-           "translation": [e for e in camera.matrix_world.translation],
-           "rotation": [e for e in camera.matrix_world.to_quaternion()]
+            "view_matrix": matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
+            "perspective_matrix": "",  # TODO: Perspective matrix
+            "translation": [e for e in camera.matrix_world.translation],
+            "rotation": [e for e in camera.matrix_world.to_quaternion()]
         })
 
     for area in blender_context.screen.areas:
@@ -381,7 +381,8 @@ def save(operator,
     xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation, object_progress())
     scene = xml3d_exporter.scene()
 
-    template_path = os.path.join(dirName, 'templates\\%s\\index.html' % template_selection)
+    template_dir = os.path.join(dirName, "templates\\%s\\" % template_selection)
+    template_path = os.path.join(template_dir, 'index.html')
     # TODO: Handle case if template file does not exist
     with open(template_path, "r") as templateFile:
         data = Template(templateFile.read())
@@ -398,10 +399,15 @@ def save(operator,
     write_xml3d_info(info_dir, xml3d_exporter.stats())
     write_blender_config(info_dir, context)
 
-    # copy all the accompanying files
-    publicDir = os.path.join(output_dir, "public")
-    if not os.path.exists(publicDir):
-        copytree(os.path.join(dirName, "public"), publicDir)
+    # copy all common files
+    target_dir = os.path.join(output_dir, "common")
+    if not os.path.exists(target_dir):
+        copytree(os.path.join(dirName, "common"), target_dir)
+
+    # copy template specific files
+    target_dir = os.path.join(output_dir, "public")
+    if not os.path.exists(target_dir):
+        copytree(os.path.join(template_dir, "public"), target_dir)
 
     # context.window_manager.progress_end()
 
