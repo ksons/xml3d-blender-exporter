@@ -20,8 +20,10 @@ def matrix_to_ccs_matrix3d(matrix):
     return "matrix3d(%s)" % ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0], col[1], col[2], col[3])
                                       for col in matrix.col])
 
+
 def safe_query_selector_id(id):
     return re.sub('[\.]+', '-', id)
+
 
 class Vertex:
     index = None

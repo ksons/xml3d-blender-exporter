@@ -1,5 +1,4 @@
 import os
-import re
 from xml.dom.minidom import Document
 from bpy_extras.io_utils import path_reference_copy
 from .export_material import Material, DefaultMaterial, export_image
@@ -182,7 +181,6 @@ class AssetExporter:
 
             self._asset['mesh'].append(
                 {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
-
 
     def saveXML(self, f, stats):
         doc = Document()

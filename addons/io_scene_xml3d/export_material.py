@@ -50,7 +50,6 @@ class Material:
         else:
             data.append({"type": "float", "name": "alpha", "value": 1})
 
-
         # if material.use_face_texture:
         # print("Warning: Material '%s' uses 'Face Textures', which are not (yet) supported. Skipping texture..." % materialName)
         # return
