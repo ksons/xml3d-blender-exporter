@@ -381,9 +381,9 @@ def save(operator,
     xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation, object_progress())
     scene = xml3d_exporter.scene()
 
-    templatePath = os.path.join(dirName, 'templates\\%s.html' % template_selection)
+    template_path = os.path.join(dirName, 'templates\\%s\\index.html' % template_selection)
     # TODO: Handle case if template file does not exist
-    with open(templatePath, "r") as templateFile:
+    with open(template_path, "r") as templateFile:
         data = Template(templateFile.read())
         file = open(filepath, 'w')
         file.write(data.substitute(title=context.scene.name, xml3d=scene,
