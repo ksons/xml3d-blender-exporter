@@ -22,7 +22,7 @@ def matrix_to_ccs_matrix3d(matrix):
 
 
 def safe_query_selector_id(id):
-    return re.sub('[\.]+', '-', id)
+    return re.sub('[ \.]+', '-', id)
 
 
 def write_generic_entry(doc, entry, stats=None):
