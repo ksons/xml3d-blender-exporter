@@ -22,7 +22,7 @@ class Stats(object):
 
 
 class Context():
-    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], warnings=[])
+    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], warnings=[], scene=None)
     base_url = None
     copy_set = set()
     materials = None

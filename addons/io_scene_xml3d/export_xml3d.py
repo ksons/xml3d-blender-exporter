@@ -400,6 +400,8 @@ def save(operator,
         file.write(data.substitute(title=context.scene.name, xml3d=scene,
                                    version=version, generator="xml3d-blender-exporter v0.1.0"))
         file.close()
+        size = os.path.getsize(filepath)
+        xml3d_exporter.stats().scene = {"name": os.path.basename(filepath), "size": size}
 
     # TODO: Make writing out stats optional
     info_dir = os.path.join(output_dir, "info")
