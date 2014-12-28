@@ -361,7 +361,7 @@ def save(operator,
          global_matrix=None,
          template_selection="preview",
          xml3djs_selection="",
-         xml3d_minimzed=False,
+         xml3d_minimized=False,
          transform_representation="css"
          ):
     """Save the Blender scene to a XML3D/HTML file."""
@@ -381,7 +381,7 @@ def save(operator,
     # TODO: Time the export
     # time1 = time.clock()
 
-    version = xml3djs_selection + ("-min" if xml3d_minimzed else "") + ".js"
+    version = xml3djs_selection + ("-min" if xml3d_minimized else "") + ".js"
 
     dirName = os.path.dirname(__file__)
     output_dir = os.path.dirname(filepath)

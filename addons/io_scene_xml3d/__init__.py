@@ -88,7 +88,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
     )
 
     # TODO: Format selection nicely (see FBX exporter)
-    xml3d_minimzed = BoolProperty(
+    xml3d_minimized = BoolProperty(
         name="Minimized",
         description="Uses minimized version of xml3d.js",
         default=True,
