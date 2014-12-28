@@ -66,14 +66,14 @@ class XML3DExporter():
             os.makedirs(assetDir)
         return assetDir
 
-    def create_resource_from_mesh(self, original_object, derived_object):
+    def create_resource_from_mesh(self, original_object):
         mesh_data_name = original_object.data.name
         path = self.create_asset_directory()
         path = os.path.join(path, mesh_data_name + ".xml")
         url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
         exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
-        exporter.add_mesh(original_object, derived_object)
+        exporter.add_mesh(original_object)
         exporter.save()
 
         # stats.assets[0]["url"] = url
@@ -85,7 +85,7 @@ class XML3DExporter():
     def warning(self, message, category=None, issue=None):
         self.context.warning(message, category, issue)
 
-    def create_resource(self, obj, derived):
+    def create_resource(self, obj):
         url = ""
 
         if obj.type in {"MESH", "FONT", "SURFACE", "CURVE"}:
@@ -94,7 +94,7 @@ class XML3DExporter():
             if key in self._resource:
                 return self._resource[key]
 
-            url = self.create_resource_from_mesh(obj, derived)
+            url = self.create_resource_from_mesh(obj)
             self._resource[key] = url
         else:
             self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
@@ -130,7 +130,7 @@ class XML3DExporter():
             if event in obj:
                 self._writer.attribute("on" + event, obj[event])
 
-    def write_transformation(self, obj, derived_matrix):
+    def write_transformation(self, obj):
         # try:
         matrix = obj.matrix_basis
 
@@ -155,7 +155,7 @@ class XML3DExporter():
             transform = " ".join(matrices)
             obj.rotation_mode = old_rotation_mode
         else:
-            matrix = obj.matrix_parent_inverse * derived_matrix
+            matrix = obj.matrix_parent_inverse * matrix
             if is_identity(matrix):
                 return
             transform = matrix_to_ccs_matrix3d(matrix)
@@ -180,11 +180,11 @@ class XML3DExporter():
         self._writer.end_element("view")
         self.context.stats.views += 1
 
-    def create_geometry(self, derived_object, original_obj):
+    def create_geometry(self, original_obj):
         self._writer.start_element(
             "model", id=escape_html_id(original_obj.data.name))
         self._writer.attribute(
-            "src", self.create_resource(derived_object, original_obj))
+            "src", self.create_resource(original_obj))
         self._writer.end_element("model")
 
     def create_lamp(self, obj):
@@ -202,37 +202,34 @@ class XML3DExporter():
 
     def create_object(self, this_object, parent, children):
 
-        free, derived_objects = create_derived_objects(
-            self.blender_context.scene, this_object)
-        if derived_objects is None:
-            return
+        #free, derived_objects = create_derived_objects(self.blender_context.scene, this_object)
+        #if derived_objects is None:
+        #    return
 
         self._object_progress()
 
-        for derived_object, derived_matrix in derived_objects:
+        self._writer.start_element("group")
+        self.write_defaults(this_object, prefix="")
+        self.write_transformation(this_object)
+        self.write_event_attributes(this_object)
 
-            self._writer.start_element("group")
-            self.write_defaults(derived_object, prefix="")
-            self.write_transformation(derived_object, derived_matrix)
-            self.write_event_attributes(derived_object)
+        if this_object.type == "CAMERA":
+            self.create_camera(this_object)
+        elif this_object.type in {'MESH', 'CURVE', 'SURFACE', 'FONT'}:
+            self.create_geometry(this_object)
+        elif this_object.type == "LAMP":
+            self.create_lamp(this_object)
+        else:
+            self.warning("Object '%s' is of type '%s', which is not (yet) supported." % (this_object.name, this_object.type))
 
-            if this_object.type == "CAMERA":
-                self.create_camera(derived_object)
-            elif this_object.type in {'MESH', 'CURVE', 'SURFACE', 'FONT'}:
-                self.create_geometry(derived_object, this_object)
-            elif this_object.type == "LAMP":
-                self.create_lamp(derived_object)
-            else:
-                self.warning("Object '%s' is of type '%s', which is not (yet) supported." % (this_object.name, this_object.type))
+        for obj, object_children in children:
+            self.create_object(obj, this_object, object_children)
 
-            for obj, object_children in children:
-                self.create_object(obj, this_object, object_children)
+        #if free:
+        #    free_derived_objects(this_object)
 
-            if free:
-                free_derived_objects(this_object)
-
-            self._writer.end_element("group")
-            self.context.stats.groups += 1
+        self._writer.end_element("group")
+        self.context.stats.groups += 1
 
     def create_def(self):
         self._writer.start_element("defs")

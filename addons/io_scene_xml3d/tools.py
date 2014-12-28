@@ -2,10 +2,16 @@ import mathutils
 import re
 
 IDENTITY = mathutils.Matrix.Identity(4)
+EMPTY = mathutils.Matrix()
+EMPTY.zero()
 
 
 def is_identity(matrix):
     return matrix == IDENTITY
+
+
+def is_empty(matrix):
+    return matrix == EMPTY
 
 
 def is_identity_scale(vector):

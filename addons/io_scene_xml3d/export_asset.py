@@ -1,6 +1,7 @@
 import os
 from xml.dom.minidom import Document
 from .export_material import Material, DefaultMaterial, export_image
+from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from . import tools
 
 
@@ -36,17 +37,26 @@ class AssetExporter:
             self._material[material.id] = material
         return "#" + material.id
 
-    def add_mesh(self, original_object, derived_object):
-        if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+    def add_mesh(self, obj):
+        base_matrix = (obj.matrix_basis).inverted()
+        free, derived_objects = create_derived_objects(self._scene, obj)
+        if derived_objects is None:
             return
 
-        try:
-            data = derived_object.to_mesh(self._scene, True, 'RENDER', True)
-        except:
-            data = None
+        for derived_object, matrix in derived_objects:
+            if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+                continue
 
-        if data:
-            self.addMeshData(data)
+            try:
+                data = derived_object.to_mesh(self._scene, True, 'RENDER', True)
+            except:
+                data = None
+
+            if data:
+                self.addMeshData(data, base_matrix * matrix)
+
+        if free:
+            free_derived_objects(obj)
 
     def export_tessfaces(self, mesh):
         if not len(mesh.tessfaces):
@@ -117,9 +127,8 @@ class AssetExporter:
                     textures[i] = None
         return textures
 
-    def addMeshData(self, mesh):
+    def addMeshData(self, mesh, matrix):
         meshName = tools.safe_query_selector_id(mesh.name)
-        # print("Writing mesh %s" % meshName)
         materialCount = len(mesh.materials)
 
         # Export based on tess_faces:
@@ -175,7 +184,6 @@ class AssetExporter:
 
             submeshName = meshName + "_" + materialName
 
-            material_url = ""
             if material:
                 converted = Material.from_blender_material(material, self.context, self._dir)
                 material_url = self.add_material(converted)
@@ -183,7 +191,7 @@ class AssetExporter:
                 material_url = self.add_material(DefaultMaterial)
 
             self._asset['mesh'].append(
-                {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
+                {"name": submeshName, "includes": meshName, "data": data, "shader": material_url, "transform": tools.matrix_to_ccs_matrix3d(matrix)})
 
     def saveXML(self, f, stats):
         doc = Document()
@@ -219,6 +227,9 @@ class AssetExporter:
             assetMesh.setAttribute("name", mesh["name"])
             assetMesh.setAttribute("includes", mesh["includes"])
             assetMesh.setAttribute("shader", mesh["shader"])
+            if "transform" in mesh:
+                assetMesh.setAttribute("style", "transform: %s;" % mesh["transform"])
+
             asset.appendChild(assetMesh)
             for entry in mesh["data"]:
                 entryElement = tools.write_generic_entry(doc, entry)
