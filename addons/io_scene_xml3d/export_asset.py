@@ -1,6 +1,5 @@
 import os
 from xml.dom.minidom import Document
-from bpy_extras.io_utils import path_reference_copy
 from .export_material import Material, DefaultMaterial, export_image
 from . import tools
 
@@ -228,9 +227,6 @@ class AssetExporter:
 
         doc.writexml(f, "", "  ", "\n", "UTF-8")
 
-    def copy_report(self, str):
-        print("Report: " + str)
-
     def save(self):
         stats = self.context.stats
         size = 0
@@ -243,7 +239,3 @@ class AssetExporter:
 
         stats.assets.append({"url": self._path, "size": size, "name": self.name})
 
-        try:
-            path_reference_copy(self.context.copy_set, self.copy_report)
-        except PermissionError:
-            print('ERROR: While copying textures: %s' % self.context.copy_set)

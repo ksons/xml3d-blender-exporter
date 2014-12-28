@@ -1,5 +1,6 @@
 import json
 from .export_material import MaterialLibrary
+from bpy_extras.io_utils import path_reference_copy
 
 
 class Stats(object):
@@ -33,5 +34,13 @@ class Context():
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
         print("Warning:", message)
 
+    def __copy_report(self, msg):
+        self.warning(msg.capitalize(), "texture")
+
+
     def finalize(self):
         self.materials.save()
+        try:
+            path_reference_copy(self.copy_set, self.__copy_report)
+        except PermissionError:
+            self.warning('ERROR: While copying textures: %s' % self.copy_set, "textures")
