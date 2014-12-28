@@ -73,7 +73,7 @@ class XML3DExporter():
         url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
         exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
-        exporter.add_mesh(original_object)
+        exporter.add_asset(original_object)
         exporter.save()
 
         # stats.assets[0]["url"] = url
