@@ -127,7 +127,7 @@ class MaterialLibrary:
             if material.compute:
                 shader.setAttribute("compute", material.compute)
             for entry in material.data:
-                entry_element = tools.write_generic_entry(doc, entry, None)
+                entry_element = tools.write_generic_entry(doc, entry)
                 shader.appendChild(entry_element)
             xml3d.appendChild(shader)
 
@@ -163,6 +163,10 @@ def export_image(image, context):
             with open(file_path, "wb") as image_file:
                 image_file.write(image_data)
                 image_file.close()
+        size = os.path.getsize(file_path)
+        image_stats = {"name": image.name, "size": size}
+        if image_stats not in context.stats.textures:
+            context.stats.textures.append(image_stats)
 
         # TODO: Optionally pack images base 64 encoded
         # mime_type = "image/png"

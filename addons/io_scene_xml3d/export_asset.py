@@ -201,7 +201,7 @@ class AssetExporter:
             if material.compute:
                 shader.setAttribute("compute", material.compute)
             for entry in material.data:
-                entryElement = tools.write_generic_entry(doc, entry, stats)
+                entryElement = tools.write_generic_entry(doc, entry)
                 shader.appendChild(entryElement)
             xml3d.appendChild(shader)
             stats.materials += 1
@@ -211,7 +211,7 @@ class AssetExporter:
             assetData.setAttribute("name", name)
             asset.appendChild(assetData)
             for entry in value["content"]:
-                entryElement = tools.write_generic_entry(doc, entry, stats)
+                entryElement = tools.write_generic_entry(doc, entry)
                 assetData.appendChild(entryElement)
 
         for mesh in self._asset["mesh"]:
@@ -221,7 +221,7 @@ class AssetExporter:
             assetMesh.setAttribute("shader", mesh["shader"])
             asset.appendChild(assetMesh)
             for entry in mesh["data"]:
-                entryElement = tools.write_generic_entry(doc, entry, stats)
+                entryElement = tools.write_generic_entry(doc, entry)
                 assetMesh.appendChild(entryElement)
             stats.meshes.append(mesh["name"])
 

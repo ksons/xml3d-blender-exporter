@@ -25,7 +25,7 @@ def safe_query_selector_id(id):
     return re.sub('[ \.]+', '-', id)
 
 
-def write_generic_entry(doc, entry, stats=None):
+def write_generic_entry(doc, entry):
     entry_type = entry["type"]
     entry_element = doc.createElement(entry_type)
     entry_element.setAttribute("name", entry["name"])
@@ -43,8 +43,6 @@ def write_generic_entry(doc, entry, stats=None):
         img_element = doc.createElement("img")
         img_element.setAttribute("src", value)
         entry_element.appendChild(img_element)
-        if stats is not None:
-            stats.textures += 1
     else:
         if not isinstance(value, list):
             value_str = str(value)

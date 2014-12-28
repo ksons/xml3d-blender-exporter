@@ -1,4 +1,5 @@
 import json
+import os
 from .export_material import MaterialLibrary
 from bpy_extras.io_utils import path_reference_copy
 
@@ -21,7 +22,7 @@ class Stats(object):
 
 
 class Context():
-    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=0, meshes=[], warnings=[])
+    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], warnings=[])
     base_url = None
     copy_set = set()
     materials = None
@@ -43,3 +44,14 @@ class Context():
             path_reference_copy(self.copy_set, self.__copy_report)
         except PermissionError:
             self.warning('ERROR: While copying textures: %s' % self.copy_set, "textures")
+
+        for key, value in self.copy_set:
+            try:
+                size = os.path.getsize(value)
+            except FileNotFoundError:
+                size = 0
+            self.stats.textures.append({
+                "name": os.path.basename(value),
+                "size": size
+
+            })
