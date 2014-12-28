@@ -229,13 +229,10 @@ class AssetExporter:
 
     def save(self):
         stats = self.context.stats
-        size = 0
 
         with open(self._path, "w") as assetFile:
             self.saveXML(assetFile, stats)
             assetFile.close()
-            os.path.getsize(self._path)
             size = os.path.getsize(self._path)
 
         stats.assets.append({"url": self._path, "size": size, "name": self.name})
-

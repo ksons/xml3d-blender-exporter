@@ -105,8 +105,9 @@ class MaterialLibrary:
     materials = None
     url = None
 
-    def __init__(self, url):
+    def __init__(self, context, url):
         self.materials = []
+        self.context = context
         self.url = url
 
     def add_material(self, material):
@@ -139,6 +140,9 @@ class MaterialLibrary:
         with open(self.url, "w") as materialFile:
             self.__save_xml(materialFile)
             materialFile.close()
+            size = os.path.getsize(self.url)
+
+        self.context.stats.materials.append({"name": "material.xml", "size": size})
 
 
 def export_image(image, context):

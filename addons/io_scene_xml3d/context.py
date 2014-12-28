@@ -21,14 +21,14 @@ class Stats(object):
 
 
 class Context():
-    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=0, textures=0, meshes=[], warnings=[])
+    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=0, meshes=[], warnings=[])
     base_url = None
     copy_set = set()
     materials = None
 
     def __init__(self, base_url):
         self.base_url = base_url
-        self.materials = MaterialLibrary(base_url + "/materials.xml")
+        self.materials = MaterialLibrary(self, base_url + "/materials.xml")
 
     def warning(self, message, category=None, issue=None, obj=None):
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
@@ -36,7 +36,6 @@ class Context():
 
     def __copy_report(self, msg):
         self.warning(msg.capitalize(), "texture")
-
 
     def finalize(self):
         self.materials.save()
