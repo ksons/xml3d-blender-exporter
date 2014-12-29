@@ -5,7 +5,6 @@ import bpy
 import math
 import json
 from . import xml_writer, export_asset, context
-from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d
 from shutil import copytree
 
@@ -202,10 +201,6 @@ class XML3DExporter():
 
     def create_object(self, this_object, parent, children):
 
-        #free, derived_objects = create_derived_objects(self.blender_context.scene, this_object)
-        #if derived_objects is None:
-        #    return
-
         self._object_progress()
 
         self._writer.start_element("group")
@@ -224,9 +219,6 @@ class XML3DExporter():
 
         for obj, object_children in children:
             self.create_object(obj, this_object, object_children)
-
-        #if free:
-        #    free_derived_objects(this_object)
 
         self._writer.end_element("group")
         self.context.stats.groups += 1

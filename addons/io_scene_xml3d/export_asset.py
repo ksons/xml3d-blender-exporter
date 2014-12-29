@@ -15,12 +15,22 @@ def appendUnique(mlist, value):
 
 
 class Asset:
+    id = ""
     meshes = None
     data = None
+    sub_assets = None
+    ref_assets = None
+    matrix = None
+    src = None
 
-    def __init__(self):
+    def __init__(self, name=None, matrix=None, src=None):
+        self.id = name
+        self.matrix = matrix
+        self.src = src
         self.meshes = []
         self.data = {}
+        self.sub_assets = {}
+        self.ref_assets = []
 
 
 class AssetExporter:
@@ -33,7 +43,7 @@ class AssetExporter:
         self._path = path
         self._dir = os.path.dirname(path)
         self._scene = scene
-        self.asset = Asset()
+        self.asset = Asset("root")
         self._material = {}
 
     def add_material(self, material):
@@ -55,17 +65,29 @@ class AssetExporter:
         for derived_object, matrix in derived_objects:
             if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
                 continue
-
-            try:
-                data = derived_object.to_mesh(self._scene, True, 'RENDER', True)
-            except:
-                data = None
-
-            if data:
-                self.add_mesh_data(data, base_matrix * matrix)
+            self.add_subasset(derived_object, base_matrix * matrix)
 
         if free:
             free_derived_objects(obj)
+
+    def add_subasset(self, derived_object, matrix):
+        name = tools.safe_query_selector_id(derived_object.name)
+
+        if name in self.asset.sub_assets:
+            ref_asset = Asset(src="#" + name, matrix=matrix)
+            self.asset.ref_assets.append(ref_asset)
+            return
+
+        sub_asset = Asset(name, matrix.copy())
+
+        try:
+            mesh = derived_object.to_mesh(self._scene, True, 'RENDER', True)
+        except:
+            mesh = None
+
+        if mesh:
+            self.add_mesh_data(sub_asset, mesh)
+            self.asset.sub_assets[name] = sub_asset
 
     def export_tessfaces(self, mesh):
         if not len(mesh.tessfaces):
@@ -136,7 +158,7 @@ class AssetExporter:
                     textures[i] = None
         return textures
 
-    def add_mesh_data(self, mesh, matrix):
+    def add_mesh_data(self, asset, mesh):
         meshName = tools.safe_query_selector_id(mesh.name)
         materialCount = len(mesh.materials)
 
@@ -165,7 +187,7 @@ class AssetExporter:
             content.append(
                 {"type": "float2", "name": "texcoord", "value": texcoord})
 
-        self.asset.data[meshName] = {"content": content}
+        asset.data[meshName] = {"content": content}
 
         mesh_textures = self.export_mesh_textures(mesh)
 
@@ -199,39 +221,39 @@ class AssetExporter:
             else:
                 material_url = self.add_material(DefaultMaterial)
 
-            self.asset.meshes.append(
-                {"name": submeshName, "includes": meshName, "data": data, "shader": material_url, "transform": tools.matrix_to_ccs_matrix3d(matrix)})
+            asset.meshes.append(
+                {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
 
     def saveXML(self, f, stats):
         doc = Document()
         xml3d = doc.createElement("xml3d")
         doc.appendChild(xml3d)
+        self.asset_xml(self.asset, xml3d)
+        doc.writexml(f, "", "  ", "\n", "UTF-8")
 
-        asset = doc.createElement("asset")
-        asset.setAttribute("id", "root")
-        xml3d.appendChild(asset)
+    def asset_xml(self, asset, parent):
+        doc = parent.ownerDocument
 
-        for name, material in self._material.items():
-            shader = doc.createElement("shader")
-            shader.setAttribute("id", name)
-            shader.setAttribute("script", material.script)
-            if material.compute:
-                shader.setAttribute("compute", material.compute)
-            for entry in material.data:
-                entryElement = tools.write_generic_entry(doc, entry)
-                shader.appendChild(entryElement)
-            xml3d.appendChild(shader)
-            stats.materials += 1
+        asset_element = doc.createElement("asset")
+        parent.appendChild(asset_element)
 
-        for name, value in self.asset.data.items():
+        if asset.id:
+            asset_element.setAttribute("id", asset.id)
+        if asset.matrix and not tools.is_identity(asset.matrix):
+            asset_element.setAttribute("style", "transform: %s;" % tools.matrix_to_ccs_matrix3d(asset.matrix))
+        if asset.src:
+            asset_element.setAttribute("src", asset.src)
+            return
+
+        for name, value in asset.data.items():
             assetData = doc.createElement("assetdata")
             assetData.setAttribute("name", name)
-            asset.appendChild(assetData)
+            asset_element.appendChild(assetData)
             for entry in value["content"]:
                 entryElement = tools.write_generic_entry(doc, entry)
                 assetData.appendChild(entryElement)
 
-        for mesh in self.asset.meshes:
+        for mesh in asset.meshes:
             asset_mesh = doc.createElement("assetmesh")
             asset_mesh.setAttribute("name", mesh["name"])
             asset_mesh.setAttribute("includes", mesh["includes"])
@@ -239,13 +261,16 @@ class AssetExporter:
             if "transform" in mesh:
                 asset_mesh.setAttribute("style", "transform: %s;" % mesh["transform"])
 
-            asset.appendChild(asset_mesh)
+            asset_element.appendChild(asset_mesh)
             for entry in mesh["data"]:
                 entryElement = tools.write_generic_entry(doc, entry)
                 asset_mesh.appendChild(entryElement)
-            stats.meshes.append(mesh["name"])
 
-        doc.writexml(f, "", "  ", "\n", "UTF-8")
+        for sub_asset in asset.sub_assets.values():
+            self.asset_xml(sub_asset, asset_element)
+
+        for ref_asset in asset.ref_assets:
+            self.asset_xml(ref_asset, asset_element)
 
     def save(self):
         stats = self.context.stats
