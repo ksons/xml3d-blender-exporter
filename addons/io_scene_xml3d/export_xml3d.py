@@ -133,7 +133,7 @@ class XML3DExporter():
         # try:
         matrix = obj.matrix_basis
 
-        if self._transform == "cssl":
+        if self._transform == "css":
             matrices = []
 
             if not is_identity(obj.matrix_parent_inverse):
@@ -380,7 +380,7 @@ def save(operator,
     scene = xml3d_exporter.scene()
     xml3d_exporter.finalize()
 
-    template_dir = os.path.join(dirName, "templates\\%s\\" % template_selection)
+    template_dir = os.path.join(dirName, "templates/%s/" % template_selection)
     template_path = os.path.join(template_dir, 'index.html')
     # TODO: Handle case if template file does not exist
     with open(template_path, "r") as templateFile:

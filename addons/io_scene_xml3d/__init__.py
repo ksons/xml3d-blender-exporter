@@ -84,7 +84,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         items=(('css', "CSS Combination", ""),
                ('css-matrix', "CSS Matrix", "")
                ),
-        default='css',
+        default='css-matrix',
     )
 
     # TODO: Format selection nicely (see FBX exporter)
