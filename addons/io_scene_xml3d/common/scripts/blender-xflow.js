@@ -67,7 +67,6 @@ Xflow.registerOperator("xflow.blenderMaterial", {
         specularColor[1] = specular_color[1] * specular_intensity[0];
         specularColor[2] = specular_color[2] * specular_intensity[0];
         shininess[0] = specular_hardness[0] / 511;
-        ambientIntensity[0] = 0.0;
         transparency[0] = Math.max(0, 1 - alpha[0]);
     }
 });
