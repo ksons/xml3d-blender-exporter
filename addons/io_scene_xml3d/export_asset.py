@@ -1,249 +1,283 @@
-import mathutils, os
-from xml.dom.minidom import Document, Element
-from .tools import Vertex, Stats
+import os
+from xml.dom.minidom import Document
+from .export_material import Material, DefaultMaterial, export_image
+from bpy_extras.io_utils import create_derived_objects, free_derived_objects
+from . import tools
 
 
 def appendUnique(mlist, value):
-    if value in mlist :
+    if value in mlist:
         return mlist[value], False
     # Not in dict, thus add it
     index = len(mlist)
     mlist[value] = index
     return index, True
 
+
+class Asset:
+    id = ""
+    meshes = None
+    data = None
+    sub_assets = None
+    ref_assets = None
+    matrix = None
+    src = None
+
+    def __init__(self, name=None, matrix=None, src=None):
+        self.id = name
+        self.matrix = matrix
+        self.src = src
+        self.meshes = []
+        self.data = {}
+        self.sub_assets = {}
+        self.ref_assets = []
+
+
 class AssetExporter:
-	def __init__(self,path, scene):
-		self._path = path
-		self._scene = scene
-		self._asset = { u"mesh": [], u"data": {}}
-		self._material = {}
+    context = None
+    name = ""
 
-	def add_default_material(self):
-		if "defaultMaterial" in self._material:
-			return
+    def __init__(self, name, context, path, scene):
+        self.name = name
+        self.context = context
+        self._path = path
+        self._dir = os.path.dirname(path)
+        self._scene = scene
+        self.asset = Asset("root")
+        self._material = {}
 
-		data = []
-		data.append({ "type": "float3", "name": "diffuseColor", "value": "0.8 0.8 0.8"})
-		data.append({ "type": "float3", "name": "specularColor", "value": "1.0 1.0 0.1"})
-		data.append({ "type": "float", "name": "ambientIntensity", "value": "0.5" })
+    def add_material(self, material):
+        url = self.context.materials.add_material(material)
+        if url is not None:
+            # TODO: Good URL handling
+            return "../materials.xml#" + material.id
 
-		self._material["defaultMaterial"] = { "content": { "data": data }, "script": "urn:xml3d:shader:phong" }
+        if material.id not in self._material:
+            self._material[material.id] = material
+        return "#" + material.id
 
+    def add_asset(self, obj):
+        base_matrix = (obj.matrix_basis).inverted()
+        free, derived_objects = create_derived_objects(self._scene, obj)
+        if derived_objects is None:
+            return
 
-	def add_material(self, material):
-		materialName = material.name
-		if materialName in self._material:
-			return
-		data = []
-		data.append({ "type": "float3", "name": "diffuseColor", "value": [e * material.diffuse_intensity for e in material.diffuse_color]})
-		data.append({ "type": "float3", "name": "specularColor", "value": [tuple(material.specular_color)] })
-		data.append({ "type": "float", "name": "ambientIntensity", "value": material.ambient })
+        for derived_object, matrix in derived_objects:
+            if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+                continue
+            self.add_subasset(derived_object, base_matrix * matrix)
 
-		self._material[materialName] = { "content": { "data": data }, "script": "urn:xml3d:shader:phong" }
+        if free:
+            free_derived_objects(obj)
 
-	def addMesh(self, meshObject, derivedObject):
-		if derivedObject:
-			for obj, mat in derivedObject:
-				if obj.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
-					continue
+    def add_subasset(self, derived_object, matrix):
+        name = tools.safe_query_selector_id(derived_object.name)
 
-				try:
-					data = obj.to_mesh(self._scene, True, 'RENDER')
-				except:
-					data = None
+        if name in self.asset.sub_assets:
+            ref_asset = Asset(src="#" + name, matrix=matrix)
+            self.asset.ref_assets.append(ref_asset)
+            return
 
-				if data:
-					self.addMeshData(data)
+        sub_asset = Asset(name, matrix.copy())
 
-		else:
-			self.addMeshData(meshObject.data)
+        try:
+            mesh = derived_object.to_mesh(self._scene, True, 'RENDER', True)
+        except:
+            mesh = None
 
-	def addMeshData(self, mesh):
-		if len(mesh.polygons) == 0 :
-			return
+        if mesh:
+            self.add_mesh_data(sub_asset, mesh)
+            self.asset.sub_assets[name] = sub_asset
 
-		meshName = mesh.name
-		materialCount = len(mesh.materials)
+    def export_tessfaces(self, mesh):
+        if not len(mesh.tessfaces):
+            self.context.warning(u"Mesh '{0:s}' has no triangles. Pure line geometry not (yet) supported. Try extruding a little.".format(mesh.name), "geometry")
+            return None, None
 
-		#print("Writing mesh %s" % meshName)
+        materialCount = len(mesh.materials)
 
-		# Mesh indices
+        # Mesh indices:
+        # For each material allocate an array
+        # @UnusedVariable
+        indices = [[] for m in range(1 if materialCount == 0 else materialCount)]
 
-		# Speichert für jedes Material die entsprechenden Vertexindices
-		indices = [[] for m in range(1 if materialCount == 0 else materialCount)] #@UnusedVariable
-		# Speichert alle Vertices des Meshes in einer aufbereiteten Form
-		vertices = []
-		# Stellt sicher, dass keine Vertices doppelt aufgenommen werden
-		vertex_dict = {}
+        # All vertices of the mesh, trying to keep the number of vertices small
+        vertices = []
+        # Vertex cache
+        vertex_dict = {}
 
-		# print("Faces: %i" % len(mesh.polygons))
+        uv_data = None
+        if len(mesh.tessface_uv_textures):
+            uv_data = [uv.data for uv in mesh.tessface_uv_textures]
+            uv_data = list(zip(*uv_data))
 
-		# TODO: Support for UV coordinates
-		uvTexture = mesh.uv_textures.active
-		if uvTexture :
-			pass
-			#print("Active UV Texture: " + uvTexture.name)
+        '''	@type bpytypes.MeshTessFace '''
+        faces = mesh.tessfaces
+        for faceIndex, face in enumerate(faces):
 
-        #meshTextureFaceLayerData = None
-       #if mesh.tessface_uv_textures.active :
-       #    meshTextureFaceLayerData = mesh.tessface_uv_textures.active.data
+            if uv_data:
+                ''' @type tuple(bpy.types.MeshTextureFace) '''
+                uv_faces = uv_data[faceIndex]
+                uv_vertices = [uv_face.uv for uv_face in uv_faces]
+                uv_vertices = list(zip(*uv_vertices))
 
-		for faceIndex, face in enumerate(mesh.polygons) :
-			mv = None
-			uvFace = None
-			#if uvTexture and uvTexture.data[faceIndex] :
-		 	#	uvFaceData = uvTexture.data[faceIndex]
-		 	#	uvFace = uvFaceData.uv1, uvFaceData.uv2, uvFaceData.uv3, uvFaceData.uv4
+            faceIndices = []
 
-			newFaceVertices = []
+            for i, vertexIndex in enumerate(face.vertices):
+                normal = mesh.vertices[
+                    vertexIndex].normal if face.use_smooth else face.normal
+                uv_vertex = uv_vertices[i][0] if uv_data else None
 
-			for i, vertexIndex in enumerate(face.vertices):
-				if face.use_smooth:
-					#if uvFace:
-					#	mv = Vertex(vertexIndex, mesh.vertices[vertexIndex].normal, uvFace[i])
-					#else:
-					mv = Vertex(vertexIndex, mesh.vertices[vertexIndex].normal, None)
-				else :
-					#if uvFace :
-					#	meshTexturePolyLayer = mesh.uv_textures.active
-					#	mv = Vertex(vertexIndex, face.normal, uvFace[i])
-					#else:
-					mv = Vertex(vertexIndex, face.normal)
+                mv = tools.Vertex(vertexIndex, normal, uv_vertex)
 
-				index, added = appendUnique(vertex_dict, mv)
-				newFaceVertices.append(index)
-				#print("enumerate: %d -> %d (%d)" % (i, vertexIndex, index))
-				if added :
-					vertices.append(mv)
+                index, added = appendUnique(vertex_dict, mv)
+                faceIndices.append(index)
+                # print("enumerate: %d -> %d (%d)" % (i, vertexIndex, index))
+                if added:
+                    vertices.append(mv)
 
-			if len(newFaceVertices) == 3 :
-				#print("3 vertices found")
-				for vertexIndex in newFaceVertices :
-					indices[face.material_index].append(vertexIndex)
-			elif len(newFaceVertices) == 4 :
-				#print("4 vertices found")
-				indices[face.material_index].append(newFaceVertices[0])
-				indices[face.material_index].append(newFaceVertices[1])
-				indices[face.material_index].append(newFaceVertices[2])
-				indices[face.material_index].append(newFaceVertices[2])
-				indices[face.material_index].append(newFaceVertices[3])
-				indices[face.material_index].append(newFaceVertices[0])
+            if len(faceIndices) == 3:
+                indices[face.material_index].extend(faceIndices)
+            elif len(faceIndices) == 4:
+                face2 = [faceIndices[2], faceIndices[3], faceIndices[0]]
+                faceIndices[3:] = face2
+                indices[face.material_index].extend(faceIndices)
+            else:
+                print("Found %s vertices" % len(faceIndices))
 
+        return vertices, indices
 
-		content = []
-		# Vertex positions and normals
-		positions = []
-		normals = []
-		for v in vertices :
-			positions.append(tuple(mesh.vertices[v.index].co))
-			normals.append(tuple(v.normal))
+    def export_mesh_textures(self, mesh):
+        textures = [None] * len(mesh.materials)
+        for i, material in enumerate(mesh.materials):
+            if material.use_face_texture:
+                try:
+                    textures[i] = {"image": mesh.tessface_uv_textures[i].data[
+                        0].image, "alpha": material.use_face_texture_alpha}
+                except:
+                    textures[i] = None
+        return textures
 
-		content.append({ "type": "float3", "name": "position", "value": positions})
-		content.append({ "type": "float3", "name": "normal", "value": normals})
+    def add_mesh_data(self, asset, mesh):
+        meshName = tools.safe_query_selector_id(mesh.name)
+        materialCount = len(mesh.materials)
 
-		self._asset['data'][meshName] = { "content": content }
-#		print("materialIndex", len(indices[0]))
+        # Export based on tess_faces:
+        vertices, indices = self.export_tessfaces(mesh)
 
- #        # Vertex texCoord
- #        if uvTexture :
- #            value_list = []
- #            for v in vertices :
- #                if v.texcoord :
- #                    value_list.append("%.6f %.6f" % tuple(v.texcoord))
- #                else :
- #                    value_list.append("0.0 0.0")
+        if not (vertices and indices):
+            return
 
- #            valueElement = self. doc.createFloat2Element(None, "texcoord")
- #            valueElement.setValue(' '.join(value_list))
- #            data.appendChild(valueElement);
+        content = []
+        # Vertex positions and normals
+        positions = []
+        normals = []
+        texcoord = []
+        has_texcoords = vertices[0].texcoord
+        for v in vertices:
+            positions.append(tuple(mesh.vertices[v.index].co))
+            normals.append(tuple(v.normal))
+            if has_texcoords:
+                texcoord.append(tuple(v.texcoord))
 
+        content.append(
+            {"type": "float3", "name": "position", "value": positions})
+        content.append({"type": "float3", "name": "normal", "value": normals})
+        if has_texcoords:
+            content.append(
+                {"type": "float2", "name": "texcoord", "value": texcoord})
 
+        asset.data[meshName] = {"content": content}
 
-		for materialIndex, material in enumerate(mesh.materials if materialCount else [None]) :
-			if len(indices[materialIndex]) == 0:
-				continue
+        mesh_textures = self.export_mesh_textures(mesh)
 
-			materialName = material.name if material else "defaultMaterial"
+        for materialIndex, material in enumerate(mesh.materials if materialCount else [None]):
+            if len(indices[materialIndex]) == 0:
+                continue
 
-			data = []
-			data.append({ "type": "int", "name": "index", "value": indices[materialIndex]})
+            materialName = material.name if material else "defaultMaterial"
 
-			submeshName = meshName + "_" + materialName
-			self._asset['mesh'].append( {"name": submeshName, "includes": meshName, "data": data, "shader": "#"+materialName })
+            data = []
+            data.append(
+                {"type": "int", "name": "index", "value": indices[materialIndex]})
 
-			if material:
-				self.add_material(material)
-			else:
-				self.add_default_material()
+            # Mesh Textures
+            if material and mesh_textures[materialIndex] and mesh_textures[materialIndex]["image"]:
+                image_src = export_image(mesh_textures[materialIndex]["image"], self.context)
+                if image_src:
+                    # TODO: Image Sampling parameters
+                    # FEATURE: Resize / convert / optimize texture
+                    data.append(
+                        {"type": "texture", "name": "diffuseTexture", "value": "../" + image_src, "wrap": None})
+                if mesh_textures[materialIndex]["alpha"]:
+                    data.append(
+                        {"type": "float", "name": "transparency", "value": "0.002"})
 
-	def saveXML(self, f, stats):
-		doc = Document()
-		xml3d = doc.createElement("xml3d")
-		doc.appendChild(xml3d)
+            submeshName = meshName + "_" + materialName
 
-		asset = doc.createElement("asset")
-		asset.setAttribute("id", "root")
-		xml3d.appendChild(asset)
+            if material:
+                converted = Material.from_blender_material(material, self.context, self._dir)
+                material_url = self.add_material(converted)
+            else:
+                material_url = self.add_material(DefaultMaterial)
 
-		for name, material in self._material.items():
-			shader = doc.createElement("shader")
-			shader.setAttribute("id", name)
-			shader.setAttribute("script", material["script"])
-			xml3d.appendChild(shader)
-			content = material["content"]
-			for entry in content["data"]:
-				entryElement = AssetExporter.writeGenericContent(doc, entry)
-				shader.appendChild(entryElement)
-			stats.materials += 1
+            asset.meshes.append(
+                {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
 
-		for name, value in self._asset["data"].items():
-			assetData = doc.createElement("assetdata")
-			assetData.setAttribute("name", name)
-			asset.appendChild(assetData)
-			for entry in value["content"]:
-				entryElement = AssetExporter.writeGenericContent(doc, entry)
-				assetData.appendChild(entryElement)
+    def saveXML(self, f, stats):
+        doc = Document()
+        xml3d = doc.createElement("xml3d")
+        doc.appendChild(xml3d)
+        self.asset_xml(self.asset, xml3d)
+        doc.writexml(f, "", "  ", "\n", "UTF-8")
 
-		for mesh in self._asset["mesh"]:
-			assetMesh = doc.createElement("assetmesh")
-			assetMesh.setAttribute("name", mesh["name"])
-			assetMesh.setAttribute("includes", mesh["includes"])
-			assetMesh.setAttribute("shader", mesh["shader"])
-			asset.appendChild(assetMesh)
-			for entry in mesh["data"]:
-				entryElement = AssetExporter.writeGenericContent(doc, entry)
-				assetMesh.appendChild(entryElement)
-			stats.meshes.append(mesh["name"])
+    def asset_xml(self, asset, parent):
+        doc = parent.ownerDocument
 
-		doc.writexml(f, "", "  ", "\n", "UTF-8")
+        asset_element = doc.createElement("asset")
+        parent.appendChild(asset_element)
 
-	def writeGenericContent(doc, entry):
-		entryElement = doc.createElement(entry["type"])
-		entryElement.setAttribute("name", entry["name"])
-		value = entry["value"]
-		valueStr = ""
-		if (entry["type"] == "int"):
-			valueStr = " ".join(str(e) for e in value)
-		else:
-			if not isinstance(value, list):
-				valueStr = str(value)
-			else:
-				for t in value:
-					length = len(t) if isinstance(t,tuple) else 1
-					fs = length* "%.6f "
-					valueStr += fs % t
+        if asset.id:
+            asset_element.setAttribute("id", asset.id)
+        if asset.matrix and not tools.is_identity(asset.matrix):
+            asset_element.setAttribute("style", "transform: %s;" % tools.matrix_to_ccs_matrix3d(asset.matrix))
+        if asset.src:
+            asset_element.setAttribute("src", asset.src)
+            return
 
-		textNode = doc.createTextNode(valueStr)
-		entryElement.appendChild(textNode)
-		return entryElement
+        for name, value in asset.data.items():
+            assetData = doc.createElement("assetdata")
+            assetData.setAttribute("name", name)
+            asset_element.appendChild(assetData)
+            for entry in value["content"]:
+                entryElement = tools.write_generic_entry(doc, entry)
+                assetData.appendChild(entryElement)
 
-	def save(self):
-		stats = Stats(materials = 0, meshes = [], assets=[])
-		stats.assets.append({ "url": self._path })
+        for mesh in asset.meshes:
+            asset_mesh = doc.createElement("assetmesh")
+            asset_mesh.setAttribute("name", mesh["name"])
+            asset_mesh.setAttribute("includes", mesh["includes"])
+            asset_mesh.setAttribute("shader", mesh["shader"])
+            if "transform" in mesh:
+                asset_mesh.setAttribute("style", "transform: %s;" % mesh["transform"])
 
-		with open (self._path, "w") as assetFile:
-			self.saveXML(assetFile, stats)
-			assetFile.close()
-			os.path.getsize(self._path)
-			stats.assets[0]["size"] = os.path.getsize(self._path)
-			return stats
+            asset_element.appendChild(asset_mesh)
+            for entry in mesh["data"]:
+                entryElement = tools.write_generic_entry(doc, entry)
+                asset_mesh.appendChild(entryElement)
+
+        for sub_asset in asset.sub_assets.values():
+            self.asset_xml(sub_asset, asset_element)
+
+        for ref_asset in asset.ref_assets:
+            self.asset_xml(ref_asset, asset_element)
+
+    def save(self):
+        stats = self.context.stats
+
+        with open(self._path, "w") as assetFile:
+            self.saveXML(assetFile, stats)
+            assetFile.close()
+            size = os.path.getsize(self._path)
+
+        stats.assets.append({"url": self._path, "size": size, "name": self.name})

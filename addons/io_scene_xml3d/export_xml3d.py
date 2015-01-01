@@ -1,67 +1,103 @@
-import os, io, re
-from . import xml_writer, export_asset
-from bpy_extras.io_utils import create_derived_objects, free_derived_objects
-from .tools import Stats, isIdentity
+import os
+import io
+import re
+import bpy
+import math
+import json
+from . import xml_writer, export_asset, context
+from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d
 from shutil import copytree
 
 ASSETDIR = "assets"
+LIGHTMODELMAP = {
+    "POINT": ("point", "intensity = xflow.blenderPoint(color, energy)"),
+    "SPOT": ("spot", "intensity = xflow.blenderSpot(color, energy)"),
+    "SUN": ("directional", "intensity = xflow.blenderSun(color, energy)")
+}
+
+
+def gamma(color):
+    return [pow(c, 1.0 / 2.2) * 255 for c in color]
+
 
 def dump(obj):
     for attr in dir(obj):
         print("obj %s", attr)
 
+
 def clamp_color(col):
     return tuple([max(min(c, 1.0), 0.0) for c in col])
 
-class XML3DExporter:
-    def __init__(self, context, dirname):
-        self._context = context
+
+def escape_html_id(_id):
+    # HTML: ID tokens must begin with a letter ([A-Za-z])
+    if not _id[:1].isalpha():
+        _id = "a" + _id
+
+    # and may be followed by any number of letters, digits ([0-9]),
+    # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
+    _id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', _id)
+    return _id
+
+
+def blender_lamp_to_xml3d_light(model):
+    if model in LIGHTMODELMAP:
+        result = LIGHTMODELMAP[model]
+        return result[0], result[1]
+    return None, None
+
+
+class XML3DExporter():
+    context = None
+
+    def __init__(self, blender_context, dirname, transform, progress):
+        self.blender_context = blender_context
+        self.context = context.Context(dirname, blender_context.scene)
         self._output = io.StringIO()
         self._writer = xml_writer.XMLWriter(self._output, 0)
         self._resource = {}
-        self._dirname = dirname
-        self._stats = Stats(assets = [], lights = 0, views = 0, groups = 0)
+        self._transform = transform
+        self._object_progress = progress
 
     def create_asset_directory(self):
-        assetDir = os.path.join(self._dirname, ASSETDIR)
+        assetDir = os.path.join(self.context.base_url, ASSETDIR)
         if not os.path.exists(assetDir):
             os.makedirs(assetDir)
         return assetDir
 
-    def create_resource_from_mesh(self, mesh_object, derived_object = None):
-        mesh_data_name = mesh_object.data.name
+    def create_resource_from_mesh(self, original_object):
+        mesh_data_name = original_object.data.name
         path = self.create_asset_directory()
         path = os.path.join(path, mesh_data_name + ".xml")
-        url  = "./%s/%s.xml" % (ASSETDIR, mesh_data_name)
+        url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
-        exporter = export_asset.AssetExporter(path, self._context.scene)
-        exporter.addMesh(mesh_object, derived_object)
-        stats = exporter.save()
+        exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
+        exporter.add_asset(original_object)
+        exporter.save()
 
-        stats.assets[0]["url"] = url
-        self._stats.join(stats)
+        # stats.assets[0]["url"] = url
         return url + "#root"
 
+    def stats(self):
+        return self.context.stats
+
+    def warning(self, message, category=None, issue=None):
+        self.context.warning(message, category, issue)
+
     def create_resource(self, obj):
-        free = None
         url = ""
 
-        if obj.type == "MESH":
-            meshData = obj.data
-            key = "mesh." + meshData.name
+        if obj.type in {"MESH", "FONT", "SURFACE", "CURVE"}:
+            mesh_data = obj.data
+            key = "mesh." + mesh_data.name
             if key in self._resource:
                 return self._resource[key]
 
-            free, derived = create_derived_objects(self._context.scene, obj)
-
-            if derived is None:
-                return url
-
-            url = self.create_resource_from_mesh(obj, derived)
+            url = self.create_resource_from_mesh(obj)
             self._resource[key] = url
+        else:
+            self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
 
-        if free:
-            free_derived_objects(obj)
         return url
 
     def build_hierarchy(self, objects):
@@ -76,7 +112,8 @@ class XML3DExporter:
             return parent
 
         for obj in objects:
-            par_lookup.setdefault(test_parent(obj.parent), []).append((obj, []))
+            par_lookup.setdefault(
+                test_parent(obj.parent), []).append((obj, []))
 
         for parent, children in par_lookup.items():
             for obj, subchildren in children:
@@ -84,81 +121,92 @@ class XML3DExporter:
 
         return par_lookup.get(None, [])
 
+    def write_id(self, obj, prefix=""):
+        self._writer.attribute("id", escape_html_id(prefix + obj.name))
 
-    def write_id(self, obj, prefix = ""):
-        id = prefix + obj.name
-        # HTML: ID tokens must begin with a letter ([A-Za-z])
-        if not id[:1].isalpha():
-            id = "a" + id
+    def write_event_attributes(self, obj):
+        for event in {"click", "dblclick", "mousedown", "mouseup", "mouseover", "mousemove", "mouseout", "mousewheel"}:
+            if event in obj:
+                self._writer.attribute("on" + event, obj[event])
 
-        # and may be followed by any number of letters, digits ([0-9]),
-        # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
-        id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', id)
-        self._writer.attribute("id", id)
-
-    def write_CSS_transform(self, obj) :
-        #try:
+    def write_transformation(self, obj):
+        # try:
         matrix = obj.matrix_basis
 
-        if isIdentity(matrix):
-            return
+        if self._transform == "css":
+            matrices = []
 
-        # TODO: Write individual transformations instead (make matrix notation optional)
-        transform = "matrix3d("
-        transform += ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0],col[1],col[2],col[3])
-                for col in matrix.col])
-        transform += ")"
+            if not is_identity(obj.matrix_parent_inverse):
+                matrices.append(
+                    matrix_to_ccs_matrix3d(obj.matrix_parent_inverse))
+
+            old_rotation_mode = obj.rotation_mode
+            obj.rotation_mode = "AXIS_ANGLE"
+            if not is_identity_translate(obj.location):
+                matrices.append("translate3d(%.6f,%.6f,%.6f)" %
+                                tuple(obj.location))
+            rot = obj.rotation_axis_angle
+            if rot[0] != 0.0:
+                matrices.append("rotate3d(%.6f,%.6f,%.6f,%.2fdeg)" % (
+                    rot[1], rot[2], rot[3], math.degrees(rot[0])))
+            if not is_identity_scale(obj.scale):
+                matrices.append("scale3d(%.6f,%.6f,%.6f)" % tuple(obj.scale))
+            transform = " ".join(matrices)
+            obj.rotation_mode = old_rotation_mode
+        else:
+            matrix = obj.matrix_parent_inverse * matrix
+            if is_identity(matrix):
+                return
+            transform = matrix_to_ccs_matrix3d(matrix)
+
         self._writer.attribute("style", "transform:" + transform + ";")
 
-    def write_class(self,obj):
+    def write_class(self, obj):
         layers = []
         for i in range(len(obj.layers)):
-            if obj.layers[i] == True:
+            if obj.layers[i] is True:
                 layers.append("layer-%d" % i)
-        className = " ".join(layers)
-        self._writer.attribute("class", className)
+        class_name = " ".join(layers)
+        self._writer.attribute("class", class_name)
 
-    def write_defaults(self, obj, prefix = ""):
+    def write_defaults(self, obj, prefix=""):
         self.write_id(obj, prefix)
         self.write_class(obj)
-        self.write_CSS_transform(obj)
 
     def create_camera(self, obj):
-        self._writer.startElement("view")
+        self._writer.start_element("view")
         self.write_id(obj, "v_")
-        self._writer.endElement("view")
-        self._stats.views += 1
+        self._writer.end_element("view")
+        self.context.stats.views += 1
 
-    def create_geometry(self, obj):
-        self._writer.startElement("model")
-        self._writer.attribute("src", self.create_resource(obj))
-        self._writer.endElement("model")
+    def create_geometry(self, original_obj):
+        self._writer.start_element(
+            "model", id=escape_html_id(original_obj.data.name))
+        self._writer.attribute(
+            "src", self.create_resource(original_obj))
+        self._writer.end_element("model")
 
     def create_lamp(self, obj):
 
-        lightModel = None
         lightdata = obj.data
-        if lightdata.type == "POINT":
-            lightModel = "point"
-        elif lightdata.type == "SPOT":
-            lightModel = "spot"
-        elif lightdata.type == "SUN":
-            lightModel = "directional"
-        else:
-            print("Warning: Unknown light type '%s'." % lightdata.type)
+
+        if not blender_lamp_to_xml3d_light(lightdata.type)[0]:
+            # Warning already reported in lightshader
             return
 
-        self._writer.startElement("light", model=lightModel, id=obj.name)
-        self.write_defaults(obj)
-        self._writer.element("float3", name="color", _content="%.4f %.4f %.4f" % tuple(lightdata.color))
-        self._writer.element("float", name="energy", _content="%.4f" % lightdata.energy)
-        self._writer.endElement("light")
-        self._stats.lights += 1
-
+        self._writer.start_element(
+            "light", shader="#" + escape_html_id("ls_" + lightdata.name))
+        self._writer.end_element("light")
+        self.context.stats.lights += 1
 
     def create_object(self, this_object, parent, children):
-        self._writer.startElement("group")
+
+        self._object_progress()
+
+        self._writer.start_element("group")
         self.write_defaults(this_object, prefix="")
+        self.write_transformation(this_object)
+        self.write_event_attributes(this_object)
 
         if this_object.type == "CAMERA":
             self.create_camera(this_object)
@@ -167,79 +215,207 @@ class XML3DExporter:
         elif this_object.type == "LAMP":
             self.create_lamp(this_object)
         else:
-            print("Warning: Unhandled type '%s'.", this_object.type)
+            self.warning("Object '%s' is of type '%s', which is not (yet) supported." % (this_object.name, this_object.type))
 
         for obj, object_children in children:
             self.create_object(obj, this_object, object_children)
 
-        self._writer.endElement("group")
-        self._stats.groups += 1
+        self._writer.end_element("group")
+        self.context.stats.groups += 1
+
+    def create_def(self):
+        self._writer.start_element("defs")
+        for lamp_data in bpy.data.lamps:
+            light_model, compute = blender_lamp_to_xml3d_light(lamp_data.type)
+
+            if not light_model:
+                self.warning("Lamp '%s' is of type '%s', which is not (yet) supported. Skipped lamp." % (lamp_data.name, lamp_data.type), "lamp", 4)
+                continue
+
+            self._writer.start_element(
+                "lightshader", script="urn:xml3d:lightshader:" + light_model, compute=compute)
+            self.write_id(lamp_data, "ls_")
+
+            if lamp_data.type == "SPOT":
+                self._writer.element("float", name="falloffAngle", _content="%.4f" % (lamp_data.spot_size / 2.0))
+                # TODO: How do spot light softness and blend correlate?
+                self._writer.element("float", name="softness", _content="%.4f" % lamp_data.spot_blend)
+
+            if lamp_data.type in {"POINT", "SPOT"}:
+                attens = [1.0, 0.0, 0.0]
+                if lamp_data.falloff_type == 'CONSTANT':
+                    attens = [1.0, 0.0, 0.0]
+                elif lamp_data.falloff_type == 'INVERSE_LINEAR':
+                    attens = [1.0, 1.0 / lamp_data.distance, 0.0]
+                elif lamp_data.falloff_type == 'INVERSE_SQUARE':
+                    attens = [
+                        1.0, 0.0, 1.0 / (lamp_data.distance * lamp_data.distance)]
+                elif lamp_data.falloff_type == 'LINEAR_QUADRATIC_WEIGHTED':
+                    attens = [
+                        1.0, lamp_data.linear_attenuation, lamp_data.quadratic_attenuation]
+                else:
+                    self.warning("Lamp '%s' has falloff type '%s', which is not (yet) supported. Using CONSTANT instead." % (lamp_data.name, lamp_data.falloff_type))
+
+                self._writer.element(
+                    "float3", name="attenuation", _content="%.4f %.4f %.4f" % tuple(attens))
+
+            self._writer.element(
+                "float3", name="color", _content="%.4f %.4f %.4f" % tuple(lamp_data.color))
+            self._writer.element(
+                "float", name="energy", _content="%.4f" % lamp_data.energy)
+
+            # if lamp_data.shadow_method == 'RAY_SHADOW':
+            #    self._writer.element("bool", name="castShadow", _content="true")
+
+            self._writer.end_element("lightshader")
+
+        self._writer.end_element("defs")
+
+    def check_scene(self, scene):
+        if scene.world.ambient_color.v > 0.0:
+            self.warning("World '{0:s}' has Ambient Color set, which is only partially supported.".format(scene.world.name), "world", issue=6)
 
     def create_scene(self, scene):
-        self._writer.startElement("xml3d", id=scene.name)
-        if scene.camera:
-            self._writer.attribute("activeView", "#v_%s" % scene.camera.name)
+        self.check_scene(scene)
 
-        render = scene.render
-        resolution = render.resolution_x * render.resolution_percentage / 100, render.resolution_y * render.resolution_percentage / 100
-        style = "width: 100%; height: 100%;" #% (resolution[1])
-        if scene.world :
+        self._writer.start_element("xml3d", id=scene.name)
+        if scene.camera:
+            self._writer.attribute("activeView", "#v_%s" % escape_html_id(scene.camera.name))
+        else:
+            self.warning("Scene '{0:s}' has no active camera set.".format(scene.name), "camera")
+
+        # render = scene.render
+        # resolution = render.resolution_x * render.resolution_percentage / 100, render.resolution_y * render.resolution_percentage / 100
+        style = "width: 100%; height: 100%;"  # % (resolution[1])
+        if scene.world:
             bgColor = scene.world.horizon_color
-            style += " background-color:rgb(%i,%i,%i);" % (bgColor[0] * 255, bgColor[1] * 255, bgColor[2] * 255)
+            style += " background-color:rgb(%i,%i,%i);" % tuple(gamma(bgColor))
 
         self._writer.attribute("style", style)
 
+        self.create_def()
+        self._writer.element("view", id="v_view")
         hierarchy = self.build_hierarchy(scene.objects)
         for obj, children in hierarchy:
             self.create_object(obj, None, children)
 
-        #xml3dElem.writexml(output)
-        self._writer.endElement("xml3d")
+        # xml3dElem.writexml(output)
+        self._writer.end_element("xml3d")
 
     def scene(self):
-        self.create_scene(self._context.scene)
+        self.create_scene(self.blender_context.scene)
         return self._output.getvalue()
+
+    def finalize(self):
+        self.context.finalize()
+
+
+def write_xml3d_info(dir, stats):
+    with open(os.path.join(dir, "xml3d-info.json"), "w") as stats_file:
+        stats_file.write(stats.to_JSON())
+        stats_file.close()
+
+
+def create_active_views(blender_context):
+    result = []
+    camera = blender_context.scene.camera
+    if camera:
+        result.append({
+            "view_matrix": matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
+            "perspective_matrix": "",  # TODO: Perspective matrix
+            "translation": [e for e in camera.matrix_world.translation],
+            "rotation": [e for e in camera.matrix_world.to_quaternion()]
+        })
+
+    for area in blender_context.screen.areas:
+        if area.type == "VIEW_3D":
+            for space in area.spaces:
+                if space.type == "VIEW_3D":
+                    result.append({
+                        "view_matrix": matrix_to_ccs_matrix3d(space.region_3d.view_matrix),
+                        "perspective_matrix": matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix),
+                        "translation": [e for e in space.region_3d.view_matrix.inverted().translation],
+                        "rotation": [e for e in space.region_3d.view_matrix.inverted().to_quaternion()]
+                    })
+
+    return result
+
+
+def write_blender_config(dir, context):
+    with open(os.path.join(dir, "blender-config.json"), "w") as stats_file:
+        stats_file.write(json.dumps({
+            "layers": [e for e in context.scene.layers],
+            "views": create_active_views(context)
+        }))
+        stats_file.close()
+
 
 def save(operator,
          context, filepath="",
          use_selection=True,
          global_matrix=None,
          template_selection="preview",
-         xml3djs_selection = "",
-         xml3d_minimzed = False
+         xml3djs_selection="",
+         xml3d_minimized=False,
+         transform_representation="css"
          ):
+    """Save the Blender scene to a XML3D/HTML file."""
 
-    import bpy
-    import mathutils
-
-    import time
-    from bpy_extras.io_utils import create_derived_objects, free_derived_objects
     from string import Template
 
-    """Save the Blender scene to a XML3D/HTML file."""
+    def object_progress():
+        count = 0
+        context.window_manager.progress_begin(0, len(context.scene.objects))
+
+        def progress():
+            nonlocal count
+            count += 1
+            context.window_manager.progress_update(count)
+        return progress
 
     # TODO: Time the export
     # time1 = time.clock()
 
-    version = "%s%s.js" % (xml3djs_selection, "-min" if xml3d_minimzed else "")
+    version = xml3djs_selection + ("-min" if xml3d_minimized else "") + ".js"
 
     dirName = os.path.dirname(__file__)
-    outputDir = os.path.dirname(filepath)
-    templatePath = os.path.join(dirName, 'templates\\%s.html' % template_selection)
-    #TODO: Handle case if template file does not exist
-    with open (templatePath, "r") as templateFile:
-        data=Template(templateFile.read())
+    output_dir = os.path.dirname(filepath)
+
+    # export the scene with all its assets
+    xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation, object_progress())
+    scene = xml3d_exporter.scene()
+    xml3d_exporter.finalize()
+
+    template_dir = os.path.join(dirName, "templates/%s/" % template_selection)
+    template_path = os.path.join(template_dir, 'index.html')
+    # TODO: Handle case if template file does not exist
+    with open(template_path, "r") as templateFile:
+        data = Template(templateFile.read())
         file = open(filepath, 'w')
-        xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath))
-        scene = xml3d_exporter.scene()
-        file.write(data.substitute(title=context.scene.name,xml3d=scene,version=version))
+        file.write(data.substitute(title=context.scene.name, xml3d=scene,
+                                   version=version, generator="xml3d-blender-exporter v0.1.0"))
         file.close()
+        size = os.path.getsize(filepath)
+        xml3d_exporter.stats().scene = {"name": os.path.basename(filepath), "size": size}
 
-        # TODO: Write out stats (optionally)
-        print(xml3d_exporter._stats.to_JSON())
+    # TODO: Make writing out stats optional
+    info_dir = os.path.join(output_dir, "info")
+    if not os.path.exists(info_dir):
+        os.makedirs(info_dir)
 
-    publicDir = os.path.join(outputDir, "public")
-    if not os.path.exists(publicDir):
-        copytree(os.path.join(dirName, "public"), publicDir)
+    write_xml3d_info(info_dir, xml3d_exporter.stats())
+    write_blender_config(info_dir, context)
+
+    # copy all common files
+    target_dir = os.path.join(output_dir, "common")
+    if not os.path.exists(target_dir):
+        copytree(os.path.join(dirName, "common"), target_dir)
+
+    # copy template specific files
+    target_dir = os.path.join(output_dir, "public")
+    if not os.path.exists(target_dir):
+        copytree(os.path.join(template_dir, "public"), target_dir)
+
+    # context.window_manager.progress_end()
 
     return {'FINISHED'}

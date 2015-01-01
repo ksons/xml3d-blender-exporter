@@ -56,5 +56,12 @@ target/
 # Exporter output directory
 output/
 
+# Install directory for usefull node modules
+node_modules
+
+# Blender tmps
+*.blend1
+
 # IDE specific
 *.sublime-*
+.idea
