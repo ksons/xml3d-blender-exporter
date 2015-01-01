@@ -52,7 +52,7 @@ class XML3DExporter():
 
     def __init__(self, blender_context, dirname, transform, progress):
         self.blender_context = blender_context
-        self.context = context.Context(dirname)
+        self.context = context.Context(dirname, blender_context.scene)
         self._output = io.StringIO()
         self._writer = xml_writer.XMLWriter(self._output, 0)
         self._resource = {}
@@ -271,7 +271,13 @@ class XML3DExporter():
 
         self._writer.end_element("defs")
 
+    def check_scene(self, scene):
+        if scene.world.ambient_color.v > 0.0:
+            self.warning("World '{0:s}' has Ambient Color set, which is only partially supported.".format(scene.world.name), "world", issue=6)
+
     def create_scene(self, scene):
+        self.check_scene(scene)
+
         self._writer.start_element("xml3d", id=scene.name)
         if scene.camera:
             self._writer.attribute("activeView", "#v_%s" % escape_html_id(scene.camera.name))

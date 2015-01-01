@@ -4,7 +4,7 @@ from bpy_extras.io_utils import path_reference
 from xml.dom.minidom import Document
 from . import tools
 
-BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, ambientIntensity, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)"
+BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)"
 
 TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
@@ -37,18 +37,16 @@ class Material:
 
     def from_material(self, material):
         data = self.data
-        data.append({"type": "float", "name": "diffuse_intensity",
-                     "value": material.diffuse_intensity})
-        data.append({"type": "float3", "name": "diffuse_color",
-                     "value": [tuple(material.diffuse_color)]})
-        data.append({"type": "float", "name": "specular_intensity",
-                     "value": material.specular_intensity})
-        data.append({"type": "float3", "name": "specular_color",
-                     "value": [tuple(material.specular_color)]})
-        data.append({"type": "float", "name": "specular_hardness",
-                     "value": material.specular_hardness})
-        data.append(
-            {"type": "float", "name": "ambient", "value": material.ambient})
+        data.append({"type": "float", "name": "diffuse_intensity", "value": material.diffuse_intensity})
+        data.append({"type": "float3", "name": "diffuse_color", "value": [tuple(material.diffuse_color)]})
+        data.append({"type": "float", "name": "specular_intensity", "value": material.specular_intensity})
+        data.append({"type": "float3", "name": "specular_color", "value": [tuple(material.specular_color)]})
+        data.append({"type": "float", "name": "specular_hardness", "value": material.specular_hardness})
+
+        world_ambient = self.context.scene.world.ambient_color
+        if world_ambient.v > 0.0:
+            local_ambient = material.ambient
+            data.append({"type": "float", "name": "ambientIntensity", "value": local_ambient * pow(world_ambient.v, 1.0 / 2.2)})
 
         if material.use_transparency:
             data.append({"type": "float", "name": "alpha", "value": material.alpha})

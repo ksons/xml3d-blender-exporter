@@ -26,9 +26,11 @@ class Context():
     base_url = None
     copy_set = set()
     materials = None
+    scene = None
 
-    def __init__(self, base_url):
+    def __init__(self, base_url, scene):
         self.base_url = base_url
+        self.scene = scene
         self.materials = MaterialLibrary(self, base_url + "/materials.xml")
 
     def warning(self, message, category=None, issue=None, obj=None):
