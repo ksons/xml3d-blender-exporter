@@ -8,6 +8,7 @@ from . import xml_writer, export_asset, context
 from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d
 from shutil import copytree
 
+VERSION = "0.2.0"
 ASSETDIR = "assets"
 LIGHTMODELMAP = {
     "POINT": ("point", "intensity = xflow.blenderPoint(color, energy)"),
@@ -393,7 +394,7 @@ def save(operator,
         data = Template(templateFile.read())
         file = open(filepath, 'w')
         file.write(data.substitute(title=context.scene.name, xml3d=scene,
-                                   version=version, generator="xml3d-blender-exporter v0.1.0"))
+                                   version=version, generator="xml3d-blender-exporter v" + VERSION))
         file.close()
         size = os.path.getsize(filepath)
         xml3d_exporter.stats().scene = {"name": os.path.basename(filepath), "size": size}
