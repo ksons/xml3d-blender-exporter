@@ -1,4 +1,6 @@
 import os
+import operator
+import mathutils
 from xml.dom.minidom import Document
 from .export_material import Material, DefaultMaterial, export_image
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
@@ -57,7 +59,7 @@ class AssetExporter:
         return "#" + material.id
 
     def add_asset(self, obj):
-        base_matrix = (obj.matrix_basis).inverted()
+        base_matrix = obj.matrix_basis.inverted()
         free, derived_objects = create_derived_objects(self._scene, obj)
         if derived_objects is None:
             return
@@ -88,6 +90,36 @@ class AssetExporter:
         if mesh:
             self.add_mesh_data(sub_asset, mesh)
             self.asset.sub_assets[name] = sub_asset
+
+    def get_bones_and_weights(self, groups):
+        if not len(groups):
+            return None, None
+
+        weights = []
+        group_index = mathutils.Vector.Fill(4, -1)
+        group_weights = mathutils.Vector.Fill(4, 0)
+        for group in groups:
+            index = group.group
+            weight = group.weight
+            weights.append((index, weight))
+
+        weights.sort(key=operator.itemgetter(1), reverse=True)
+
+        for j in range(4):
+            if j < len(weights):
+                w = weights[j]
+                group_index[j] = w[0]
+                group_weights[j] = w[1]
+
+                # TODO: Currently we write out the vertex group index. What we really need is the corresponding bone index
+                # for k, bone in enumerate(obj.pose.bones):
+                #     if obj.vertex_groups[w[0]].name == bone.name:
+                #         group_index[j] = k
+                #         group_weights[j] = w[1]
+                #         break
+
+        # TODO: Should we normalize? Source is not necessarily normalized.
+        return group_index, tools.normalize_vec4(group_weights)
 
     def export_tessfaces(self, mesh):
         if not len(mesh.tessfaces):
@@ -124,11 +156,12 @@ class AssetExporter:
             faceIndices = []
 
             for i, vertexIndex in enumerate(face.vertices):
-                normal = mesh.vertices[
-                    vertexIndex].normal if face.use_smooth else face.normal
+                normal = mesh.vertices[vertexIndex].normal if face.use_smooth else face.normal
                 uv_vertex = uv_vertices[i][0] if uv_data else None
 
-                mv = tools.Vertex(vertexIndex, normal, uv_vertex)
+                group_index, group_weights = self.get_bones_and_weights(mesh.vertices[vertexIndex].groups)
+
+                mv = tools.Vertex(vertexIndex, normal, uv_vertex, group_index, group_weights)
 
                 index, added = appendUnique(vertex_dict, mv)
                 faceIndices.append(index)
@@ -173,16 +206,25 @@ class AssetExporter:
         positions = []
         normals = []
         texcoord = []
+        group_weights = []
+        group_indices = []
         has_texcoords = vertices[0].texcoord
+        has_weights = vertices[0].group_weights
         for v in vertices:
             positions.append(tuple(mesh.vertices[v.index].co))
             normals.append(tuple(v.normal))
             if has_texcoords:
                 texcoord.append(tuple(v.texcoord))
+            if has_weights:
+                group_weights.append(v.group_weights[:])
+                group_indices.append(v.group_index[:])
 
         content.append(
             {"type": "float3", "name": "position", "value": positions})
         content.append({"type": "float3", "name": "normal", "value": normals})
+        if has_weights:
+            content.append({"type": "int4", "name": "bone_index", "value": group_indices})
+            content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
         if has_texcoords:
             content.append(
                 {"type": "float2", "name": "texcoord", "value": texcoord})

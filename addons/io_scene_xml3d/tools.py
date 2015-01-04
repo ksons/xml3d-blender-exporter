@@ -27,6 +27,11 @@ def matrix_to_ccs_matrix3d(matrix):
                                       for col in matrix.col])
 
 
+def normalize_vec4(vec):
+    # Vector.normalize does not take w into account
+    return vec * (1.0 / vec.length)
+
+
 def safe_query_selector_id(id):
     return re.sub('[ \.]+', '-', id)
 
@@ -38,8 +43,12 @@ def write_generic_entry(doc, entry):
 
     value = entry["value"]
     value_str = None
-    if entry_type == "int":
-        value_str = " ".join(str(e) for e in value)
+    if entry_type == "int" or entry_type == "int4":
+        value_str = ""
+        for t in value:
+            length = len(t) if isinstance(t, tuple) else 1
+            fs = length * "%.d "
+            value_str += fs % t
     elif entry_type == "texture":
 
         if entry["wrap"] is not None:
@@ -69,7 +78,13 @@ class Vertex:
     index = None
     normal = None
     texcoord = None
-    color = None
+    group_index = None
+    group_weights = None
+
+    def veckey4d(self, v):
+        if v is None:
+            return None
+        return mathutils.Vector((round(v[0], 8), round(v[1], 8), round(v[2], 8), round(v[3], 8)))
 
     def veckey3d(self, v):
         if v is None:
@@ -81,10 +96,12 @@ class Vertex:
             return None
         return mathutils.Vector((round(v[0], 8), round(v[1], 8)))
 
-    def __init__(self, index, normal=None, uvs=None, color=None):
+    def __init__(self, index, normal=None, uvs=None, group_index=None, group_weights=None):
         self.index = index
         self.normal = self.veckey3d(normal)
         self.texcoord = self.veckey2d(uvs)
+        self.group_index = self.veckey4d(group_index)
+        self.group_weights = self.veckey4d(group_weights)
 
     def __str__(self):
         return "i: " + str(self.index) + ", n: " + str(self.normal) + ", t: " + str(self.texcoord)
@@ -117,4 +134,4 @@ class Vertex:
         return self.index
 
     def __eq__(self, other):
-        return self.index == other.index and self.normal == other.normal and self.texcoord == other.texcoord
+        return self.index == other.index and self.normal == other.normal and self.texcoord == other.texcoord and self.group_index == other.group_index and self.group_weights == other.group_weights
