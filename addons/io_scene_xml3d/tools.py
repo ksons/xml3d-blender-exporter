@@ -32,6 +32,10 @@ def normalize_vec4(vec):
     return vec * (1.0 / vec.length)
 
 
+def has_armature_modifier(obj):
+    return len(obj.modifiers) == 1 and obj.modifiers[0].type == 'ARMATURE'
+
+
 def safe_query_selector_id(id):
     return re.sub('[ \.]+', '-', id)
 

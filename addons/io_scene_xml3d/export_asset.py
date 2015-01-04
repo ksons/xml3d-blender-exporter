@@ -81,9 +81,10 @@ class AssetExporter:
             return
 
         sub_asset = Asset(name, matrix.copy())
-
+        apply_modifiers = not tools.has_armature_modifier(derived_object)
+        print(apply_modifiers)
         try:
-            mesh = derived_object.to_mesh(self._scene, True, 'RENDER', True)
+            mesh = derived_object.to_mesh(self._scene, apply_modifiers, 'RENDER', True, False)
         except:
             mesh = None
 
