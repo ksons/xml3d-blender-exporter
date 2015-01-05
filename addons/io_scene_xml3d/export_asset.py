@@ -81,18 +81,27 @@ class AssetExporter:
             return
 
         sub_asset = Asset(name, matrix.copy())
-        apply_modifiers = not tools.has_armature_modifier(derived_object)
-        print(apply_modifiers)
+
+        armature_info = None
+        armature_object = tools.get_armature_object(derived_object)
+        if armature_object is not None:
+            armature, armature_url = self.context.armatures.create_armature(armature_object)
+            armature_info = {
+                "vertex_groups": derived_object.vertex_groups,
+                "bone_map": armature.bone_map
+            }
+
         try:
+            apply_modifiers = armature_object is None
             mesh = derived_object.to_mesh(self._scene, apply_modifiers, 'RENDER', True, False)
         except:
             mesh = None
 
         if mesh:
-            self.add_mesh_data(sub_asset, mesh)
+            self.add_mesh_data(sub_asset, mesh, armature_info)
             self.asset.sub_assets[name] = sub_asset
 
-    def get_bones_and_weights(self, groups):
+    def get_bones_and_weights(self, groups, armature_info):
         if not len(groups):
             return None, None
 
@@ -102,27 +111,24 @@ class AssetExporter:
         for group in groups:
             index = group.group
             weight = group.weight
-            weights.append((index, weight))
+            name = armature_info['vertex_groups'][index].name
+            weights.append((index, weight, name))
 
         weights.sort(key=operator.itemgetter(1), reverse=True)
 
         for j in range(4):
             if j < len(weights):
                 w = weights[j]
-                group_index[j] = w[0]
-                group_weights[j] = w[1]
 
-                # TODO: Currently we write out the vertex group index. What we really need is the corresponding bone index
-                # for k, bone in enumerate(obj.pose.bones):
-                #     if obj.vertex_groups[w[0]].name == bone.name:
-                #         group_index[j] = k
-                #         group_weights[j] = w[1]
-                #         break
+                # TODO: Mapping by name. However, vertex groups can also be explicitly assigned
+                if w[2] in armature_info['bone_map']:
+                    group_index[j] = armature_info['bone_map'][w[2]]
+                    group_weights[j] = w[1]
 
         # TODO: Should we normalize? Source is not necessarily normalized.
         return group_index, tools.normalize_vec4(group_weights)
 
-    def export_tessfaces(self, mesh):
+    def export_tessfaces(self, mesh, armature_info):
         if not len(mesh.tessfaces):
             self.context.warning(u"Mesh '{0:s}' has no triangles. Pure line geometry not (yet) supported. Try extruding a little.".format(mesh.name), "geometry")
             return None, None
@@ -160,7 +166,7 @@ class AssetExporter:
                 normal = mesh.vertices[vertexIndex].normal if face.use_smooth else face.normal
                 uv_vertex = uv_vertices[i][0] if uv_data else None
 
-                group_index, group_weights = self.get_bones_and_weights(mesh.vertices[vertexIndex].groups)
+                group_index, group_weights = self.get_bones_and_weights(mesh.vertices[vertexIndex].groups, armature_info)
 
                 mv = tools.Vertex(vertexIndex, normal, uv_vertex, group_index, group_weights)
 
@@ -192,12 +198,12 @@ class AssetExporter:
                     textures[i] = None
         return textures
 
-    def add_mesh_data(self, asset, mesh):
+    def add_mesh_data(self, asset, mesh, armature_info):
         meshName = tools.safe_query_selector_id(mesh.name)
         materialCount = len(mesh.materials)
 
         # Export based on tess_faces:
-        vertices, indices = self.export_tessfaces(mesh)
+        vertices, indices = self.export_tessfaces(mesh, armature_info)
 
         if not (vertices and indices):
             return

@@ -29,11 +29,15 @@ def matrix_to_ccs_matrix3d(matrix):
 
 def normalize_vec4(vec):
     # Vector.normalize does not take w into account
+    if vec.length == 0.0:
+        return vec
     return vec * (1.0 / vec.length)
 
 
-def has_armature_modifier(obj):
-    return len(obj.modifiers) == 1 and obj.modifiers[0].type == 'ARMATURE'
+def get_armature_object(obj):
+    if len(obj.modifiers) == 1 and obj.modifiers[0].type == 'ARMATURE':
+        return obj.modifiers[0].object
+    return None
 
 
 def safe_query_selector_id(id):

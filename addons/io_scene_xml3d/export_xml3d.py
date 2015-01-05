@@ -215,7 +215,7 @@ class XML3DExporter():
         elif this_object.type in {'MESH', 'CURVE', 'SURFACE', 'FONT'}:
             self.create_geometry(this_object)
         elif this_object.type == "ARMATURE":
-            self.create_armature(this_object)
+            self.context.armatures.create_armature(this_object)
         elif this_object.type == "LAMP":
             self.create_lamp(this_object)
         else:
@@ -312,30 +312,6 @@ class XML3DExporter():
 
     def finalize(self):
         self.context.finalize()
-
-    def create_armature(self, obj):
-        armature = Armature(obj.data.name, self.context)
-        pose = obj.pose
-
-        bone_map = {}
-        locations = []
-        rotations = []
-
-        for i, pose_bone in enumerate(pose.bones):
-            bone_map[pose_bone] = i
-            armature_bone = pose_bone.bone
-            # TODO: What information needs to be exported from the pose? Also: relative vs absolute...
-            locations.append(armature_bone.head_local[:])
-            rotations.append(pose_bone.rotation_quaternion[:])
-
-        bone_parent = [(bone_map[bone.parent] if bone.parent in bone_map else -1) for bone in pose.bones]
-        armature.data.append({"type": "int", "name": "bone_parent", "value": bone_parent})
-        armature.data.append({"type": "float3", "name": "bind_location", "value": locations})
-        armature.data.append({"type": "float4", "name": "bind_rotation", "value": rotations})
-        # print("Locations", locations)
-        # print("Rotations", rotations)
-
-        self.context.armatures.add_armature(armature)
 
 
 def write_xml3d_info(dir, stats):
