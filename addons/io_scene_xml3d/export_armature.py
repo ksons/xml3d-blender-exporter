@@ -3,16 +3,28 @@ from xml.dom.minidom import Document
 from . import tools
 
 
-class Armature:
-    context = None
+class ArmatureAnimation:
     id = ""
-    data = None
-    bone_map = None
+    context = None
 
     def __init__(self, name, context):
         self.id = name
         self.context = context
         self.data = []
+
+
+class Armature:
+    context = None
+    id = ""
+    data = None
+    bone_map = None
+    animations = None
+
+    def __init__(self, name, context):
+        self.id = name
+        self.context = context
+        self.data = []
+        self.animations = []
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -39,7 +51,66 @@ class Armature:
         armature.data.append({"type": "int", "name": "bone_parent", "value": bone_parent})
         armature.data.append({"type": "float3", "name": "bind_location", "value": locations})
         armature.data.append({"type": "float4", "name": "bind_rotation", "value": rotations})
+        Armature.create_animation(armature_object, armature, context)
         return armature
+
+    @staticmethod
+    def create_animation(armature_object, armature, context):
+        if not (armature_object.animation_data and armature_object.animation_data.action):
+            return
+
+        action = armature_object.animation_data.action
+        animation = ArmatureAnimation(action.name, context)
+        frame_min = action.frame_range[0]
+        frame_max = action.frame_range[1]
+
+        animation.data.append({"type": "float", "name": "minFrame", "value": frame_min})
+        animation.data.append({"type": "float", "name": "maxFrame", "value": frame_max})
+
+        # keys = []
+        # channels_location = []
+        channels_rotation = []
+        # channels_scale = []
+
+        for bone in armature_object.data.bones:
+            channels_rotation.append(find_channels(action, bone, "rotation_quaternion"))
+
+        armature.animations.append(animation)
+        print(action)
+
+
+# Stolen from three.js blender exporter (GNU GPL, https://github.com/mrdoob/three.js)
+def find_channels(action, bone, channel_type):
+    bone_name = bone.name
+    ngroups = len(action.groups)
+    result = []
+
+    # Variant 1: channels grouped by bone names
+    if ngroups > 0:
+
+        # Find the channel group for the given bone
+        group_index = -1
+        for i in range(ngroups):
+            if action.groups[i].name == bone_name:
+                group_index = i
+
+        # Get all desired channels in that group
+        if group_index > -1:
+            for channel in action.groups[group_index].channels:
+                if channel_type in channel.data_path:
+                    result.append(channel)
+
+    # Variant 2: no channel groups, bone names included in channel names
+    else:
+
+        bone_label = '"%s"' % bone_name
+
+        for channel in action.fcurves:
+            data_path = channel.data_path
+            if bone_label in data_path and channel_type in data_path:
+                result.append(channel)
+
+    return result
 
 
 class ArmatureLibrary:
@@ -76,12 +147,20 @@ class ArmatureLibrary:
         doc.appendChild(xml3d)
 
         for armature in self.armatures:
-            shader = doc.createElement("data")
-            shader.setAttribute("id", armature.id)
+            data = doc.createElement("data")
+            data.setAttribute("id", armature.id)
             for entry in armature.data:
                 entry_element = tools.write_generic_entry(doc, entry)
-                shader.appendChild(entry_element)
-            xml3d.appendChild(shader)
+                data.appendChild(entry_element)
+            xml3d.appendChild(data)
+
+            for animation in armature.animations:
+                data = doc.createElement("data")
+                data.setAttribute("id", animation.id)
+                for entry in animation.data:
+                    entry_element = tools.write_generic_entry(doc, entry)
+                    data.appendChild(entry_element)
+                xml3d.appendChild(data)
 
         doc.writexml(file, "", "  ", "\n", "UTF-8")
 

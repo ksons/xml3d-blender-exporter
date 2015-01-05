@@ -47,6 +47,11 @@ def safe_query_selector_id(id):
 def write_generic_entry(doc, entry):
     entry_type = entry["type"]
     entry_element = doc.createElement(entry_type)
+
+    if entry_type == "data":
+        entry_element.setAttribute("src", entry["src"])
+        return entry_element
+
     entry_element.setAttribute("name", entry["name"])
 
     value = entry["value"]

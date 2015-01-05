@@ -6,7 +6,6 @@ import math
 import json
 from . import xml_writer, export_asset, context
 from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d
-from .export_armature import Armature
 from shutil import copytree
 
 VERSION = "0.2.0"

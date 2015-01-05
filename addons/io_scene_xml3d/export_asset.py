@@ -88,7 +88,8 @@ class AssetExporter:
             armature, armature_url = self.context.armatures.create_armature(armature_object)
             armature_info = {
                 "vertex_groups": derived_object.vertex_groups,
-                "bone_map": armature.bone_map
+                "bone_map": armature.bone_map,
+                "src": "../armatures.xml#" + armature.id
             }
 
         try:
@@ -102,7 +103,7 @@ class AssetExporter:
             self.asset.sub_assets[name] = sub_asset
 
     def get_bones_and_weights(self, groups, armature_info):
-        if not len(groups):
+        if not (len(groups) and armature_info):
             return None, None
 
         weights = []
@@ -232,6 +233,7 @@ class AssetExporter:
         if has_weights:
             content.append({"type": "int4", "name": "bone_index", "value": group_indices})
             content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
+            content.append({"type": "data", "src": armature_info["src"]})
         if has_texcoords:
             content.append(
                 {"type": "float2", "name": "texcoord", "value": texcoord})
