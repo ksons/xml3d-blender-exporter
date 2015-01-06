@@ -53,6 +53,8 @@ def write_generic_entry(doc, entry):
         return entry_element
 
     entry_element.setAttribute("name", entry["name"])
+    if "key" in entry:
+        entry_element.setAttribute("key", entry["key"])
 
     value = entry["value"]
     value_str = None

@@ -67,13 +67,28 @@ class Armature:
         animation.data.append({"type": "float", "name": "minFrame", "value": frame_min})
         animation.data.append({"type": "float", "name": "maxFrame", "value": frame_max})
 
-        # keys = []
-        # channels_location = []
+        keys = set()
         channels_rotation = []
-        # channels_scale = []
+        # Collect samples from keyframes
+        for i, pose_bone in enumerate(armature_object.pose.bones):
+            channels = find_channels(action, pose_bone.bone, "rotation_quaternion")
+            print(len(channels))
+            channels_rotation.append(channels)
+            for channel in channels:
+                for keyframe in channel.keyframe_points:
+                    keys.add(keyframe.co[0])
 
-        for bone in armature_object.data.bones:
-            channels_rotation.append(find_channels(action, bone, "rotation_quaternion"))
+        samples = sorted(keys)
+        print("samples", len(samples), samples)
+
+        for sample in samples:
+            sampled_rotations = []
+            for i, pose_bone in enumerate(armature_object.pose.bones):
+                channels = channels_rotation[i]
+                for channel in channels:
+                    sampled_rotations.append(channel.evaluate(sample))
+
+            animation.data.append({"type": "float4", "name": "rotation_quaternion", "key": str(sample), "value": sampled_rotations})
 
         armature.animations.append(animation)
         print(action)
