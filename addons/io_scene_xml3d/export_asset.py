@@ -135,7 +135,7 @@ class AssetExporter:
                     group_weights[j] = w[1]
 
         # TODO: Should we normalize? Source is not necessarily normalized.
-        return group_index, tools.normalize_vec4(group_weights)
+        return group_index, group_weights
 
     def export_tessfaces(self, mesh, armature_info):
         if not len(mesh.tessfaces):
