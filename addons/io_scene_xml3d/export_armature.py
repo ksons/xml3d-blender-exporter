@@ -1,4 +1,5 @@
 import os
+import mathutils
 from xml.dom.minidom import Document
 from . import tools
 
@@ -6,11 +7,13 @@ from . import tools
 class ArmatureAnimation:
     id = ""
     context = None
+    start_frame = 0.0
 
     def __init__(self, name, context):
         self.id = name
         self.context = context
         self.data = []
+        self.start_frame = 0.0
 
 
 class Armature:
@@ -29,6 +32,20 @@ class Armature:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def get_config(self):
+        if not len(self.animations):
+            return None
+
+        config = []
+        for animation in self.animations:
+            config.append({
+                "name": animation.id,
+                "data": [
+                    {"type": "float", "name": "animKey", "value": animation.start_frame}
+                ]
+            })
+        return config
+
     @staticmethod
     def create_from_blender(armature_object, armature_id, context):
         armature = Armature(armature_id, context)
@@ -44,8 +61,8 @@ class Armature:
             armature.bone_map[pose_bone.name] = i
             armature_bone = pose_bone.bone
             # TODO: What information needs to be exported from the pose? Also: relative vs absolute...
-            locations.append(armature_bone.head_local[:])
-            rotations.append(pose_bone.rotation_quaternion[:])
+            locations.append((-armature_bone.head_local)[:])
+            rotations += [0.0, 0.0, 0.0, 1.0]
 
         bone_parent = [(bone_map[bone.parent] if bone.parent in bone_map else -1) for bone in pose.bones]
         armature.data.append({"type": "int", "name": "bone_parent", "value": bone_parent})
@@ -61,37 +78,57 @@ class Armature:
 
         action = armature_object.animation_data.action
         animation = ArmatureAnimation(action.name, context)
-        frame_min = action.frame_range[0]
+        frame_min = animation.start_frame = action.frame_range[0]
         frame_max = action.frame_range[1]
 
         animation.data.append({"type": "float", "name": "minFrame", "value": frame_min})
         animation.data.append({"type": "float", "name": "maxFrame", "value": frame_max})
+        animation.data.append({"type": "float", "name": "animKey", "value": frame_min})
 
         keys = set()
         channels_rotation = []
+        channels_location = []
         # Collect samples from keyframes
         for i, pose_bone in enumerate(armature_object.pose.bones):
-            channels = find_channels(action, pose_bone.bone, "rotation_quaternion")
-            print(len(channels))
-            channels_rotation.append(channels)
-            for channel in channels:
+            rotation_channels = find_channels(action, pose_bone.bone, "rotation_quaternion")
+            channels_rotation.append(rotation_channels)
+            for channel in rotation_channels:
+                for keyframe in channel.keyframe_points:
+                    keys.add(keyframe.co[0])
+
+            location_channels = find_channels(action, pose_bone.bone, "location")
+            channels_location.append(location_channels)
+            for channel in location_channels:
                 for keyframe in channel.keyframe_points:
                     keys.add(keyframe.co[0])
 
         samples = sorted(keys)
-        print("samples", len(samples), samples)
+        # print("samples", len(samples), samples)
 
         for sample in samples:
             sampled_rotations = []
             for i, pose_bone in enumerate(armature_object.pose.bones):
                 channels = channels_rotation[i]
-                for channel in channels:
-                    sampled_rotations.append(channel.evaluate(sample))
+                quaternion = mathutils.Vector.Fill(4)
+                for i, channel in enumerate(channels):
+                    quaternion[i] = channel.evaluate(sample)
+                sampled_rotations += quaternion.yzwx[:]
 
             animation.data.append({"type": "float4", "name": "rotation_quaternion", "key": str(sample), "value": sampled_rotations})
 
+            sampled_locations = []
+            for i, pose_bone in enumerate(armature_object.pose.bones):
+                channels = channels_location[i]
+                vec = mathutils.Vector.Fill(3)
+                for j, channel in enumerate(channels):
+                    vec[j] = channel.evaluate(sample)
+                sampled_locations += vec[:]
+
+            animation.data.append({"type": "float3", "name": "location", "key": str(sample), "value": sampled_locations})
+
+        armature.data.append({"type": "data", "src": "#" + animation.id})
         armature.animations.append(animation)
-        print(action)
+        context.stats.animations.append({"name": action.name, "minFrame": frame_min, "maxFrame": frame_max})
 
 
 # Stolen from three.js blender exporter (GNU GPL, https://github.com/mrdoob/three.js)
@@ -162,12 +199,12 @@ class ArmatureLibrary:
         doc.appendChild(xml3d)
 
         for armature in self.armatures:
-            data = doc.createElement("data")
-            data.setAttribute("id", armature.id)
+            armature_data = doc.createElement("data")
+            armature_data.setAttribute("id", armature.id)
             for entry in armature.data:
                 entry_element = tools.write_generic_entry(doc, entry)
-                data.appendChild(entry_element)
-            xml3d.appendChild(data)
+                armature_data.appendChild(entry_element)
+            xml3d.appendChild(armature_data)
 
             for animation in armature.animations:
                 data = doc.createElement("data")

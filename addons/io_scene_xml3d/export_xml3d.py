@@ -5,7 +5,7 @@ import bpy
 import math
 import json
 from . import xml_writer, export_asset, context
-from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d
+from . import tools
 from shutil import copytree
 
 VERSION = "0.2.0"
@@ -73,11 +73,11 @@ class XML3DExporter():
         url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
         exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
-        exporter.add_asset(original_object)
+        configs = exporter.add_asset(original_object)
         exporter.save()
 
         # stats.assets[0]["url"] = url
-        return url + "#root"
+        return url + "#root", configs
 
     def stats(self):
         return self.context.stats
@@ -86,7 +86,8 @@ class XML3DExporter():
         self.context.warning(message, category, issue)
 
     def create_resource(self, obj):
-        url = ""
+        url = None
+        configs = None
 
         if obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}:
             mesh_data = obj.data
@@ -94,12 +95,12 @@ class XML3DExporter():
             if key in self._resource:
                 return self._resource[key]
 
-            url = self.create_resource_from_mesh(obj)
+            url, configs = self.create_resource_from_mesh(obj)
             self._resource[key] = url
         else:
             self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
 
-        return url
+        return url, configs
 
     def build_hierarchy(self, objects):
         """ returns parent child relationships, skipping
@@ -137,28 +138,28 @@ class XML3DExporter():
         if self._transform == "css":
             matrices = []
 
-            if not is_identity(obj.matrix_parent_inverse):
+            if not tools.is_identity(obj.matrix_parent_inverse):
                 matrices.append(
-                    matrix_to_ccs_matrix3d(obj.matrix_parent_inverse))
+                    tools.matrix_to_ccs_matrix3d(obj.matrix_parent_inverse))
 
             old_rotation_mode = obj.rotation_mode
             obj.rotation_mode = "AXIS_ANGLE"
-            if not is_identity_translate(obj.location):
+            if not tools.is_identity_translate(obj.location):
                 matrices.append("translate3d(%.6f,%.6f,%.6f)" %
                                 tuple(obj.location))
             rot = obj.rotation_axis_angle
             if rot[0] != 0.0:
                 matrices.append("rotate3d(%.6f,%.6f,%.6f,%.2fdeg)" % (
                     rot[1], rot[2], rot[3], math.degrees(rot[0])))
-            if not is_identity_scale(obj.scale):
+            if not tools.is_identity_scale(obj.scale):
                 matrices.append("scale3d(%.6f,%.6f,%.6f)" % tuple(obj.scale))
             transform = " ".join(matrices)
             obj.rotation_mode = old_rotation_mode
         else:
             matrix = obj.matrix_parent_inverse * matrix
-            if is_identity(matrix):
+            if tools.is_identity(matrix):
                 return
-            transform = matrix_to_ccs_matrix3d(matrix)
+            transform = tools.matrix_to_ccs_matrix3d(matrix)
 
         self._writer.attribute("style", "transform:" + transform + ";")
 
@@ -181,10 +182,19 @@ class XML3DExporter():
         self.context.stats.views += 1
 
     def create_geometry(self, original_obj):
-        self._writer.start_element(
-            "model", id=escape_html_id(original_obj.data.name))
-        self._writer.attribute(
-            "src", self.create_resource(original_obj))
+        url, configs = self.create_resource(original_obj)
+        if not url:
+            return
+
+        self._writer.start_element("model", id=escape_html_id(original_obj.data.name))
+        self._writer.attribute("src", url)
+        for config in configs:
+            self._writer.start_element("assetdata", name=config["name"])
+            for entry in config["data"]:
+                tools.write_generic_entry_html(self._writer, entry)
+            self._writer.end_element("assetdata")
+            print(config)
+
         self._writer.end_element("model")
 
     def create_lamp(self, obj):
@@ -324,7 +334,7 @@ def create_active_views(blender_context):
     camera = blender_context.scene.camera
     if camera:
         result.append({
-            "view_matrix": matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
+            "view_matrix": tools.matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
             "perspective_matrix": "",  # TODO: Perspective matrix
             "translation": [e for e in camera.matrix_world.translation],
             "rotation": [e for e in camera.matrix_world.to_quaternion()]
@@ -335,8 +345,8 @@ def create_active_views(blender_context):
             for space in area.spaces:
                 if space.type == "VIEW_3D":
                     result.append({
-                        "view_matrix": matrix_to_ccs_matrix3d(space.region_3d.view_matrix),
-                        "perspective_matrix": matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix),
+                        "view_matrix": tools.matrix_to_ccs_matrix3d(space.region_3d.view_matrix),
+                        "perspective_matrix": tools.matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix),
                         "translation": [e for e in space.region_3d.view_matrix.inverted().translation],
                         "rotation": [e for e in space.region_3d.view_matrix.inverted().to_quaternion()]
                     })

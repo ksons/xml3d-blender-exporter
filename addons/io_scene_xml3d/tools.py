@@ -44,6 +44,13 @@ def safe_query_selector_id(id):
     return re.sub('[ \.]+', '-', id)
 
 
+def write_generic_entry_html(writer, entry):
+    element_name = entry["type"]
+    writer.start_element(element_name)
+    writer.attribute("name", entry["name"])
+    writer.end_element(element_name)
+
+
 def write_generic_entry(doc, entry):
     entry_type = entry["type"]
     entry_element = doc.createElement(entry_type)

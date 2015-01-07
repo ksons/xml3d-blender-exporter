@@ -64,13 +64,17 @@ class AssetExporter:
         if derived_objects is None:
             return
 
+        configs = []
         for derived_object, matrix in derived_objects:
             if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
                 continue
-            self.add_subasset(derived_object, base_matrix * matrix)
+            subconfigs = self.add_subasset(derived_object, base_matrix * matrix)
+            if subconfigs:
+                configs += subconfigs
 
         if free:
             free_derived_objects(obj)
+        return configs
 
     def add_subasset(self, derived_object, matrix):
         name = tools.safe_query_selector_id(derived_object.name)
@@ -83,6 +87,7 @@ class AssetExporter:
         sub_asset = Asset(name, matrix.copy())
 
         armature_info = None
+        armature_config = None
         armature_object = tools.get_armature_object(derived_object)
         if armature_object is not None:
             armature, armature_url = self.context.armatures.create_armature(armature_object)
@@ -91,6 +96,7 @@ class AssetExporter:
                 "bone_map": armature.bone_map,
                 "src": "../armatures.xml#" + armature.id
             }
+            armature_config = armature.get_config()
 
         try:
             apply_modifiers = armature_object is None
@@ -101,6 +107,8 @@ class AssetExporter:
         if mesh:
             self.add_mesh_data(sub_asset, mesh, armature_info)
             self.asset.sub_assets[name] = sub_asset
+
+        return armature_config
 
     def get_bones_and_weights(self, groups, armature_info):
         if not (len(groups) and armature_info):
@@ -210,12 +218,13 @@ class AssetExporter:
             return
 
         content = []
-        # Vertex positions and normals
         positions = []
         normals = []
         texcoord = []
         group_weights = []
         group_indices = []
+        compute = None
+
         has_texcoords = vertices[0].texcoord
         has_weights = vertices[0].group_weights
         for v in vertices:
@@ -234,11 +243,12 @@ class AssetExporter:
             content.append({"type": "int4", "name": "bone_index", "value": group_indices})
             content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
             content.append({"type": "data", "src": armature_info["src"]})
+            compute = "dataflow['../common/xflow/data-flows.xml#blenderSkinning']"
         if has_texcoords:
             content.append(
                 {"type": "float2", "name": "texcoord", "value": texcoord})
 
-        asset.data[meshName] = {"content": content}
+        asset.data[meshName] = {"content": content, "compute": compute}
 
         mesh_textures = self.export_mesh_textures(mesh)
 
@@ -299,6 +309,8 @@ class AssetExporter:
         for name, value in asset.data.items():
             assetData = doc.createElement("assetdata")
             assetData.setAttribute("name", name)
+            if value["compute"]:
+                assetData.setAttribute("compute", value["compute"])
             asset_element.appendChild(assetData)
             for entry in value["content"]:
                 entryElement = tools.write_generic_entry(doc, entry)
