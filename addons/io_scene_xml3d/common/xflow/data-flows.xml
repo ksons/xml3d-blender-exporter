@@ -1,0 +1,41 @@
+<xml3d xmlns="http://www.xml3d.org/2009/xml3d">
+   <!-- <dataflow id="blenderTransform" out="boneXform, bonePoseXform">
+        <int param="true" name="boneParent"/>
+        <float3 param="true" name="bindTranslation"/>
+        <float4 param="true" name="bindRotation"/>
+        <float3 param="true" name="translation"/>
+        <float4 param="true" name="rotation"/>
+        <float param="true" name="animKey">0</float>
+        <compute>
+            bindPose = xflow.createTransformInv({translation: bindTranslation, rotation: bindRotation});
+            bindPose = xflow.forwardKinematicsInv(boneParent, bindPose);
+            rot = xflow.slerpSeq(rotation, animKey);
+            trans = xflow.lerpSeq(translation, animKey);
+            pose = xflow.createTransform({translation: trans, rotation: rot});
+            bonePoseXform = xflow.forwardKinematics(boneParent, pose);
+            boneXform = xflow.mul(bindPose, bonePoseXform);
+        </compute>
+    </dataflow>-->
+    <dataflow id="blenderSkinning" out="position, normal">
+        <int param="true" name="bone_parent"/>
+        <float3 param="true" name="bind_location"/>
+        <float4 param="true" name="bind_rotation"/>
+        <float4 param="true" name="rotation_quaternion"/>
+        <float3 param="true" name="position"/>
+        <float3 param="true" name="normal"/>
+        <int4 param="true" name="bone_index"/>
+        <float4 param="true" name="bone_weight"/>
+        <float4x4 param="true" name="boneXform"/>
+        <float param="true" name="animKey">0</float>
+        <compute>
+            bindPose = xflow.createTransformInv({translation: bind_location, rotation: bind_rotation});
+            bindPose = xflow.forwardKinematicsInv(bone_parent, bindPose);
+            rot = xflow.slerpSeq(rotation_quaternion, animKey);
+            pose = xflow.createTransform({rotation: rot});
+            bonePoseXform = xflow.forwardKinematics(bone_parent, pose);
+            boneXform = xflow.mul(bindPose, bonePoseXform);
+            normal = xflow.skinDirection(normal, bone_index, bone_weight, boneXform);
+            position = xflow.skinPosition(position, bone_index, bone_weight, boneXform);
+        </compute>
+    </dataflow>
+</xml3d>
