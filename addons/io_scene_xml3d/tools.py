@@ -1,5 +1,6 @@
 import mathutils
 import re
+import itertools
 
 IDENTITY = mathutils.Matrix.Identity(4)
 EMPTY = mathutils.Matrix()
@@ -25,6 +26,11 @@ def is_identity_translate(vector):
 def matrix_to_ccs_matrix3d(matrix):
     return "matrix3d(%s)" % ",".join(["%.6f,%.6f,%.6f,%.6f" % (col[0], col[1], col[2], col[3])
                                       for col in matrix.col])
+
+
+def matrix_to_list(matrix):
+    result = list(itertools.chain(*matrix.transposed()))
+    return result
 
 
 def normalize_vec4(vec):
@@ -84,11 +90,7 @@ def write_generic_entry(doc, entry):
         if not isinstance(value, list):
             value_str = str(value)
         else:
-            value_str = ""
-            for t in value:
-                length = len(t) if isinstance(t, tuple) else 1
-                fs = length * "%.6f "
-                value_str += fs % t
+            value_str = " ".join(str(v) for v in value)
 
     if value_str:
         text_node = doc.createTextNode(value_str)

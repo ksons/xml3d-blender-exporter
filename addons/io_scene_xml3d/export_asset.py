@@ -199,7 +199,7 @@ class AssetExporter:
     def export_mesh_textures(self, mesh):
         textures = [None] * len(mesh.materials)
         for i, material in enumerate(mesh.materials):
-            if material.use_face_texture:
+            if material and material.use_face_texture:
                 try:
                     textures[i] = {"image": mesh.tessface_uv_textures[i].data[
                         0].image, "alpha": material.use_face_texture_alpha}

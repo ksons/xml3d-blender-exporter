@@ -1,5 +1,6 @@
 import os
 import mathutils
+import math
 from xml.dom.minidom import Document
 from . import tools
 
@@ -51,23 +52,23 @@ class Armature:
         armature = Armature(armature_id, context)
         pose = armature_object.pose
 
+        armature_matrix = armature_object.matrix_local
+        #print(armature_matrix, tools.is_identity(armature_matrix))
         bone_map = {}
         armature.bone_map = {}
-        locations = []
-        rotations = []
+        bind_matrices = []
 
         for i, pose_bone in enumerate(pose.bones):
             bone_map[pose_bone] = i
             armature.bone_map[pose_bone.name] = i
             armature_bone = pose_bone.bone
-            # TODO: What information needs to be exported from the pose? Also: relative vs absolute...
-            locations.append((-armature_bone.head_local)[:])
-            rotations += [0.0, 0.0, 0.0, 1.0]
+
+            matrix = armature_matrix * armature_bone.matrix_local
+            bind_matrices += tools.matrix_to_list(matrix.inverted())
 
         bone_parent = [(bone_map[bone.parent] if bone.parent in bone_map else -1) for bone in pose.bones]
         armature.data.append({"type": "int", "name": "bone_parent", "value": bone_parent})
-        armature.data.append({"type": "float3", "name": "bind_location", "value": locations})
-        armature.data.append({"type": "float4", "name": "bind_rotation", "value": rotations})
+        armature.data.append({"type": "float4x4", "name": "inverse_bind_matrix", "value": bind_matrices})
         Armature.create_animation(armature_object, armature, context)
         return armature
 
@@ -83,7 +84,7 @@ class Armature:
 
         animation.data.append({"type": "float", "name": "minFrame", "value": frame_min})
         animation.data.append({"type": "float", "name": "maxFrame", "value": frame_max})
-        animation.data.append({"type": "float", "name": "animKey", "value": frame_min})
+        animation.data.append({"type": "float", "name": "animKey", "value": "15"})
 
         keys = set()
         channels_rotation = []
@@ -107,29 +108,36 @@ class Armature:
 
         for sample in samples:
             sampled_rotations = []
-            for i, pose_bone in enumerate(armature_object.pose.bones):
-                channels = channels_rotation[i]
-                quaternion = mathutils.Vector.Fill(4)
-                for i, channel in enumerate(channels):
+            sampled_locations = []
+            for i, pose_bone in enumerate(armature_object.data.bones):
+                local_matrix = get_local_bone_matrix(pose_bone)
+                loc, rot, scl = local_matrix.decompose()
+
+                bone_channels_location = channels_location[i]
+                bone_channels_rotation = channels_rotation[i]
+                vec = mathutils.Vector.Fill(3)
+                quaternion = mathutils.Quaternion()
+                for i, channel in enumerate(bone_channels_rotation):
                     quaternion[i] = channel.evaluate(sample)
-                sampled_rotations += quaternion.yzwx[:]
+                for j, channel in enumerate(bone_channels_location):
+                    vec[j] = channel.evaluate(sample)
+                sampled_rotations += mathutils.Vector((quaternion * rot)).yzwx[:]
+                sampled_locations += (vec + loc)[:]
 
             animation.data.append({"type": "float4", "name": "rotation_quaternion", "key": str(sample), "value": sampled_rotations})
-
-            sampled_locations = []
-            for i, pose_bone in enumerate(armature_object.pose.bones):
-                channels = channels_location[i]
-                vec = mathutils.Vector.Fill(3)
-                for j, channel in enumerate(channels):
-                    vec[j] = channel.evaluate(sample)
-                sampled_locations += vec[:]
-
             animation.data.append({"type": "float3", "name": "location", "key": str(sample), "value": sampled_locations})
 
         armature.data.append({"type": "data", "src": "#" + animation.id})
         armature.animations.append(animation)
         context.stats.animations.append({"name": action.name, "minFrame": frame_min, "maxFrame": frame_max})
 
+
+def get_local_bone_matrix(bone):
+    if not bone.parent:
+        return bone.matrix_local
+    else:
+        parent_matrix = bone.parent.matrix_local
+        return parent_matrix.inverted() * bone.matrix_local
 
 # Stolen from three.js blender exporter (GNU GPL, https://github.com/mrdoob/three.js)
 def find_channels(action, bone, channel_type):
