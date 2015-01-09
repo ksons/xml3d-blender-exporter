@@ -52,8 +52,10 @@ def safe_query_selector_id(id):
 
 def write_generic_entry_html(writer, entry):
     element_name = entry["type"]
-    writer.start_element(element_name)
-    writer.attribute("name", entry["name"])
+    writer.start_element(element_name, name=entry["name"])
+    if "class" in entry:
+        writer.attribute("class", entry["class"])
+    writer.content(str(entry["value"]))
     writer.end_element(element_name)
 
 

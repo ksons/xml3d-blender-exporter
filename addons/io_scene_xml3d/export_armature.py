@@ -40,9 +40,9 @@ class Armature:
         config = []
         for animation in self.animations:
             config.append({
-                "name": animation.id,
+                "name": self.id,
                 "data": [
-                    {"type": "float", "name": "animKey", "value": animation.start_frame}
+                    {"type": "float", "name": "animKey", "value": animation.start_frame, "class": "anim armature"}
                 ]
             })
         return config

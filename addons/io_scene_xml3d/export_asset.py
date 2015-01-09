@@ -94,7 +94,8 @@ class AssetExporter:
             armature_info = {
                 "vertex_groups": derived_object.vertex_groups,
                 "bone_map": armature.bone_map,
-                "src": "../armatures.xml#" + armature.id
+                "src": "../armatures.xml#" + armature.id,
+                "name": armature.id
             }
             armature_config = armature.get_config()
 
@@ -224,17 +225,18 @@ class AssetExporter:
         group_weights = []
         group_indices = []
         compute = None
+        includes = None
 
         has_texcoords = vertices[0].texcoord
         has_weights = vertices[0].group_weights
         for v in vertices:
-            positions.append(tuple(mesh.vertices[v.index].co))
-            normals.append(tuple(v.normal))
+            positions += mesh.vertices[v.index].co[:]
+            normals += v.normal[:]
             if has_texcoords:
-                texcoord.append(tuple(v.texcoord))
+                texcoord += v.texcoord[:]
             if has_weights:
-                group_weights.append(v.group_weights[:])
-                group_indices.append(v.group_index[:])
+                group_weights += v.group_weights[:]
+                group_indices += v.group_index[:]
 
         content.append(
             {"type": "float3", "name": "position", "value": positions})
@@ -242,13 +244,17 @@ class AssetExporter:
         if has_weights:
             content.append({"type": "int4", "name": "bone_index", "value": group_indices})
             content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
-            content.append({"type": "data", "src": armature_info["src"]})
+            armature_name = armature_info['name']
+            # content.append()
+            # asset.data[armature_name] = {"src": armature_info["src"], "includes": None, "compute": None}
+            asset.data[armature_name] = {"content": [{"type": "data", "src": armature_info["src"]}], "includes": None, "compute": None}
             compute = "dataflow['../common/xflow/data-flows.xml#blenderSkinning']"
+            includes = armature_info['name']
         if has_texcoords:
             content.append(
                 {"type": "float2", "name": "texcoord", "value": texcoord})
 
-        asset.data[meshName] = {"content": content, "compute": compute}
+        asset.data[meshName] = {"content": content, "compute": compute, "includes": includes}
 
         mesh_textures = self.export_mesh_textures(mesh)
 
@@ -307,14 +313,26 @@ class AssetExporter:
             return
 
         for name, value in asset.data.items():
-            assetData = doc.createElement("assetdata")
-            assetData.setAttribute("name", name)
-            if value["compute"]:
-                assetData.setAttribute("compute", value["compute"])
-            asset_element.appendChild(assetData)
+            asset_data = doc.createElement("assetdata")
+            asset_data.setAttribute("name", name)
+
+            if 'src' in value:
+                asset_data.setAttribute("src", value["src"])
+
+            if 'includes' in value and value["includes"]:
+                asset_data.setAttribute("includes", value["includes"])
+
+            if 'compute' in value and value["compute"]:
+                asset_data.setAttribute("compute", value["compute"])
+
+
+            asset_element.appendChild(asset_data)
+            if not 'content' in value:
+                return
+
             for entry in value["content"]:
                 entryElement = tools.write_generic_entry(doc, entry)
-                assetData.appendChild(entryElement)
+                asset_data.appendChild(entryElement)
 
         for mesh in asset.meshes:
             asset_mesh = doc.createElement("assetmesh")

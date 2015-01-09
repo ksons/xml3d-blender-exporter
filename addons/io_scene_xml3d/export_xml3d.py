@@ -193,7 +193,6 @@ class XML3DExporter():
             for entry in config["data"]:
                 tools.write_generic_entry_html(self._writer, entry)
             self._writer.end_element("assetdata")
-            print(config)
 
         self._writer.end_element("model")
 

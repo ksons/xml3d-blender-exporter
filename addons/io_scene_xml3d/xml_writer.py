@@ -46,6 +46,12 @@ class XMLWriter:
     def attribute(self, name, value):
         self._stream.write(" " + name + "=" + quoteattr(value))
 
+    def content(self, content):
+        if self._isElementOpen:
+            self._stream.write(">")
+            self._isElementOpen = False
+        self._stream.write(content)
+
     def element(self, _name, **attr):
         self.start_element(_name, **attr)
         self.end_element(_name)
