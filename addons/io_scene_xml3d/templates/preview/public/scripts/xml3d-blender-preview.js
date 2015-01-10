@@ -93,7 +93,16 @@ $(function () {
         updateLayers();
     });
 
+    var minFrame = 0, maxFrame = 0, currentFrame = 0;
+    var animation_keys = $(".anim.armature")
+    function getAnimationFrames(animations) {
+        currentFrame = minFrame = Math.min(animations.map(function(o) { return o.minFrame }));
+        maxFrame = Math.max(animations.map(function(o) { return o.maxFrame }));
+    }
+
+
     $.get("./info/xml3d-info.json", function (data) {
+        getAnimationFrames(data.animations)
         var warnings = data.warnings;
         if (warnings.length) {
             $("#bell").append("<span class='message-position'><span class='count'>" + warnings.length + "</span></span>");
@@ -128,6 +137,13 @@ $(function () {
         var count = e.detail.count;
         renderStatText = "Tris:" + count.primitives + " | Objects:" + count.objects;
         updateRenderText();
+         if(maxFrame > minFrame) {
+            currentFrame++;
+            if (currentFrame > maxFrame) {
+                currentFrame = minFrame;
+            }
+            animation_keys.text(currentFrame)
+        }
     });
     xml3d.addEventListener("mouseover", function (e) {
         //console.log("mouseover", e.target);
