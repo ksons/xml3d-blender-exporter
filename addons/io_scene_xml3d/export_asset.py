@@ -25,8 +25,9 @@ class Asset:
     matrix = None
     src = None
 
-    def __init__(self, name=None, matrix=None, src=None):
-        self.id = name
+    def __init__(self, id_=None, name=None, matrix=None, src=None):
+        self.id = id_
+        self.name = name
         self.matrix = matrix
         self.src = src
         self.meshes = []
@@ -45,7 +46,7 @@ class AssetExporter:
         self._path = path
         self._dir = os.path.dirname(path)
         self._scene = scene
-        self.asset = Asset("root")
+        self.asset = Asset(id_="root")
         self._material = {}
 
     def add_material(self, material):
@@ -64,17 +65,18 @@ class AssetExporter:
         if derived_objects is None:
             return
 
-        configs = []
+        asset_configs = {
+            "subconfigs": []
+        }
         for derived_object, matrix in derived_objects:
             if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
                 continue
-            subconfigs = self.add_subasset(derived_object, base_matrix * matrix)
-            if subconfigs:
-                configs += subconfigs
+            subasset_configs = self.add_subasset(derived_object, base_matrix * matrix)
+            asset_configs["subconfigs"].append(subasset_configs)
 
         if free:
             free_derived_objects(obj)
-        return configs
+        return asset_configs
 
     def add_subasset(self, derived_object, matrix):
         name = tools.safe_query_selector_id(derived_object.name)
@@ -84,10 +86,10 @@ class AssetExporter:
             self.asset.ref_assets.append(ref_asset)
             return
 
-        sub_asset = Asset(name, matrix.copy())
+        sub_asset = Asset(name=name, matrix=matrix.copy())
+        subasset_config = {"name": name}
 
         armature_info = None
-        armature_config = None
         armature_object = tools.get_armature_object(derived_object)
         if armature_object is not None:
             armature, armature_url = self.context.armatures.create_armature(armature_object)
@@ -98,6 +100,8 @@ class AssetExporter:
                 "name": armature.id
             }
             armature_config = armature.get_config()
+            if armature_config:
+                subasset_config["armature"] = armature_config
 
         try:
             apply_modifiers = armature_object is None
@@ -109,7 +113,7 @@ class AssetExporter:
             self.add_mesh_data(sub_asset, mesh, armature_info)
             self.asset.sub_assets[name] = sub_asset
 
-        return armature_config
+        return subasset_config
 
     def get_bones_and_weights(self, groups, armature_info):
         if not (len(groups) and armature_info):
@@ -247,7 +251,7 @@ class AssetExporter:
             armature_name = armature_info['name']
             # content.append()
             # asset.data[armature_name] = {"src": armature_info["src"], "includes": None, "compute": None}
-            asset.data[armature_name] = {"content": [{"type": "data", "src": armature_info["src"]}], "includes": None, "compute": None}
+            asset.data[armature_name] = {"content": [{"type": "data", "src": armature_info["src"]}, {"type": "float", "name": "animKey", "value": 1.0}], "includes": None, "compute": None}
             compute = "dataflow['../common/xflow/data-flows.xml#blenderSkinning']"
             includes = armature_info['name']
         if has_texcoords:
@@ -306,6 +310,8 @@ class AssetExporter:
 
         if asset.id:
             asset_element.setAttribute("id", asset.id)
+        if asset.name:
+            asset_element.setAttribute("name", asset.name)
         if asset.matrix and not tools.is_identity(asset.matrix):
             asset_element.setAttribute("style", "transform: %s;" % tools.matrix_to_ccs_matrix3d(asset.matrix))
         if asset.src:
@@ -325,9 +331,8 @@ class AssetExporter:
             if 'compute' in value and value["compute"]:
                 asset_data.setAttribute("compute", value["compute"])
 
-
             asset_element.appendChild(asset_data)
-            if not 'content' in value:
+            if 'content' not in value:
                 return
 
             for entry in value["content"]:

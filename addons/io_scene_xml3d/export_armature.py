@@ -1,6 +1,5 @@
 import os
 import mathutils
-import math
 from xml.dom.minidom import Document
 from . import tools
 
@@ -53,7 +52,7 @@ class Armature:
         pose = armature_object.pose
 
         armature_matrix = armature_object.matrix_local
-        #print(armature_matrix, tools.is_identity(armature_matrix))
+        # print(armature_matrix, tools.is_identity(armature_matrix))
         bone_map = {}
         armature.bone_map = {}
         bind_matrices = []
@@ -138,6 +137,7 @@ def get_local_bone_matrix(bone):
     else:
         parent_matrix = bone.parent.matrix_local
         return parent_matrix.inverted() * bone.matrix_local
+
 
 # Stolen from three.js blender exporter (GNU GPL, https://github.com/mrdoob/three.js)
 def find_channels(action, bone, channel_type):

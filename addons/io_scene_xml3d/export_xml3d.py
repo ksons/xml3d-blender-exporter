@@ -73,11 +73,11 @@ class XML3DExporter():
         url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
 
         exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
-        configs = exporter.add_asset(original_object)
+        asset_config = exporter.add_asset(original_object)
         exporter.save()
 
         # stats.assets[0]["url"] = url
-        return url + "#root", configs
+        return url + "#root", asset_config
 
     def stats(self):
         return self.context.stats
@@ -87,7 +87,7 @@ class XML3DExporter():
 
     def create_resource(self, obj):
         url = None
-        configs = None
+        asset_config = None
 
         if obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}:
             mesh_data = obj.data
@@ -95,12 +95,12 @@ class XML3DExporter():
             if key in self._resource:
                 return self._resource[key]
 
-            url, configs = self.create_resource_from_mesh(obj)
+            url, asset_config = self.create_resource_from_mesh(obj)
             self._resource[key] = url
         else:
             self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
 
-        return url, configs
+        return url, asset_config
 
     def build_hierarchy(self, objects):
         """ returns parent child relationships, skipping
@@ -181,18 +181,30 @@ class XML3DExporter():
         self._writer.end_element("view")
         self.context.stats.views += 1
 
+    def create_model_configuration(self, config):
+        if 'subconfigs' in config:
+            subconfigs = config['subconfigs']
+            for subconfig in subconfigs:
+                if 'armature' in subconfig:
+                    self._writer.start_element("asset", name=subconfig["name"])
+                    armatures = subconfig['armature']
+                    for armature in armatures:
+                        self._writer.start_element("assetdata", name=armature["name"])
+                        for entry in armature["data"]:
+                            tools.write_generic_entry_html(self._writer, entry)
+                        self._writer.end_element("assetdata")
+                    self._writer.end_element("asset")
+
     def create_geometry(self, original_obj):
-        url, configs = self.create_resource(original_obj)
+        url, model_config = self.create_resource(original_obj)
         if not url:
             return
 
         self._writer.start_element("model", id=escape_html_id(original_obj.data.name))
         self._writer.attribute("src", url)
-        for config in configs:
-            self._writer.start_element("assetdata", name=config["name"])
-            for entry in config["data"]:
-                tools.write_generic_entry_html(self._writer, entry)
-            self._writer.end_element("assetdata")
+
+        if model_config:
+            self.create_model_configuration(model_config)
 
         self._writer.end_element("model")
 
