@@ -96,8 +96,8 @@ $(function () {
     var minFrame = 0, maxFrame = 0, currentFrame = 0;
     var animation_keys = $(".anim.armature")
     function getAnimationFrames(animations) {
-        currentFrame = minFrame = Math.min(animations.map(function(o) { return o.minFrame }));
-        maxFrame = Math.max(animations.map(function(o) { return o.maxFrame }));
+        currentFrame = minFrame = Math.min.apply(Math, animations.map(function(o) { return o.minFrame }));
+        maxFrame = Math.max.apply(Math, animations.map(function(o) { return o.maxFrame }));
     }
 
 
