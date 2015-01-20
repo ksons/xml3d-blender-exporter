@@ -144,27 +144,15 @@ def get_local_bone_matrix(bone):
 # Stolen from three.js blender exporter (GNU GPL, https://github.com/mrdoob/three.js)
 def find_channels(action, bone, channel_type):
     bone_name = bone.name
-    ngroups = len(action.groups)
+    # ngroups = len(action.groups)
     result = []
 
-    # TODO Catch assertion
-    assert ngroups > 0, "This scene does not use action groups. Not considered yet."
+    bone_label = '"%s"' % bone_name
 
-    # Variant 1: channels grouped by bone names
-    # only using variant 1. Have no case for variant 2 yet
-
-    # Find the channel group for the given bone
-    group_index = -1
-    for i in range(ngroups):
-        # print(action.groups[i].name, bone_name)
-        if action.groups[i].name == bone_name:
-            group_index = i
-
-    # Get all desired channels in that group
-    if group_index > -1:
-        for channel in action.groups[group_index].channels:
-            if channel_type in channel.data_path:
-                result.append(channel)
+    for channel in action.fcurves:
+        data_path = channel.data_path
+        if bone_label in data_path and channel_type in data_path:
+            result.append(channel)
 
     return result
 
