@@ -51,6 +51,7 @@ class Armature:
         armature = Armature(armature_id, context)
         pose = armature_object.pose
 
+        # print(armature_object.name, armature_object.matrix_local)
         armature_matrix = armature_object.matrix_local
         # print(armature_matrix, tools.is_identity(armature_matrix))
         bone_map = {}
@@ -77,7 +78,7 @@ class Armature:
             return
 
         action = armature_object.animation_data.action
-        animation = ArmatureAnimation(action.name, context)
+        animation = ArmatureAnimation(tools.safe_query_selector_id(action.name), context)
         frame_min = animation.start_frame = action.frame_range[0]
         frame_max = action.frame_range[1]
 
@@ -91,6 +92,7 @@ class Armature:
         # Collect samples from keyframes
         for i, pose_bone in enumerate(armature_object.pose.bones):
             rotation_channels = find_channels(action, pose_bone.bone, "rotation_quaternion")
+            # print(rotation_channels)
             channels_rotation.append(rotation_channels)
             for channel in rotation_channels:
                 for keyframe in channel.keyframe_points:
@@ -120,7 +122,7 @@ class Armature:
                     quaternion[i] = channel.evaluate(sample)
                 for j, channel in enumerate(bone_channels_location):
                     vec[j] = channel.evaluate(sample)
-                sampled_rotations += mathutils.Vector((quaternion * rot)).yzwx[:]
+                sampled_rotations += mathutils.Vector((rot * quaternion)).yzwx[:]
                 sampled_locations += (vec + loc)[:]
 
             animation.data.append({"type": "float4", "name": "rotation_quaternion", "key": str(sample), "value": sampled_rotations})
@@ -128,7 +130,7 @@ class Armature:
 
         armature.data.append({"type": "data", "src": "#" + animation.id})
         armature.animations.append(animation)
-        context.stats.animations.append({"name": action.name, "minFrame": frame_min, "maxFrame": frame_max})
+        context.stats.animations.append({"name": tools.safe_query_selector_id(action.name), "minFrame": frame_min, "maxFrame": frame_max})
 
 
 def get_local_bone_matrix(bone):
@@ -145,12 +147,14 @@ def find_channels(action, bone, channel_type):
     ngroups = len(action.groups)
     result = []
 
+    # print(ngroups)
     # Variant 1: channels grouped by bone names
     if ngroups > 0:
 
         # Find the channel group for the given bone
         group_index = -1
         for i in range(ngroups):
+            # print(action.groups[i].name, bone_name)
             if action.groups[i].name == bone_name:
                 group_index = i
 

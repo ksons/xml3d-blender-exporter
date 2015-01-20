@@ -41,6 +41,24 @@ Xflow.registerOperator("xflow.blenderPoint", {
     }
 });
 
+Xflow.registerOperator("xflow.transformPoint", {
+    outputs: [  {type: 'float3', name: 'result'}],
+    params:  [
+      {type: 'float3', source: 'point'},
+      {type: 'float4x4', source: 'matrix'}
+    ],
+    evaluate: function(result, point, matrix, info) {
+        var tmp = XML3D.math.vec3.create();
+        for(var i = 0; i < info.iterateCount; i++) {
+            var offset = 3*i;
+            var res = XML3D.math.mat4.multiplyOffsetVec3(matrix, 0, point, offset, tmp);
+            result[offset] = res[0];
+            result[offset+1] = res[1];
+            result[offset+2] = res[2];
+        }
+    }
+});
+
 Xflow.registerOperator("xflow.blenderMaterial", {
     outputs: [
                 {type: 'float3', name: 'diffuseColor'},

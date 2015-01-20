@@ -7,6 +7,7 @@
         <float3 param="true" name="normal"/>
         <int4 param="true" name="bone_index"/>
         <float4 param="true" name="bone_weight"/>
+        <float4x4 param="true" name="bind_shape_matrix"/>
         <float4x4 param="true" name="inverse_bind_matrix"/>
         <float param="true" name="animKey">0</float>
         <compute>
@@ -17,6 +18,7 @@
             pose = xflow.forwardKinematics(bone_parent, pose);
             boneXform = xflow.mul(inverse_bind_matrix, pose);
             normal = xflow.skinDirection(normal, bone_index, bone_weight, boneXform);
+            position = xflow.transformPoint(position, bind_shape_matrix);
             position = xflow.skinPosition(position, bone_index, bone_weight, boneXform);
         </compute>
     </dataflow>

@@ -95,6 +95,7 @@ class AssetExporter:
             armature, armature_url = self.context.armatures.create_armature(armature_object)
             armature_info = {
                 "vertex_groups": derived_object.vertex_groups,
+                "bind_shape_matrix": derived_object.matrix_world,
                 "bone_map": armature.bone_map,
                 "src": "../armatures.xml#" + armature.id,
                 "name": armature.id
@@ -248,6 +249,7 @@ class AssetExporter:
         if has_weights:
             content.append({"type": "int4", "name": "bone_index", "value": group_indices})
             content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
+            content.append({"type": "float4x4", "name": "bind_shape_matrix", "value": tools.matrix_to_list(armature_info["bind_shape_matrix"])})
             armature_name = armature_info['name']
             # content.append()
             # asset.data[armature_name] = {"src": armature_info["src"], "includes": None, "compute": None}
