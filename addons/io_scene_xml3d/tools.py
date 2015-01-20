@@ -47,7 +47,7 @@ def get_armature_object(obj):
 
 
 def safe_query_selector_id(id):
-    return re.sub('[ \.]+', '-', id)
+    return re.sub('[ |\.]+', '-', id)
 
 
 def write_generic_entry_html(writer, entry):
