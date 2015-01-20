@@ -147,31 +147,23 @@ def find_channels(action, bone, channel_type):
     ngroups = len(action.groups)
     result = []
 
-    # print(ngroups)
+    # TODO Catch assertion
+    assert ngroups > 0, "This scene does not use action groups. Not considered yet."
+
     # Variant 1: channels grouped by bone names
-    if ngroups > 0:
+    # only using variant 1. Have no case for variant 2 yet
 
-        # Find the channel group for the given bone
-        group_index = -1
-        for i in range(ngroups):
-            # print(action.groups[i].name, bone_name)
-            if action.groups[i].name == bone_name:
-                group_index = i
+    # Find the channel group for the given bone
+    group_index = -1
+    for i in range(ngroups):
+        # print(action.groups[i].name, bone_name)
+        if action.groups[i].name == bone_name:
+            group_index = i
 
-        # Get all desired channels in that group
-        if group_index > -1:
-            for channel in action.groups[group_index].channels:
-                if channel_type in channel.data_path:
-                    result.append(channel)
-
-    # Variant 2: no channel groups, bone names included in channel names
-    else:
-
-        bone_label = '"%s"' % bone_name
-
-        for channel in action.fcurves:
-            data_path = channel.data_path
-            if bone_label in data_path and channel_type in data_path:
+    # Get all desired channels in that group
+    if group_index > -1:
+        for channel in action.groups[group_index].channels:
+            if channel_type in channel.data_path:
                 result.append(channel)
 
     return result
