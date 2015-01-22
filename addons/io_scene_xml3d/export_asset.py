@@ -114,7 +114,11 @@ class AssetExporter:
         subasset_config = ModelConfiguration(name=name)
 
         armature_info = None
-        armature_object = tools.get_armature_object(derived_object)
+        armature_object, warn = tools.get_armature_object(derived_object)
+
+        if warn:
+            self.context.warning(warn)
+
         if armature_object is not None:
             armature, armature_url = self.context.armatures.create_armature(armature_object)
             armature_info = {

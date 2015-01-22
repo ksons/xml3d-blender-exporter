@@ -42,8 +42,11 @@ def normalize_vec4(vec):
 
 def get_armature_object(obj):
     if len(obj.modifiers) == 1 and obj.modifiers[0].type == 'ARMATURE':
-        return obj.modifiers[0].object
-    return None
+        return obj.modifiers[0].object, None
+    if 'ARMATURE' in [m.type for m in obj.modifiers]:
+        # TODO: Add issue
+        return None, "There are multiple modifiers on obj '%s'. Armature export with multiple modifiers is not (yet) supported. Armature will not be exported." % obj.name
+    return None, None
 
 
 def safe_query_selector_id(id):
