@@ -7,19 +7,21 @@
         <float3 param="true" name="normal"/>
         <int4 param="true" name="bone_index"/>
         <float4 param="true" name="bone_weight"/>
-        <float4x4 param="true" name="bind_shape_matrix"/>
-        <float4x4 param="true" name="inverse_bind_matrix"/>
+        <float4x4 param="true" name="offset_matrix"/>
+        <float4x4 param="true" name="global_inverse_matrix"/>
         <float param="true" name="animKey">0</float>
         <compute>
             rot = xflow.slerpSeq(rotation_quaternion, animKey);
             loc = xflow.lerpSeq(location, animKey);
-            pose = xflow.createTransform({translation: loc, rotation: rot});
+            animation_local_matrix = xflow.createTransform({translation: loc, rotation: rot});
+            animation_global_matrix = xflow.forwardKinematics(bone_parent, animation_local_matrix);
 
-            pose = xflow.forwardKinematics(bone_parent, pose);
-            boneXform = xflow.mul(inverse_bind_matrix, pose);
-            normal = xflow.skinDirection(normal, bone_index, bone_weight, boneXform);
-            position = xflow.transformPoint(position, bind_shape_matrix);
-            position = xflow.skinPosition(position, bone_index, bone_weight, boneXform);
+            pose = xflow.mul(offset_matrix, animation_global_matrix);
+            pose = xflow.mulSingle(pose, global_inverse_matrix);
+
+            normal = xflow.skinDirection(normal, bone_index, bone_weight, pose);
+            position = xflow.skinPosition(position, bone_index, bone_weight, pose);
+
         </compute>
     </dataflow>
 </xml3d>

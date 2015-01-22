@@ -51,24 +51,15 @@ class Armature:
         armature = Armature(armature_id, context)
         pose = armature_object.pose
 
-        # print(armature_object.name, armature_object.matrix_local)
-        armature_matrix = armature_object.matrix_local
-        # print(armature_matrix, tools.is_identity(armature_matrix))
         bone_map = {}
         armature.bone_map = {}
-        bind_matrices = []
 
         for i, pose_bone in enumerate(pose.bones):
             bone_map[pose_bone] = i
             armature.bone_map[pose_bone.name] = i
-            armature_bone = pose_bone.bone
-
-            matrix = armature_matrix * armature_bone.matrix_local
-            bind_matrices += tools.matrix_to_list(matrix.inverted())
 
         bone_parent = [(bone_map[bone.parent] if bone.parent in bone_map else -1) for bone in pose.bones]
         armature.data.append({"type": "int", "name": "bone_parent", "value": bone_parent})
-        armature.data.append({"type": "float4x4", "name": "inverse_bind_matrix", "value": bind_matrices})
         Armature.create_animation(armature_object, armature, context)
         return armature
 

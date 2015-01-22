@@ -83,6 +83,25 @@ class AssetExporter:
         self.assets.append(parent)
         return asset_configs
 
+    def armature_offset_matrix(self, armature_object, obj):
+        pose = armature_object.pose
+        armature_matrix = armature_object.matrix_world
+
+        world_matrix = obj.matrix_world
+        bind_matrices = []
+        for i, pose_bone in enumerate(pose.bones):
+            armature_bone = pose_bone.bone
+
+            matrix = armature_matrix * armature_bone.matrix_local
+            matrix = matrix.inverted() * world_matrix
+            # with open(os.path.join(self._dir, pose_bone.name + ".txt"), "w") as assetFile:
+            #    assetFile.write(str(matrix))
+            #    assetFile.close()
+
+            bind_matrices += tools.matrix_to_list(matrix)
+
+        return bind_matrices
+
     def add_subasset(self, parent_asset, derived_object, matrix):
         name = tools.safe_query_selector_id(derived_object.name)
 
@@ -91,7 +110,7 @@ class AssetExporter:
             parent_asset.ref_assets.append(ref_asset)
             return
 
-        sub_asset = Asset(id_=name, name=name, matrix=matrix.copy())
+        sub_asset = Asset(name=name, matrix=matrix.copy())
         subasset_config = ModelConfiguration(name=name)
 
         armature_info = None
@@ -100,11 +119,14 @@ class AssetExporter:
             armature, armature_url = self.context.armatures.create_armature(armature_object)
             armature_info = {
                 "vertex_groups": derived_object.vertex_groups,
-                "bind_shape_matrix": derived_object.matrix_world,
+                # FIXME: This is only true, if derived object is immediate chid of armarture. Needs to be fixed.
+                "global_inverse_matrix": derived_object.matrix_local.inverted(),
+                "offset_matrix": self.armature_offset_matrix(armature_object, derived_object),
                 "bone_map": armature.bone_map,
                 "src": "../armatures.xml#" + armature.id,
                 "name": armature.id
             }
+            # print(derived_object.matrix_local.inverted())
             armature_config = armature.get_config()
             if armature_config:
                 subasset_config.armatures += armature_config
@@ -144,6 +166,9 @@ class AssetExporter:
                 if w[2] in armature_info['bone_map']:
                     group_index[j] = armature_info['bone_map'][w[2]]
                     group_weights[j] = w[1]
+                else:
+                    # print("not in bone_map:", w[2])
+                    pass
 
         # TODO: Should we normalize? Source is not necessarily normalized.
         return group_index, group_weights
@@ -254,7 +279,8 @@ class AssetExporter:
         if has_weights:
             content.append({"type": "int4", "name": "bone_index", "value": group_indices})
             content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
-            content.append({"type": "float4x4", "name": "bind_shape_matrix", "value": tools.matrix_to_list(armature_info["bind_shape_matrix"])})
+            content.append({"type": "float4x4", "name": "global_inverse_matrix", "value": tools.matrix_to_list(armature_info["global_inverse_matrix"])})
+            content.append({"type": "float4x4", "name": "offset_matrix", "value": armature_info["offset_matrix"]})
             armature_name = armature_info['name']
             # content.append()
             # asset.data[armature_name] = {"src": armature_info["src"], "includes": None, "compute": None}

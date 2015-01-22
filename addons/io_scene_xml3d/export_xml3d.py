@@ -76,22 +76,22 @@ class XML3DExporter():
         url = None
         asset_config = None
 
-        try:
-            assert geo_obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}
+        # try:
+        assert geo_obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}
 
-            # TODO: Safe name
-            asset_name = tools.safe_query_selector_id(geo_obj.name)
+        # TODO: Safe name
+        asset_name = tools.safe_query_selector_id(geo_obj.name)
 
-            path = self.create_asset_directory()
-            path = os.path.join(path, asset_name + ".xml")
-            exporter = export_asset.AssetExporter(asset_name, self.context, path, self.blender_context.scene)
-            asset_config = exporter.add_asset(geo_obj)
-            url = "%s/%s.xml#%s" % (ASSETDIR, asset_name, asset_name)
-            exporter.save()
+        path = self.create_asset_directory()
+        path = os.path.join(path, asset_name + ".xml")
+        exporter = export_asset.AssetExporter(asset_name, self.context, path, self.blender_context.scene)
+        asset_config = exporter.add_asset(geo_obj)
+        url = "%s/%s.xml#%s" % (ASSETDIR, asset_name, asset_name)
+        exporter.save()
 
-        except:
-            # self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
-            print("Exception")
+        # except:
+        # self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
+        # print("Exception")
 
         return url, asset_config
 
