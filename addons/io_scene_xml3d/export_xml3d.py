@@ -66,39 +66,32 @@ class XML3DExporter():
             os.makedirs(assetDir)
         return assetDir
 
-    def create_resource_from_mesh(self, original_object):
-        mesh_data_name = original_object.data.name
-        path = self.create_asset_directory()
-        path = os.path.join(path, mesh_data_name + ".xml")
-        url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
-
-        exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
-        asset_config = exporter.add_asset(original_object)
-        exporter.save()
-
-        # stats.assets[0]["url"] = url
-        return url + "#root", asset_config
-
     def stats(self):
         return self.context.stats
 
     def warning(self, message, category=None, issue=None):
         self.context.warning(message, category, issue)
 
-    def create_resource(self, obj):
+    def add_asset_from_geometry(self, geo_obj):
         url = None
         asset_config = None
 
-        if obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}:
-            mesh_data = obj.data
-            key = "mesh." + mesh_data.name
-            if key in self._resource:
-                return self._resource[key]
+        try:
+            assert geo_obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}
 
-            url, asset_config = self.create_resource_from_mesh(obj)
-            self._resource[key] = url
-        else:
-            self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
+            # TODO: Safe name
+            asset_name = tools.safe_query_selector_id(geo_obj.name)
+
+            path = self.create_asset_directory()
+            path = os.path.join(path, asset_name + ".xml")
+            exporter = export_asset.AssetExporter(asset_name, self.context, path, self.blender_context.scene)
+            asset_config = exporter.add_asset(geo_obj)
+            url = "%s/%s.xml#%s" % (ASSETDIR, asset_name, asset_name)
+            exporter.save()
+
+        except:
+            # self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
+            print("Exception")
 
         return url, asset_config
 
@@ -181,22 +174,19 @@ class XML3DExporter():
         self._writer.end_element("view")
         self.context.stats.views += 1
 
-    def create_model_configuration(self, config):
-        if 'subconfigs' in config:
-            subconfigs = config['subconfigs']
-            for subconfig in subconfigs:
-                if 'armature' in subconfig:
-                    self._writer.start_element("asset", name=subconfig["name"])
-                    armatures = subconfig['armature']
-                    for armature in armatures:
-                        self._writer.start_element("assetdata", name=armature["name"])
-                        for entry in armature["data"]:
+    def create_model_configuration(self, model_config):
+        for child_config in model_config.children:
+            if child_config is not None and len(child_config.armatures):
+                self._writer.start_element("asset", name=child_config.name)
+                for armature in child_config.armatures:
+                    self._writer.start_element("assetdata", name=armature["name"])
+                    for entry in armature["data"]:
                             tools.write_generic_entry_html(self._writer, entry)
-                        self._writer.end_element("assetdata")
-                    self._writer.end_element("asset")
+                    self._writer.end_element("assetdata")
+                self._writer.end_element("asset")
 
     def create_geometry(self, original_obj):
-        url, model_config = self.create_resource(original_obj)
+        url, model_config = self.add_asset_from_geometry(original_obj)
         if not url:
             return
 

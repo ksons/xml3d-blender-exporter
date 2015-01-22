@@ -24,6 +24,7 @@ class Asset:
     ref_assets = None
     matrix = None
     src = None
+    configuration = None
 
     def __init__(self, id_=None, name=None, matrix=None, src=None):
         self.id = id_
@@ -39,6 +40,7 @@ class Asset:
 class AssetExporter:
     context = None
     name = ""
+    assets = []
 
     def __init__(self, name, context, path, scene):
         self.name = name
@@ -46,7 +48,7 @@ class AssetExporter:
         self._path = path
         self._dir = os.path.dirname(path)
         self._scene = scene
-        self.asset = Asset(id_="root")
+        self.assets = []
         self._material = {}
 
     def add_material(self, material):
@@ -65,29 +67,32 @@ class AssetExporter:
         if derived_objects is None:
             return
 
-        asset_configs = {
-            "subconfigs": []
-        }
+        parent = Asset(id_=tools.safe_query_selector_id(obj.name))
+
+        asset_configs = ModelConfiguration()
+
         for derived_object, matrix in derived_objects:
             if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
                 continue
-            subasset_configs = self.add_subasset(derived_object, base_matrix * matrix)
-            asset_configs["subconfigs"].append(subasset_configs)
+            subasset_configs = self.add_subasset(parent, derived_object, base_matrix * matrix)
+            asset_configs.children.append(subasset_configs)
 
         if free:
             free_derived_objects(obj)
+
+        self.assets.append(parent)
         return asset_configs
 
-    def add_subasset(self, derived_object, matrix):
+    def add_subasset(self, parent_asset, derived_object, matrix):
         name = tools.safe_query_selector_id(derived_object.name)
 
-        if name in self.asset.sub_assets:
+        if name in parent_asset.sub_assets:
             ref_asset = Asset(src="#" + name, matrix=matrix)
-            self.asset.ref_assets.append(ref_asset)
+            parent_asset.ref_assets.append(ref_asset)
             return
 
-        sub_asset = Asset(name=name, matrix=matrix.copy())
-        subasset_config = {"name": name}
+        sub_asset = Asset(id_=name, name=name, matrix=matrix.copy())
+        subasset_config = ModelConfiguration(name=name)
 
         armature_info = None
         armature_object = tools.get_armature_object(derived_object)
@@ -102,7 +107,7 @@ class AssetExporter:
             }
             armature_config = armature.get_config()
             if armature_config:
-                subasset_config["armature"] = armature_config
+                subasset_config.armatures += armature_config
 
         try:
             apply_modifiers = armature_object is None
@@ -112,7 +117,7 @@ class AssetExporter:
 
         if mesh:
             self.add_mesh_data(sub_asset, mesh, armature_info)
-            self.asset.sub_assets[name] = sub_asset
+            parent_asset.sub_assets[name] = sub_asset
 
         return subasset_config
 
@@ -301,7 +306,8 @@ class AssetExporter:
         doc = Document()
         xml3d = doc.createElement("xml3d")
         doc.appendChild(xml3d)
-        self.asset_xml(self.asset, xml3d)
+        for asset in self.assets:
+            self.asset_xml(asset, xml3d)
         doc.writexml(f, "", "  ", "\n", "UTF-8")
 
     def asset_xml(self, asset, parent):
@@ -369,3 +375,14 @@ class AssetExporter:
             size = os.path.getsize(self._path)
 
         stats.assets.append({"url": self._path, "size": size, "name": self.name})
+
+
+class ModelConfiguration:
+    children = []
+    name = None
+    armatures = []
+
+    def __init__(self, name=None):
+        self.children = []
+        self.name = name
+        self.armatures = []
