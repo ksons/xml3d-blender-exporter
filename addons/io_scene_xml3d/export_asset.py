@@ -187,8 +187,6 @@ class AssetExporter:
         else:
             print("Found vertex without weights")
 
-
-        # TODO: Should we normalize? Source is not necessarily normalized.
         return group_index, group_weights
 
     def export_tessfaces(self, mesh, armature_info):

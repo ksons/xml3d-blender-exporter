@@ -109,10 +109,13 @@ class Armature:
                 bone_channels_rotation = channels_rotation[i]
                 vec = mathutils.Vector.Fill(3)
                 quaternion = mathutils.Quaternion()
-                for i, channel in enumerate(bone_channels_rotation):
-                    quaternion[i] = channel.evaluate(sample)
+                quaternion.identity()
+
+                for q, channel in enumerate(bone_channels_rotation):
+                    quaternion[q] = channel.evaluate(sample)
                 for j, channel in enumerate(bone_channels_location):
                     vec[j] = channel.evaluate(sample)
+
                 sampled_rotations += mathutils.Vector((rot * quaternion)).yzwx[:]
                 sampled_locations += (vec + loc)[:]
 
