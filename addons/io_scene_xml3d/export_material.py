@@ -1,8 +1,10 @@
 import os
 import bpy
+import re
 from bpy_extras.io_utils import path_reference
 from xml.dom.minidom import Document
 from . import tools
+from . import png
 
 BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)"
 
@@ -144,38 +146,40 @@ class MaterialLibrary:
 
 
 def export_image(image, context):
+    if image in context.images:
+        return context.images[image]
+
     if image.source not in {'FILE', 'VIDEO'}:
         context.warning(u"Image '{0:s}' is of source '{1:s}' which is not (yet) supported. Using default ...".format(image.name, image.source), "texture")
         return None
 
-    if image.packed_file:
-        image_data = image.packed_file.data
+    # Create texture directory if it does not exist
+    texture_path = os.path.join(context.base_url, "textures")
+    os.makedirs(texture_path, exist_ok=True)
 
-        # Create texture directory if it not already exists
-        texture_path = os.path.join(context.base_url, "textures")
-        os.makedirs(texture_path, exist_ok=True)
+    # is it actually possible for image.name to be empty?
+    # Blender seams to always enumerate "undefined" if no name is specified
+    # defaults to file name which is what we would use anyway
+    image_name = image.name if image.name != "" else bpy.path.display_name_from_filepath(image.filepath)
+    # a name in blender is allowed to contain any utf8 character
+    # filesystems are not that permissive
+    # to be as compatible as possible we replace the most common invalid characters with an underscore
+    # there are many other invalid names like reserved DOS names but handling all edge cases is not feasible
+    image_name = re.sub(r"\\|\*|\.|\"|\/|\[|\]|:|;|\||=|,|<|>", "_", image_name)
 
-        image_src = os.path.join("textures", image.name)
-        file_path = os.path.join(context.base_url, image_src)
-        if not os.path.exists(file_path):
-            with open(file_path, "wb") as image_file:
-                image_file.write(image_data)
-                image_file.close()
-        size = os.path.getsize(file_path)
-        image_stats = {"name": image.name, "size": size}
-        if image_stats not in context.stats.textures:
-            context.stats.textures.append(image_stats)
+    # todo: we should copy the texture if it is already a png image
+    file_name = image_name + ".png"
+    image_src = os.path.join("textures", file_name)
+    file_path = os.path.join(texture_path, file_name)
+    width = image.size[0]
+    height = image.size[1]
+    pixels = [x * 255 for x in list(image.pixels)]
+    pixels = [pixels[r * width * 4:(r + 1) * width * 4] for r in range(0, height)][::-1]
+    w = png.Writer(width, height, alpha=True)
+    with open(file_path, "wb") as image_file:
+        w.write_packed(image_file, pixels)
+        image_file.close()
 
-        # TODO: Optionally pack images base 64 encoded
-        # mime_type = "image/png"
-        # image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
-        # image_src = "data:%s;base64,%s" % (mime_type, image_data)
-    else:
-        base_src = os.path.dirname(bpy.data.filepath)
-        filepath_full = bpy.path.abspath(image.filepath, library=image.library)
-        image_src = path_reference(filepath_full, base_src, context.base_url, 'COPY', "textures", context.copy_set, image.library)
-
-    # print("image", image_src, image.filepath, self._copy_set)
     image_src = image_src.replace('\\', '/')
-
+    context.images[image] = image_src
     return image_src

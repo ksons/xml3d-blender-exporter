@@ -32,6 +32,8 @@ class Context():
         self.base_url = base_url
         self.scene = scene
         self.materials = MaterialLibrary(self, base_url + "/materials.xml")
+        # maps Blender Image objects to output path used as img tag src in the XML3D scene
+        self.images = {}
 
     def warning(self, message, category=None, issue=None, obj=None):
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
