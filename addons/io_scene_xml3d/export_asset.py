@@ -154,25 +154,39 @@ class AssetExporter:
         weights = []
         group_index = mathutils.Vector.Fill(4, -1)
         group_weights = mathutils.Vector.Fill(4, 0)
+
+        sum_weights = 0.0
         for group in groups:
             index = group.group
-            weight = group.weight
             name = armature_info['vertex_groups'][index].name
-            weights.append((index, weight, name))
 
-        weights.sort(key=operator.itemgetter(1), reverse=True)
+            if len(name) == 0:
+                print("No name")
 
-        for j in range(4):
-            if j < len(weights):
-                w = weights[j]
+            if name not in armature_info['bone_map']:
+                # print("not in bone_map:", name)
+                continue
 
-                # TODO: Mapping by name. However, vertex groups can also be explicitly assigned
-                if w[2] in armature_info['bone_map']:
-                    group_index[j] = armature_info['bone_map'][w[2]]
-                    group_weights[j] = w[1]
-                else:
-                    # print("not in bone_map:", w[2])
-                    pass
+            sum_weights += group.weight
+            weights.append((group.weight, armature_info['bone_map'][name]))
+
+        if sum_weights > 0:
+            # Now take the four with the highest influence
+            weights.sort(key=operator.itemgetter(0), reverse=True)
+            # Recalculate overall weight
+            sum_weights = 0.0
+            weight_count = len(weights)
+            for j in range(min(4, weight_count)):
+                weight = weights[j]
+                group_index[j] = weight[1]
+                group_weights[j] = weight[0]
+                sum_weights += weight[0]
+
+            group_weights *= 1.0 / sum_weights
+
+        else:
+            print("Found vertex without weights")
+
 
         # TODO: Should we normalize? Source is not necessarily normalized.
         return group_index, group_weights
