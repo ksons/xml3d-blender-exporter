@@ -158,32 +158,12 @@ class AssetExporter:
         if not (vertices and indices):
             return
 
-        content = []
-        positions = []
-        normals = []
-        texcoord = []
-        group_weights = []
-        group_indices = []
+        content = meshtools.get_vertex_attributes(mesh, vertices)
+
         compute = None
         includes = None
 
-        has_texcoords = vertices[0].texcoord
-        has_weights = vertices[0].group_weights
-        for v in vertices:
-            positions += mesh.vertices[v.index].co[:]
-            normals += v.normal[:]
-            if has_texcoords:
-                texcoord += v.texcoord[:]
-            if has_weights:
-                group_weights += v.group_weights[:]
-                group_indices += v.group_index[:]
-
-        content.append(
-            {"type": "float3", "name": "position", "value": positions})
-        content.append({"type": "float3", "name": "normal", "value": normals})
-        if has_weights:
-            content.append({"type": "int4", "name": "bone_index", "value": group_indices})
-            content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
+        if armature_info:
             content.append({"type": "float4x4", "name": "global_inverse_matrix", "value": tools.matrix_to_list(armature_info["global_inverse_matrix"])})
             content.append({"type": "float4x4", "name": "offset_matrix", "value": armature_info["offset_matrix"]})
             armature_name = armature_info['name']
@@ -192,9 +172,6 @@ class AssetExporter:
             asset.data[armature_name] = {"content": [{"type": "data", "src": armature_info["src"]}, {"type": "float", "name": "animKey", "value": 1.0}], "includes": None, "compute": None}
             compute = "dataflow['../common/xflow/data-flows.xml#blenderSkinning']"
             includes = armature_info['name']
-        if has_texcoords:
-            content.append(
-                {"type": "float2", "name": "texcoord", "value": texcoord})
 
         asset.data[meshName] = {"content": content, "compute": compute, "includes": includes}
 

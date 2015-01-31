@@ -113,3 +113,34 @@ def append_unique(mlist, value):
     index = len(mlist)
     mlist[value] = index
     return index, True
+
+
+def get_vertex_attributes(mesh, vertices):
+    content = []
+    positions = []
+    normals = []
+    texcoord = []
+    group_weights = []
+    group_indices = []
+
+    has_texcoords = vertices[0].texcoord
+    has_weights = vertices[0].group_weights
+    for v in vertices:
+        positions += mesh.vertices[v.index].co[:]
+        normals += v.normal[:]
+        if has_texcoords:
+            texcoord += v.texcoord[:]
+        if has_weights:
+            group_weights += v.group_weights[:]
+            group_indices += v.group_index[:]
+
+    content.append({"type": "float3", "name": "position", "value": positions})
+    content.append({"type": "float3", "name": "normal", "value": normals})
+    if has_texcoords:
+        content.append({"type": "float2", "name": "texcoord", "value": texcoord})
+
+    if has_weights:
+        content.append({"type": "int4", "name": "bone_index", "value": group_indices})
+        content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
+
+    return content
