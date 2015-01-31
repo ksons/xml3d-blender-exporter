@@ -53,56 +53,6 @@ def safe_query_selector_id(id):
     return re.sub('[ \|\.]+', '-', id)
 
 
-def write_generic_entry_html(writer, entry):
-    element_name = entry["type"]
-    writer.start_element(element_name, name=entry["name"])
-    if "class" in entry:
-        writer.attribute("class", entry["class"])
-    writer.content(str(entry["value"]))
-    writer.end_element(element_name)
-
-
-def write_generic_entry(doc, entry):
-    entry_type = entry["type"]
-    entry_element = doc.createElement(entry_type)
-
-    if entry_type == "data":
-        entry_element.setAttribute("src", entry["src"])
-        return entry_element
-
-    entry_element.setAttribute("name", entry["name"])
-    if "key" in entry:
-        entry_element.setAttribute("key", entry["key"])
-
-    value = entry["value"]
-    value_str = None
-    if entry_type == "int" or entry_type == "int4":
-        value_str = ""
-        for t in value:
-            length = len(t) if isinstance(t, tuple) else 1
-            fs = length * "%.d "
-            value_str += fs % t
-    elif entry_type == "texture":
-
-        if entry["wrap"] is not None:
-            entry_element.setAttribute("wrapS", entry["wrap"])
-            entry_element.setAttribute("wrapT", entry["wrap"])
-
-        img_element = doc.createElement("img")
-        img_element.setAttribute("src", value)
-        entry_element.appendChild(img_element)
-    else:
-        if not isinstance(value, list):
-            value_str = str(value)
-        else:
-            value_str = " ".join(str(v) for v in value)
-
-    if value_str:
-        text_node = doc.createTextNode(value_str)
-        entry_element.appendChild(text_node)
-    return entry_element
-
-
 class Vertex:
     index = None
     normal = None

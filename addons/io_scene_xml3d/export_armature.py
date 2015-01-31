@@ -2,6 +2,7 @@ import os
 import mathutils
 from xml.dom.minidom import Document
 from . import tools
+from .data import DataType, DataEntry, DataReference, write_generic_entry
 
 
 class ArmatureAnimation:
@@ -41,7 +42,7 @@ class Armature:
             config.append({
                 "name": self.id,
                 "data": [
-                    {"type": "float", "name": "animKey", "value": animation.start_frame, "class": "anim armature"}
+                    DataEntry("animKey", DataType.float, animation.start_frame, class_name="anim armature")
                 ]
             })
         return config
@@ -59,7 +60,7 @@ class Armature:
             armature.bone_map[pose_bone.name] = i
 
         bone_parent = [(bone_map[bone.parent] if bone.parent in bone_map else -1) for bone in pose.bones]
-        armature.data.append({"type": "int", "name": "bone_parent", "value": bone_parent})
+        armature.data.append(DataEntry("bone_parent", DataType.int, bone_parent))
         Armature.create_animation(armature_object, armature, context)
         return armature
 
@@ -73,9 +74,8 @@ class Armature:
         frame_min = animation.start_frame = action.frame_range[0]
         frame_max = action.frame_range[1]
 
-        animation.data.append({"type": "float", "name": "minFrame", "value": frame_min})
-        animation.data.append({"type": "float", "name": "maxFrame", "value": frame_max})
-        animation.data.append({"type": "float", "name": "animKey", "value": "15"})
+        animation.data.append(DataEntry("minFrame", DataType.float, frame_min))
+        animation.data.append(DataEntry("maxFrame", DataType.float, frame_max))
 
         keys = set()
         channels_rotation = []
@@ -119,10 +119,10 @@ class Armature:
                 sampled_rotations += mathutils.Vector((rot * quaternion)).yzwx[:]
                 sampled_locations += (vec + loc)[:]
 
-            animation.data.append({"type": "float4", "name": "rotation_quaternion", "key": str(sample), "value": sampled_rotations})
-            animation.data.append({"type": "float3", "name": "location", "key": str(sample), "value": sampled_locations})
+            animation.data.append(DataEntry("rotation_quaternion", DataType.float4, sampled_rotations, str(sample)))
+            animation.data.append(DataEntry("location", DataType.float3, sampled_locations, str(sample)))
 
-        armature.data.append({"type": "data", "src": "#" + animation.id})
+        armature.data.append(DataReference("#" + animation.id))
         armature.animations.append(animation)
         context.stats.animations.append({"name": tools.safe_query_selector_id(action.name), "minFrame": frame_min, "maxFrame": frame_max})
 
@@ -188,7 +188,7 @@ class ArmatureLibrary:
             armature_data = doc.createElement("data")
             armature_data.setAttribute("id", armature.id)
             for entry in armature.data:
-                entry_element = tools.write_generic_entry(doc, entry)
+                entry_element = write_generic_entry(doc, entry)
                 armature_data.appendChild(entry_element)
             xml3d.appendChild(armature_data)
 
@@ -196,7 +196,7 @@ class ArmatureLibrary:
                 data = doc.createElement("data")
                 data.setAttribute("id", animation.id)
                 for entry in animation.data:
-                    entry_element = tools.write_generic_entry(doc, entry)
+                    entry_element = write_generic_entry(doc, entry)
                     data.appendChild(entry_element)
                 xml3d.appendChild(data)
 

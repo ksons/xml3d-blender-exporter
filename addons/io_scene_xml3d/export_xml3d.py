@@ -6,6 +6,7 @@ import math
 import json
 from . import xml_writer, export_asset, context
 from . import tools
+from .data import write_generic_entry_html
 from shutil import copytree
 
 VERSION = "0.2.0"
@@ -181,7 +182,7 @@ class XML3DExporter():
                 for armature in child_config.armatures:
                     self._writer.start_element("assetdata", name=armature["name"])
                     for entry in armature["data"]:
-                            tools.write_generic_entry_html(self._writer, entry)
+                            write_generic_entry_html(self._writer, entry)
                     self._writer.end_element("assetdata")
                 self._writer.end_element("asset")
 

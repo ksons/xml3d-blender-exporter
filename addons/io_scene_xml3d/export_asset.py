@@ -1,6 +1,7 @@
 import os
 from xml.dom.minidom import Document
 from .export_material import Material, DefaultMaterial, export_image
+from .data import DataEntry, DataType, DataReference, TextureEntry, write_generic_entry
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from . import tools
 from . import meshtools
@@ -164,12 +165,12 @@ class AssetExporter:
         includes = None
 
         if armature_info:
-            content.append({"type": "float4x4", "name": "global_inverse_matrix", "value": tools.matrix_to_list(armature_info["global_inverse_matrix"])})
-            content.append({"type": "float4x4", "name": "offset_matrix", "value": armature_info["offset_matrix"]})
+            content.append(DataEntry.create_from_matrix("global_inverse_matrix", armature_info["global_inverse_matrix"]))
+            content.append(DataEntry("offset_matrix", DataType.float16, armature_info["offset_matrix"]))
             armature_name = armature_info['name']
             # content.append()
             # asset.data[armature_name] = {"src": armature_info["src"], "includes": None, "compute": None}
-            asset.data[armature_name] = {"content": [{"type": "data", "src": armature_info["src"]}, {"type": "float", "name": "animKey", "value": 1.0}], "includes": None, "compute": None}
+            asset.data[armature_name] = {"content": [DataReference(armature_info["src"]), DataEntry("animKey", DataType.float, 1.0)], "includes": None, "compute": None}
             compute = "dataflow['../common/xflow/data-flows.xml#blenderSkinning']"
             includes = armature_info['name']
 
@@ -184,8 +185,7 @@ class AssetExporter:
             materialName = material.name if material else "defaultMaterial"
 
             data = []
-            data.append(
-                {"type": "int", "name": "index", "value": indices[materialIndex]})
+            data.append(DataEntry("index", DataType.int, indices[materialIndex]))
 
             # Mesh Textures
             if material and mesh_textures[materialIndex] and mesh_textures[materialIndex]["image"]:
@@ -193,11 +193,9 @@ class AssetExporter:
                 if image_src:
                     # TODO: Image Sampling parameters
                     # FEATURE: Resize / convert / optimize texture
-                    data.append(
-                        {"type": "texture", "name": "diffuseTexture", "value": "../" + image_src, "wrap": None})
+                    data.append(TextureEntry("diffuseTexture", "../" + image_src))
                 if mesh_textures[materialIndex]["alpha"]:
-                    data.append(
-                        {"type": "float", "name": "transparency", "value": "0.002"})
+                    data.append(DataEntry("transparency", DataType.float, "0.002"))
 
             submeshName = meshName + "_" + materialName
 
@@ -252,7 +250,7 @@ class AssetExporter:
                 return
 
             for entry in value["content"]:
-                entryElement = tools.write_generic_entry(doc, entry)
+                entryElement = write_generic_entry(doc, entry)
                 asset_data.appendChild(entryElement)
 
         for mesh in asset.meshes:
@@ -265,7 +263,7 @@ class AssetExporter:
 
             asset_element.appendChild(asset_mesh)
             for entry in mesh["data"]:
-                entryElement = tools.write_generic_entry(doc, entry)
+                entryElement = write_generic_entry(doc, entry)
                 asset_mesh.appendChild(entryElement)
 
         for sub_asset in asset.sub_assets.values():

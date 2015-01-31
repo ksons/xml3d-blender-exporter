@@ -1,4 +1,5 @@
 from .tools import Vertex
+from .data import DataEntry, DataType
 import operator
 import mathutils
 
@@ -134,13 +135,13 @@ def get_vertex_attributes(mesh, vertices):
             group_weights += v.group_weights[:]
             group_indices += v.group_index[:]
 
-    content.append({"type": "float3", "name": "position", "value": positions})
-    content.append({"type": "float3", "name": "normal", "value": normals})
+    content.append(DataEntry("position", DataType.float3, positions))
+    content.append(DataEntry("normal", DataType.float3, normals))
     if has_texcoords:
-        content.append({"type": "float2", "name": "texcoord", "value": texcoord})
+        content.append(DataEntry("texcoord", DataType.float2, texcoord))
 
     if has_weights:
-        content.append({"type": "int4", "name": "bone_index", "value": group_indices})
-        content.append({"type": "float4", "name": "bone_weight", "value": group_weights})
+        content.append(DataEntry("bone_index", DataType.int4, group_indices))
+        content.append(DataEntry("bone_weight", DataType.float4, group_weights))
 
     return content
