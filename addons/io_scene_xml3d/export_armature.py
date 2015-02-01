@@ -103,7 +103,6 @@ class Armature:
             sampled_locations = []
             for i, pose_bone in enumerate(armature_object.data.bones):
                 local_matrix = get_local_bone_matrix(pose_bone)
-                loc, rot, scl = local_matrix.decompose()
 
                 bone_channels_location = channels_location[i]
                 bone_channels_rotation = channels_rotation[i]
@@ -116,8 +115,11 @@ class Armature:
                 for j, channel in enumerate(bone_channels_location):
                     vec[j] = channel.evaluate(sample)
 
+                location = (local_matrix * mathutils.Matrix.Translation(vec)).to_translation()
+                loc, rot, scl = local_matrix.decompose()
+
                 sampled_rotations += mathutils.Vector((rot * quaternion)).yzwx[:]
-                sampled_locations += (vec + loc)[:]
+                sampled_locations += location[:]
 
             animation.data.append(DataEntry("rotation_quaternion", DataType.float4, sampled_rotations, str(sample)))
             animation.data.append(DataEntry("location", DataType.float3, sampled_locations, str(sample)))
