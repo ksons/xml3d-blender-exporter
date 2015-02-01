@@ -132,8 +132,8 @@ def get_vertex_attributes(mesh, vertices):
         if has_texcoords:
             texcoord += v.texcoord[:]
         if has_weights:
-            group_weights += v.group_weights[:]
-            group_indices += v.group_index[:]
+            group_weights += v.group_weights[:] if v.group_weights else [0, 0, 0, 0]
+            group_indices += v.group_index[:] if v.group_index else [0, 0, 0, 0]
 
     content.append(DataEntry("position", DataType.float3, positions))
     content.append(DataEntry("normal", DataType.float3, normals))
