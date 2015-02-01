@@ -78,8 +78,10 @@ class Armature:
         animation.data.append(DataEntry("maxFrame", DataType.float, frame_max))
 
         keys = set()
+
         channels_rotation = []
         channels_location = []
+        channels_scale = []
         # Collect samples from keyframes
         for i, pose_bone in enumerate(armature_object.pose.bones):
             rotation_channels = find_channels(action, pose_bone.bone, "rotation_quaternion")
@@ -95,34 +97,49 @@ class Armature:
                 for keyframe in channel.keyframe_points:
                     keys.add(keyframe.co[0])
 
+            scale_channels = find_channels(action, pose_bone.bone, "scale")
+            channels_scale.append(scale_channels)
+            for channel in scale_channels:
+                for keyframe in channel.keyframe_points:
+                    keys.add(keyframe.co[0])
+
         samples = sorted(keys)
         # print("samples", len(samples), samples)
 
         for sample in samples:
             sampled_rotations = []
             sampled_locations = []
+            sampled_scales = []
             for i, pose_bone in enumerate(armature_object.data.bones):
                 local_matrix = get_local_bone_matrix(pose_bone)
 
                 bone_channels_location = channels_location[i]
                 bone_channels_rotation = channels_rotation[i]
-                vec = mathutils.Vector.Fill(3)
+                bone_channels_scale = channels_scale[i]
+
+                location = mathutils.Vector.Fill(3)
+                scale = mathutils.Vector.Fill(3, 1)
                 quaternion = mathutils.Quaternion()
                 quaternion.identity()
 
                 for q, channel in enumerate(bone_channels_rotation):
                     quaternion[q] = channel.evaluate(sample)
                 for j, channel in enumerate(bone_channels_location):
-                    vec[j] = channel.evaluate(sample)
+                    location[j] = channel.evaluate(sample)
+                for s, channel in enumerate(bone_channels_scale):
+                    scale[s] = channel.evaluate(sample)
 
-                location = (local_matrix * mathutils.Matrix.Translation(vec)).to_translation()
+                location = (local_matrix * mathutils.Matrix.Translation(location)).to_translation()
                 loc, rot, scl = local_matrix.decompose()
+                scale = mathutils.Vector((scl[0] * scale[0], scl[1] * scale[1], scl[2] * scale[2]))
 
                 sampled_rotations += mathutils.Vector((rot * quaternion)).yzwx[:]
                 sampled_locations += location[:]
+                sampled_scales += scale[:]
 
             animation.data.append(DataEntry("rotation_quaternion", DataType.float4, sampled_rotations, str(sample)))
             animation.data.append(DataEntry("location", DataType.float3, sampled_locations, str(sample)))
+            animation.data.append(DataEntry("scale", DataType.float3, sampled_scales, str(sample)))
 
         armature.data.append(DataReference("#" + animation.id))
         armature.animations.append(animation)
