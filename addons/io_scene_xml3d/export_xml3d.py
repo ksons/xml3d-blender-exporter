@@ -31,17 +31,6 @@ def clamp_color(col):
     return tuple([max(min(c, 1.0), 0.0) for c in col])
 
 
-def escape_html_id(_id):
-    # HTML: ID tokens must begin with a letter ([A-Za-z])
-    if not _id[:1].isalpha():
-        _id = "a" + _id
-
-    # and may be followed by any number of letters, digits ([0-9]),
-    # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
-    _id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', _id)
-    return _id
-
-
 def blender_lamp_to_xml3d_light(model):
     if model in LIGHTMODELMAP:
         result = LIGHTMODELMAP[model]
@@ -118,7 +107,7 @@ class XML3DExporter():
         return par_lookup.get(None, [])
 
     def write_id(self, obj, prefix=""):
-        self._writer.attribute("id", escape_html_id(prefix + obj.name))
+        self._writer.attribute("id", tools.escape_html_id(prefix + obj.name))
 
     def write_event_attributes(self, obj):
         for event in {"click", "dblclick", "mousedown", "mouseup", "mouseover", "mousemove", "mouseout", "mousewheel"}:
@@ -191,7 +180,7 @@ class XML3DExporter():
         if not url:
             return
 
-        self._writer.start_element("model", id=escape_html_id(original_obj.data.name))
+        self._writer.start_element("model", id=tools.escape_html_id(original_obj.data.name))
         self._writer.attribute("src", url)
 
         if model_config:
@@ -208,7 +197,7 @@ class XML3DExporter():
             return
 
         self._writer.start_element(
-            "light", shader="#" + escape_html_id("ls_" + lightdata.name))
+            "light", shader="#" + tools.escape_html_id("ls_" + lightdata.name))
         self._writer.end_element("light")
         self.context.stats.lights += 1
 
@@ -295,7 +284,7 @@ class XML3DExporter():
 
         self._writer.start_element("xml3d", id=scene.name)
         if scene.camera:
-            self._writer.attribute("activeView", "#v_%s" % escape_html_id(scene.camera.name))
+            self._writer.attribute("activeView", "#v_%s" % tools.escape_html_id(scene.camera.name))
         else:
             self.warning("Scene '{0:s}' has no active camera set.".format(scene.name), "camera")
 

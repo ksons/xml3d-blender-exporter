@@ -49,8 +49,19 @@ def get_armature_object(obj):
     return None, None
 
 
-def safe_query_selector_id(id):
-    return re.sub('[ \|\.]+', '-', id)
+def escape_html_id(_id):
+    # HTML: ID tokens must begin with a letter ([A-Za-z])
+    if not _id[:1].isalpha():
+        _id = "a" + _id
+
+    # and may be followed by any number of letters, digits ([0-9]),
+    # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
+    _id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', _id)
+    return _id
+
+
+def safe_query_selector_id(_id):
+    return re.sub('[ \|\.]+', '-', escape_html_id(_id))
 
 
 class Vertex:
