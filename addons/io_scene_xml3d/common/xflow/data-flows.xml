@@ -1,0 +1,29 @@
+<xml3d xmlns="http://www.xml3d.org/2009/xml3d">
+    <dataflow id="blenderSkinning" out="position, normal">
+        <int param="true" name="bone_parent"/>
+        <float4 param="true" name="rotation_quaternion"/>
+        <float3 param="true" name="position"/>
+        <float3 param="true" name="location"/>
+        <float3 param="true" name="scale"/>
+        <float3 param="true" name="normal"/>
+        <int4 param="true" name="bone_index"/>
+        <float4 param="true" name="bone_weight"/>
+        <float4x4 param="true" name="offset_matrix"/>
+        <float4x4 param="true" name="global_inverse_matrix"/>
+        <float param="true" name="animKey">0</float>
+        <compute>
+            rot = xflow.slerpSeq(rotation_quaternion, animKey);
+            loc = xflow.lerpSeq(location, animKey);
+            scl = xflow.lerpSeq(scale, animKey);
+            animation_local_matrix = xflow.createTransform({translation: loc, rotation: rot, scale:scl});
+            animation_global_matrix = xflow.forwardKinematics(bone_parent, animation_local_matrix);
+
+            pose = xflow.mul(offset_matrix, animation_global_matrix);
+            pose = xflow.mulSingle(pose, global_inverse_matrix);
+
+            normal = xflow.skinDirection(normal, bone_index, bone_weight, pose);
+            position = xflow.skinPosition(position, bone_index, bone_weight, pose);
+
+        </compute>
+    </dataflow>
+</xml3d>

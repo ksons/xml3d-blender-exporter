@@ -1,6 +1,7 @@
 import json
 import os
 from .export_material import MaterialLibrary
+from .export_armature import ArmatureLibrary
 from bpy_extras.io_utils import path_reference_copy
 
 
@@ -22,7 +23,7 @@ class Stats(object):
 
 
 class Context():
-    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], warnings=[], scene=None)
+    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], armatures=[], animations=[], warnings=[], scene=None)
     base_url = None
     copy_set = set()
     materials = None
@@ -32,6 +33,7 @@ class Context():
         self.base_url = base_url
         self.scene = scene
         self.materials = MaterialLibrary(self, base_url + "/materials.xml")
+        self.armatures = ArmatureLibrary(self, base_url + "/armatures.xml")
 
     def warning(self, message, category=None, issue=None, obj=None):
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
@@ -41,6 +43,7 @@ class Context():
         self.warning(msg.capitalize(), "texture")
 
     def finalize(self):
+        self.armatures.save()
         self.materials.save()
         try:
             path_reference_copy(self.copy_set, self.__copy_report)

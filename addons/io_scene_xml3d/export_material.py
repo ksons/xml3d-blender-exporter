@@ -2,6 +2,7 @@ import os
 import bpy
 from bpy_extras.io_utils import path_reference
 from xml.dom.minidom import Document
+from .data import DataType, DataEntry, TextureEntry, write_generic_entry
 from . import tools
 
 BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)"
@@ -37,21 +38,21 @@ class Material:
 
     def from_material(self, material):
         data = self.data
-        data.append({"type": "float", "name": "diffuse_intensity", "value": material.diffuse_intensity})
-        data.append({"type": "float3", "name": "diffuse_color", "value": [tuple(material.diffuse_color)]})
-        data.append({"type": "float", "name": "specular_intensity", "value": material.specular_intensity})
-        data.append({"type": "float3", "name": "specular_color", "value": [tuple(material.specular_color)]})
-        data.append({"type": "float", "name": "specular_hardness", "value": material.specular_hardness})
+        data.append(DataEntry("diffuse_intensity", DataType.float, material.diffuse_intensity))
+        data.append(DataEntry("diffuse_color", DataType.float3, [tuple(material.diffuse_color)]))
+        data.append(DataEntry("specular_intensity", DataType.float, material.specular_intensity))
+        data.append(DataEntry("specular_color", DataType.float3, [tuple(material.specular_color)]))
+        data.append(DataEntry("specular_hardness", DataType.float, material.specular_hardness))
 
         world_ambient = self.context.scene.world.ambient_color
         if world_ambient.v > 0.0:
             local_ambient = material.ambient
-            data.append({"type": "float", "name": "ambientIntensity", "value": local_ambient * pow(world_ambient.v, 1.0 / 2.2)})
+            data.append(DataEntry("ambientIntensity", DataType.float, local_ambient * pow(world_ambient.v, 1.0 / 2.2)))
 
         if material.use_transparency:
-            data.append({"type": "float", "name": "alpha", "value": material.alpha})
+            data.append(DataEntry("alpha", DataType.float, material.alpha))
         else:
-            data.append({"type": "float", "name": "alpha", "value": 1})
+            data.append(DataEntry("alpha", DataType.float, 1))
 
         # if material.use_face_texture:
         # print("Warning: Material '%s' uses 'Face Textures', which are not (yet) supported. Skipping texture..." % materialName)
@@ -92,11 +93,14 @@ class Material:
             if image_src:
                 # TODO: extension/clamp, filtering, sampling parameters
                 # FEATURE: Resize / convert / optimize texture
-                data.append(
-                    {"type": "texture", "name": "diffuseTexture", "wrap": wrap, "value": image_src})
+                data.append(TextureEntry("diffuseTexture", image_src, wrap_type=wrap))
 
 DefaultMaterial = Material("defaultMaterial", None, None)
-DefaultMaterial.data = [{"type": "float3", "name": "diffuseColor", "value": "0.8 0.8 0.8"}, {"type": "float3", "name": "specularColor", "value": "1.0 1.0 0.1"}, {"type": "float", "name": "ambientIntensity", "value": "0.5"}]
+DefaultMaterial.data = [
+    DataEntry("diffuseColor", DataType.float3, "0.8 0.8 0.8"),
+    DataEntry("specularColor", DataType.float3, "1.0 1.0 1.0"),
+    DataEntry("ambientIntensity", DataType.float, "0.5")
+]
 
 
 class MaterialLibrary:
@@ -125,7 +129,7 @@ class MaterialLibrary:
             if material.compute:
                 shader.setAttribute("compute", material.compute)
             for entry in material.data:
-                entry_element = tools.write_generic_entry(doc, entry)
+                entry_element = write_generic_entry(doc, entry)
                 shader.appendChild(entry_element)
             xml3d.appendChild(shader)
 

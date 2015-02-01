@@ -65,3 +65,6 @@ node_modules
 # IDE specific
 *.sublime-*
 .idea
+
+# Testing with proprietary stuff
+misc/
