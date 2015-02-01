@@ -360,7 +360,10 @@ def write_blender_config(dir, context):
     with open(os.path.join(dir, "blender-config.json"), "w") as stats_file:
         stats_file.write(json.dumps({
             "layers": [e for e in context.scene.layers],
-            "views": create_active_views(context)
+            "views": create_active_views(context),
+            "render-settings": {
+                "fps": context.scene.render.fps
+            }
         }))
         stats_file.close()
 

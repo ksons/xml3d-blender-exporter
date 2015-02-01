@@ -79,6 +79,7 @@ $(function () {
         loop();
     }
 
+    var fps = 24;
     $.get("./info/blender-config.json", function (data) {
         data.layers.forEach(function (on, i) {
             c_layers[i].active = on;
@@ -91,6 +92,9 @@ $(function () {
             view.get(0).orientation.set(rot);
         }
         updateLayers();
+        if(data["render-settings"]) {
+            fps = data["render-settings"].fps || fps;
+        }
     });
 
     var minFrame = 0, maxFrame = 0, currentFrame = 0;
@@ -133,12 +137,21 @@ $(function () {
     xml3d.addEventListener("load", function () {
         $("span.fa-spin").removeClass("fa-spin fa-circle-o-notch").addClass("fa-check");
     });
+
+    var lastAnimation = window.performance.now();
     xml3d.addEventListener("framedrawn", function (e) {
         var count = e.detail.count;
         renderStatText = "Tris:" + count.primitives + " | Objects:" + count.objects;
         updateRenderText();
+
+        var now = window.performance.now();
+        var deltaTime = now - lastAnimation;
+        lastAnimation = now;
+
+        var deltaFrame = deltaTime * fps / 1000;
+
          if(maxFrame > minFrame) {
-            currentFrame++;
+            currentFrame += deltaFrame;
             if (currentFrame > maxFrame) {
                 currentFrame = minFrame;
             }
