@@ -114,8 +114,7 @@ class AssetExporter:
             armature, armature_url = self.context.armatures.create_armature(armature_object)
             armature_info = {
                 "vertex_groups": derived_object.vertex_groups,
-                # FIXME: This is only true, if derived object is immediate chid of armarture. Needs to be fixed.
-                "global_inverse_matrix": derived_object.matrix_local.inverted(),
+                "global_inverse_matrix": (armature_object.matrix_world.inverted() * derived_object.matrix_world).inverted(),
                 "offset_matrix": self.armature_offset_matrix(armature_object, derived_object),
                 "bone_map": armature.bone_map,
                 "src": "../armatures.xml#" + armature.id,
