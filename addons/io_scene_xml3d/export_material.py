@@ -1,7 +1,6 @@
 import os
 import bpy
 import re
-from bpy_extras.io_utils import path_reference
 from xml.dom.minidom import Document
 from .data import DataType, DataEntry, TextureEntry, write_generic_entry
 from . import tools
