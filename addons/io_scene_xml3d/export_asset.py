@@ -58,7 +58,7 @@ class AssetExporter:
         free, derived_objects = create_derived_objects(self._scene, obj)
 
         if derived_objects is None:
-            return
+            return None
 
         asset = Asset(id_=tools.safe_query_selector_id(obj.data.name))
 

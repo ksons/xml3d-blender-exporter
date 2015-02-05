@@ -70,13 +70,12 @@ class XML3DExporter():
         path = os.path.join(path, asset_name + ".xml")
         exporter = export_asset.AssetExporter(asset_name, self.context, path, self.blender_context.scene)
         asset_config = exporter.add_asset(geo_obj)
+
+        if not asset_config:
+            return None, None
+
         url = "%s/%s.xml#%s" % (ASSETDIR, asset_name, asset_name)
         exporter.save()
-
-        # except:
-        # self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
-        # print("Exception")
-
         return url, asset_config
 
     def build_hierarchy(self, objects):
@@ -209,6 +208,8 @@ class XML3DExporter():
             self.context.armatures.create_armature(this_object)
         elif this_object.type == "LAMP":
             self.create_lamp(this_object)
+        elif this_object.type == "EMPTY":
+            pass
         else:
             self.warning("Object '%s' is of type '%s', which is not (yet) supported." % (this_object.name, this_object.type))
 
