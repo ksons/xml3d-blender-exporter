@@ -40,9 +40,9 @@ class Material:
     def from_material(self, material):
         data = self.data
         data.append(DataEntry("diffuse_intensity", DataType.float, material.diffuse_intensity))
-        data.append(DataEntry("diffuse_color", DataType.float3, [tuple(material.diffuse_color)]))
+        data.append(DataEntry("diffuse_color", DataType.float3, list(material.diffuse_color)))
         data.append(DataEntry("specular_intensity", DataType.float, material.specular_intensity))
-        data.append(DataEntry("specular_color", DataType.float3, [tuple(material.specular_color)]))
+        data.append(DataEntry("specular_color", DataType.float3, list(material.specular_color)))
         data.append(DataEntry("specular_hardness", DataType.float, material.specular_hardness))
 
         world_ambient = self.context.scene.world.ambient_color
