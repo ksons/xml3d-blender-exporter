@@ -168,7 +168,7 @@ def export_image(image, context):
     # filesystems are not that permissive
     # to be as compatible as possible we replace the most common invalid characters with an underscore
     # there are many other invalid names like reserved DOS names but handling all edge cases is not feasible
-    image_name = re.sub(r"\\|\*|\.|\"|\/|\[|\]|:|;|\||=|,|<|>", "_", image_name)
+    image_name = re.sub(r"\\|\*|\.|\"|\/|\[|\]|:|;|#|\||=|,|<|>", "_", image_name)
 
     # todo: we should copy the texture if it is already a png image
     file_name = image_name + ".png"
