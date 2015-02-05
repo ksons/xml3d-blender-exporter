@@ -1,10 +1,10 @@
 import os
 import bpy
-import re
 from xml.dom.minidom import Document
 from .data import DataType, DataEntry, TextureEntry, write_generic_entry
 from . import tools
 from . import png
+from bpy_extras.io_utils import path_reference
 
 BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)"
 
@@ -160,16 +160,36 @@ def export_image(image, context):
     texture_path = os.path.join(context.base_url, "textures")
     os.makedirs(texture_path, exist_ok=True)
 
-    # is it actually possible for image.name to be empty?
-    # Blender seams to always enumerate "undefined" if no name is specified
-    # defaults to file name which is what we would use anyway
-    image_name = image.name if image.name != "" else bpy.path.display_name_from_filepath(image.filepath)
-    # a name in blender is allowed to contain any utf8 character
-    # filesystems are not that permissive
-    # to be as compatible as possible we replace the most common invalid characters with an underscore
-    # there are many other invalid names like reserved DOS names but handling all edge cases is not feasible
-    image_name = re.sub(r"\\|\*|\.|\"|\/|\[|\]|:|;|#|\||=|,|<|>", "_", image_name)
+    if image.file_format in {'PNG', 'JPEG'}:
+        if image.packed_file:
+            return save_packed_image(image, context)
+        else:
+            return copy_image(image, context)
 
+    return convert_and_export(image, texture_path, context)
+
+
+def save_packed_image(image, context):
+    image_data = image.packed_file.data
+
+    image_src = os.path.join("textures", image.name)
+    file_path = os.path.join(context.base_url, image_src)
+    if not os.path.exists(file_path):
+        with open(file_path, "wb") as image_file:
+            image_file.write(image_data)
+            image_file.close()
+    return image_src
+
+
+def copy_image(image, context):
+    base_src = os.path.dirname(bpy.data.filepath)
+    filepath_full = bpy.path.abspath(image.filepath, library=image.library)
+    image_src = path_reference(filepath_full, base_src, context.base_url, 'COPY', "textures", context.copy_set, image.library)
+    return image_src
+
+
+def convert_and_export(image, texture_path, context):
+    image_name = tools.safe_filename_from_image(image)
     # todo: we should copy the texture if it is already a png image
     file_name = image_name + ".png"
     image_src = os.path.join("textures", file_name)

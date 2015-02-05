@@ -1,6 +1,7 @@
 import mathutils
 import re
 import itertools
+from bpy.path import display_name_from_filepath
 
 IDENTITY = mathutils.Matrix.Identity(4)
 EMPTY = mathutils.Matrix()
@@ -62,6 +63,19 @@ def escape_html_id(_id):
 
 def safe_query_selector_id(_id):
     return re.sub('[ \|\.]+', '-', escape_html_id(_id))
+
+
+def safe_filename_from_image(image):
+    # is it actually possible for image.name to be empty?
+    # Blender seams to always enumerate "undefined" if no name is specified
+    # defaults to file name which is what we would use anyway
+    image_name = image.name if image.name != "" else display_name_from_filepath(image.filepath)
+    # a name in blender is allowed to contain any utf8 character
+    # filesystems are not that permissive
+    # to be as compatible as possible we replace the most common invalid characters with an underscore
+    # there are many other invalid names like reserved DOS names but handling all edge cases is not feasible
+    image_name = re.sub(r"\\|\*|\.|\"|\/|\[|\]|:|;|#|\||=|,|<|>", "_", image_name)
+    return image_name
 
 
 class Vertex:
