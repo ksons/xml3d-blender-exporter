@@ -1,8 +1,10 @@
 import os
 import bpy
-from bpy_extras.io_utils import path_reference
 from xml.dom.minidom import Document
+from .data import DataType, DataEntry, TextureEntry, write_generic_entry
 from . import tools
+from . import png
+from bpy_extras.io_utils import path_reference
 
 BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)"
 
@@ -37,21 +39,21 @@ class Material:
 
     def from_material(self, material):
         data = self.data
-        data.append({"type": "float", "name": "diffuse_intensity", "value": material.diffuse_intensity})
-        data.append({"type": "float3", "name": "diffuse_color", "value": [tuple(material.diffuse_color)]})
-        data.append({"type": "float", "name": "specular_intensity", "value": material.specular_intensity})
-        data.append({"type": "float3", "name": "specular_color", "value": [tuple(material.specular_color)]})
-        data.append({"type": "float", "name": "specular_hardness", "value": material.specular_hardness})
+        data.append(DataEntry("diffuse_intensity", DataType.float, material.diffuse_intensity))
+        data.append(DataEntry("diffuse_color", DataType.float3, list(material.diffuse_color)))
+        data.append(DataEntry("specular_intensity", DataType.float, material.specular_intensity))
+        data.append(DataEntry("specular_color", DataType.float3, list(material.specular_color)))
+        data.append(DataEntry("specular_hardness", DataType.float, material.specular_hardness))
 
         world_ambient = self.context.scene.world.ambient_color
         if world_ambient.v > 0.0:
             local_ambient = material.ambient
-            data.append({"type": "float", "name": "ambientIntensity", "value": local_ambient * pow(world_ambient.v, 1.0 / 2.2)})
+            data.append(DataEntry("ambientIntensity", DataType.float, local_ambient * pow(world_ambient.v, 1.0 / 2.2)))
 
         if material.use_transparency:
-            data.append({"type": "float", "name": "alpha", "value": material.alpha})
+            data.append(DataEntry("alpha", DataType.float, material.alpha))
         else:
-            data.append({"type": "float", "name": "alpha", "value": 1})
+            data.append(DataEntry("alpha", DataType.float, 1))
 
         # if material.use_face_texture:
         # print("Warning: Material '%s' uses 'Face Textures', which are not (yet) supported. Skipping texture..." % materialName)
@@ -92,11 +94,14 @@ class Material:
             if image_src:
                 # TODO: extension/clamp, filtering, sampling parameters
                 # FEATURE: Resize / convert / optimize texture
-                data.append(
-                    {"type": "texture", "name": "diffuseTexture", "wrap": wrap, "value": image_src})
+                data.append(TextureEntry("diffuseTexture", image_src, wrap_type=wrap))
 
 DefaultMaterial = Material("defaultMaterial", None, None)
-DefaultMaterial.data = [{"type": "float3", "name": "diffuseColor", "value": "0.8 0.8 0.8"}, {"type": "float3", "name": "specularColor", "value": "1.0 1.0 0.1"}, {"type": "float", "name": "ambientIntensity", "value": "0.5"}]
+DefaultMaterial.data = [
+    DataEntry("diffuseColor", DataType.float3, "0.8 0.8 0.8"),
+    DataEntry("specularColor", DataType.float3, "1.0 1.0 1.0"),
+    DataEntry("ambientIntensity", DataType.float, "0.5")
+]
 
 
 class MaterialLibrary:
@@ -125,7 +130,7 @@ class MaterialLibrary:
             if material.compute:
                 shader.setAttribute("compute", material.compute)
             for entry in material.data:
-                entry_element = tools.write_generic_entry(doc, entry)
+                entry_element = write_generic_entry(doc, entry)
                 shader.appendChild(entry_element)
             xml3d.appendChild(shader)
 
@@ -144,38 +149,60 @@ class MaterialLibrary:
 
 
 def export_image(image, context):
+    if image in context.images:
+        return context.images[image]
+
     if image.source not in {'FILE', 'VIDEO'}:
         context.warning(u"Image '{0:s}' is of source '{1:s}' which is not (yet) supported. Using default ...".format(image.name, image.source), "texture")
         return None
 
-    if image.packed_file:
-        image_data = image.packed_file.data
+    # Create texture directory if it does not exist
+    texture_path = os.path.join(context.base_url, "textures")
+    os.makedirs(texture_path, exist_ok=True)
 
-        # Create texture directory if it not already exists
-        texture_path = os.path.join(context.base_url, "textures")
-        os.makedirs(texture_path, exist_ok=True)
+    if image.file_format in {'PNG', 'JPEG'}:
+        if image.packed_file:
+            return save_packed_image(image, context)
+        else:
+            return copy_image(image, context)
 
-        image_src = os.path.join("textures", image.name)
-        file_path = os.path.join(context.base_url, image_src)
-        if not os.path.exists(file_path):
-            with open(file_path, "wb") as image_file:
-                image_file.write(image_data)
-                image_file.close()
-        size = os.path.getsize(file_path)
-        image_stats = {"name": image.name, "size": size}
-        if image_stats not in context.stats.textures:
-            context.stats.textures.append(image_stats)
+    return convert_and_export(image, texture_path, context)
 
-        # TODO: Optionally pack images base 64 encoded
-        # mime_type = "image/png"
-        # image_data = base64.b64encode(image.packed_file.data).decode("utf-8")
-        # image_src = "data:%s;base64,%s" % (mime_type, image_data)
-    else:
-        base_src = os.path.dirname(bpy.data.filepath)
-        filepath_full = bpy.path.abspath(image.filepath, library=image.library)
-        image_src = path_reference(filepath_full, base_src, context.base_url, 'COPY', "textures", context.copy_set, image.library)
 
-    # print("image", image_src, image.filepath, self._copy_set)
+def save_packed_image(image, context):
+    image_data = image.packed_file.data
+
+    image_src = os.path.join("textures", image.name)
+    file_path = os.path.join(context.base_url, image_src)
+    if not os.path.exists(file_path):
+        with open(file_path, "wb") as image_file:
+            image_file.write(image_data)
+            image_file.close()
+    return image_src
+
+
+def copy_image(image, context):
+    base_src = os.path.dirname(bpy.data.filepath)
+    filepath_full = bpy.path.abspath(image.filepath, library=image.library)
+    image_src = path_reference(filepath_full, base_src, context.base_url, 'COPY', "textures", context.copy_set, image.library)
+    return image_src
+
+
+def convert_and_export(image, texture_path, context):
+    image_name = tools.safe_filename_from_image(image)
+    # todo: we should copy the texture if it is already a png image
+    file_name = image_name + ".png"
+    image_src = os.path.join("textures", file_name)
+    file_path = os.path.join(texture_path, file_name)
+    width = image.size[0]
+    height = image.size[1]
+    pixels = [x * 255 for x in list(image.pixels)]
+    pixels = [pixels[r * width * 4:(r + 1) * width * 4] for r in range(0, height)][::-1]
+    w = png.Writer(width, height, alpha=True)
+    with open(file_path, "wb") as image_file:
+        w.write_packed(image_file, pixels)
+        image_file.close()
+
     image_src = image_src.replace('\\', '/')
-
+    context.images[image] = image_src
     return image_src

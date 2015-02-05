@@ -79,6 +79,7 @@ $(function () {
         loop();
     }
 
+    var fps = 24;
     $.get("./info/blender-config.json", function (data) {
         data.layers.forEach(function (on, i) {
             c_layers[i].active = on;
@@ -91,9 +92,21 @@ $(function () {
             view.get(0).orientation.set(rot);
         }
         updateLayers();
+        if(data["render-settings"]) {
+            fps = data["render-settings"].fps || fps;
+        }
     });
 
+    var minFrame = 0, maxFrame = 0, currentFrame = 0;
+    var animation_keys = $(".anim.armature")
+    function getAnimationFrames(animations) {
+        currentFrame = minFrame = Math.min.apply(Math, animations.map(function(o) { return o.minFrame }));
+        maxFrame = Math.max.apply(Math, animations.map(function(o) { return o.maxFrame }));
+    }
+
+
     $.get("./info/xml3d-info.json", function (data) {
+        getAnimationFrames(data.animations)
         var warnings = data.warnings;
         if (warnings.length) {
             $("#bell").append("<span class='message-position'><span class='count'>" + warnings.length + "</span></span>");
@@ -124,10 +137,26 @@ $(function () {
     xml3d.addEventListener("load", function () {
         $("span.fa-spin").removeClass("fa-spin fa-circle-o-notch").addClass("fa-check");
     });
+
+    var lastAnimation = window.performance.now();
     xml3d.addEventListener("framedrawn", function (e) {
         var count = e.detail.count;
         renderStatText = "Tris:" + count.primitives + " | Objects:" + count.objects;
         updateRenderText();
+
+        var now = window.performance.now();
+        var deltaTime = now - lastAnimation;
+        lastAnimation = now;
+
+        var deltaFrame = deltaTime * fps / 1000;
+
+         if(maxFrame > minFrame) {
+            currentFrame += deltaFrame;
+            if (currentFrame > maxFrame) {
+                currentFrame = minFrame;
+            }
+            animation_keys.text(currentFrame)
+        }
     });
     xml3d.addEventListener("mouseover", function (e) {
         //console.log("mouseover", e.target);

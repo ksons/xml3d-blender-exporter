@@ -1,5 +1,7 @@
 import mathutils
 import re
+import itertools
+from bpy.path import display_name_from_filepath
 
 IDENTITY = mathutils.Matrix.Identity(4)
 EMPTY = mathutils.Matrix()
@@ -27,49 +29,66 @@ def matrix_to_ccs_matrix3d(matrix):
                                       for col in matrix.col])
 
 
-def safe_query_selector_id(id):
-    return re.sub('[ \.]+', '-', id)
+def matrix_to_list(matrix):
+    result = list(itertools.chain(*matrix.transposed()))
+    return result
 
 
-def write_generic_entry(doc, entry):
-    entry_type = entry["type"]
-    entry_element = doc.createElement(entry_type)
-    entry_element.setAttribute("name", entry["name"])
+def normalize_vec4(vec):
+    # Vector.normalize does not take w into account
+    if vec.length == 0.0:
+        return vec
+    return vec * (1.0 / vec.length)
 
-    value = entry["value"]
-    value_str = None
-    if entry_type == "int":
-        value_str = " ".join(str(e) for e in value)
-    elif entry_type == "texture":
 
-        if entry["wrap"] is not None:
-            entry_element.setAttribute("wrapS", entry["wrap"])
-            entry_element.setAttribute("wrapT", entry["wrap"])
+def get_armature_object(obj):
+    if len(obj.modifiers) == 1 and obj.modifiers[0].type == 'ARMATURE':
+        return obj.modifiers[0].object, None
+    if 'ARMATURE' in [m.type for m in obj.modifiers]:
+        # TODO: Add issue
+        return None, "There are multiple modifiers on obj '%s'. Armature export with multiple modifiers is not (yet) supported. Armature will not be exported." % obj.name
+    return None, None
 
-        img_element = doc.createElement("img")
-        img_element.setAttribute("src", value)
-        entry_element.appendChild(img_element)
-    else:
-        if not isinstance(value, list):
-            value_str = str(value)
-        else:
-            value_str = ""
-            for t in value:
-                length = len(t) if isinstance(t, tuple) else 1
-                fs = length * "%.6f "
-                value_str += fs % t
 
-    if value_str:
-        text_node = doc.createTextNode(value_str)
-        entry_element.appendChild(text_node)
-    return entry_element
+def escape_html_id(_id):
+    # HTML: ID tokens must begin with a letter ([A-Za-z])
+    if not _id[:1].isalpha():
+        _id = "a" + _id
+
+    # and may be followed by any number of letters, digits ([0-9]),
+    # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
+    _id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', _id)
+    return _id
+
+
+def safe_query_selector_id(_id):
+    return re.sub('[ \|\.]+', '-', escape_html_id(_id))
+
+
+def safe_filename_from_image(image):
+    # is it actually possible for image.name to be empty?
+    # Blender seams to always enumerate "undefined" if no name is specified
+    # defaults to file name which is what we would use anyway
+    image_name = image.name if image.name != "" else display_name_from_filepath(image.filepath)
+    # a name in blender is allowed to contain any utf8 character
+    # filesystems are not that permissive
+    # to be as compatible as possible we replace the most common invalid characters with an underscore
+    # there are many other invalid names like reserved DOS names but handling all edge cases is not feasible
+    image_name = re.sub(r"\\|\*|\.|\"|\/|\[|\]|:|;|#|\||=|,|<|>", "_", image_name)
+    return image_name
 
 
 class Vertex:
     index = None
     normal = None
     texcoord = None
-    color = None
+    group_index = None
+    group_weights = None
+
+    def veckey4d(self, v):
+        if v is None:
+            return None
+        return mathutils.Vector((round(v[0], 8), round(v[1], 8), round(v[2], 8), round(v[3], 8)))
 
     def veckey3d(self, v):
         if v is None:
@@ -81,10 +100,12 @@ class Vertex:
             return None
         return mathutils.Vector((round(v[0], 8), round(v[1], 8)))
 
-    def __init__(self, index, normal=None, uvs=None, color=None):
+    def __init__(self, index, normal=None, uvs=None, group_index=None, group_weights=None):
         self.index = index
         self.normal = self.veckey3d(normal)
         self.texcoord = self.veckey2d(uvs)
+        self.group_index = self.veckey4d(group_index)
+        self.group_weights = self.veckey4d(group_weights)
 
     def __str__(self):
         return "i: " + str(self.index) + ", n: " + str(self.normal) + ", t: " + str(self.texcoord)
@@ -117,4 +138,4 @@ class Vertex:
         return self.index
 
     def __eq__(self, other):
-        return self.index == other.index and self.normal == other.normal and self.texcoord == other.texcoord
+        return self.index == other.index and self.normal == other.normal and self.texcoord == other.texcoord and self.group_index == other.group_index and self.group_weights == other.group_weights

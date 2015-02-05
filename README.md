@@ -16,6 +16,14 @@ For instance, if you cloned the repository to ```C:\Users\paul\xml3d-blender-exp
 
 ## Changelog
 
+### 0.2.0 (2015-02-05)
+
+Features:
+
+  - Basic Armature support
+  - Basic Armature Animation support
+  - Textures converted to PNG (contribution from @jasu0x58)
+
 ### 0.1.0 (2015-01-01)
 
 Features:

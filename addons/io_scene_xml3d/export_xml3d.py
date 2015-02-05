@@ -1,13 +1,14 @@
 import os
 import io
-import re
 import bpy
 import math
 import json
 from . import xml_writer, export_asset, context
-from .tools import is_identity, is_identity_scale, is_identity_translate, matrix_to_ccs_matrix3d
+from . import tools
+from .data import write_generic_entry_html
 from shutil import copytree
 
+VERSION = "0.2.0"
 ASSETDIR = "assets"
 LIGHTMODELMAP = {
     "POINT": ("point", "intensity = xflow.blenderPoint(color, energy)"),
@@ -27,17 +28,6 @@ def dump(obj):
 
 def clamp_color(col):
     return tuple([max(min(c, 1.0), 0.0) for c in col])
-
-
-def escape_html_id(_id):
-    # HTML: ID tokens must begin with a letter ([A-Za-z])
-    if not _id[:1].isalpha():
-        _id = "a" + _id
-
-    # and may be followed by any number of letters, digits ([0-9]),
-    # hyphens ("-"), underscores ("_"), colons (":"), and periods (".")
-    _id = re.sub('[^a-zA-Z0-9-_:\.]+', '-', _id)
-    return _id
 
 
 def blender_lamp_to_xml3d_light(model):
@@ -65,40 +55,28 @@ class XML3DExporter():
             os.makedirs(assetDir)
         return assetDir
 
-    def create_resource_from_mesh(self, original_object):
-        mesh_data_name = original_object.data.name
-        path = self.create_asset_directory()
-        path = os.path.join(path, mesh_data_name + ".xml")
-        url = "%s/%s.xml" % (ASSETDIR, mesh_data_name)
-
-        exporter = export_asset.AssetExporter(original_object.name, self.context, path, self.blender_context.scene)
-        exporter.add_asset(original_object)
-        exporter.save()
-
-        # stats.assets[0]["url"] = url
-        return url + "#root"
-
     def stats(self):
         return self.context.stats
 
     def warning(self, message, category=None, issue=None):
         self.context.warning(message, category, issue)
 
-    def create_resource(self, obj):
-        url = ""
+    def add_asset_from_geometry(self, geo_obj):
+        assert geo_obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}
 
-        if obj.type in {"MESH", "FONT", "SURFACE", "CURVE"}:
-            mesh_data = obj.data
-            key = "mesh." + mesh_data.name
-            if key in self._resource:
-                return self._resource[key]
+        asset_name = tools.safe_query_selector_id(geo_obj.data.name)
 
-            url = self.create_resource_from_mesh(obj)
-            self._resource[key] = url
-        else:
-            self.warning(u"Object '{0:s}' is of type '{1:s}', which is not (yet) supported.".format(obj.name, obj.type))
+        path = self.create_asset_directory()
+        path = os.path.join(path, asset_name + ".xml")
+        exporter = export_asset.AssetExporter(asset_name, self.context, path, self.blender_context.scene)
+        asset_config = exporter.add_asset(geo_obj)
 
-        return url
+        if not asset_config:
+            return None, None
+
+        url = "%s/%s.xml#%s" % (ASSETDIR, asset_name, asset_name)
+        exporter.save()
+        return url, asset_config
 
     def build_hierarchy(self, objects):
         """ returns parent child relationships, skipping
@@ -122,7 +100,7 @@ class XML3DExporter():
         return par_lookup.get(None, [])
 
     def write_id(self, obj, prefix=""):
-        self._writer.attribute("id", escape_html_id(prefix + obj.name))
+        self._writer.attribute("id", tools.escape_html_id(prefix + obj.name))
 
     def write_event_attributes(self, obj):
         for event in {"click", "dblclick", "mousedown", "mouseup", "mouseover", "mousemove", "mouseout", "mousewheel"}:
@@ -136,28 +114,28 @@ class XML3DExporter():
         if self._transform == "css":
             matrices = []
 
-            if not is_identity(obj.matrix_parent_inverse):
+            if not tools.is_identity(obj.matrix_parent_inverse):
                 matrices.append(
-                    matrix_to_ccs_matrix3d(obj.matrix_parent_inverse))
+                    tools.matrix_to_ccs_matrix3d(obj.matrix_parent_inverse))
 
             old_rotation_mode = obj.rotation_mode
             obj.rotation_mode = "AXIS_ANGLE"
-            if not is_identity_translate(obj.location):
+            if not tools.is_identity_translate(obj.location):
                 matrices.append("translate3d(%.6f,%.6f,%.6f)" %
                                 tuple(obj.location))
             rot = obj.rotation_axis_angle
             if rot[0] != 0.0:
                 matrices.append("rotate3d(%.6f,%.6f,%.6f,%.2fdeg)" % (
                     rot[1], rot[2], rot[3], math.degrees(rot[0])))
-            if not is_identity_scale(obj.scale):
+            if not tools.is_identity_scale(obj.scale):
                 matrices.append("scale3d(%.6f,%.6f,%.6f)" % tuple(obj.scale))
             transform = " ".join(matrices)
             obj.rotation_mode = old_rotation_mode
         else:
             matrix = obj.matrix_parent_inverse * matrix
-            if is_identity(matrix):
+            if tools.is_identity(matrix):
                 return
-            transform = matrix_to_ccs_matrix3d(matrix)
+            transform = tools.matrix_to_ccs_matrix3d(matrix)
 
         self._writer.attribute("style", "transform:" + transform + ";")
 
@@ -179,11 +157,25 @@ class XML3DExporter():
         self._writer.end_element("view")
         self.context.stats.views += 1
 
+    def create_model_configuration(self, model_config):
+        for child_config in model_config.children:
+            if child_config is not None:
+                self._writer.start_element("assetdata", name=child_config.name)
+                for entry in child_config.data:
+                        write_generic_entry_html(self._writer, entry)
+                self._writer.end_element("assetdata")
+
     def create_geometry(self, original_obj):
-        self._writer.start_element(
-            "model", id=escape_html_id(original_obj.data.name))
-        self._writer.attribute(
-            "src", self.create_resource(original_obj))
+        url, model_config = self.add_asset_from_geometry(original_obj)
+        if not url:
+            return
+
+        self._writer.start_element("model", id=tools.escape_html_id(original_obj.data.name))
+        self._writer.attribute("src", url)
+
+        if model_config:
+            self.create_model_configuration(model_config)
+
         self._writer.end_element("model")
 
     def create_lamp(self, obj):
@@ -195,7 +187,7 @@ class XML3DExporter():
             return
 
         self._writer.start_element(
-            "light", shader="#" + escape_html_id("ls_" + lightdata.name))
+            "light", shader="#" + tools.escape_html_id("ls_" + lightdata.name))
         self._writer.end_element("light")
         self.context.stats.lights += 1
 
@@ -212,8 +204,12 @@ class XML3DExporter():
             self.create_camera(this_object)
         elif this_object.type in {'MESH', 'CURVE', 'SURFACE', 'FONT'}:
             self.create_geometry(this_object)
+        elif this_object.type == "ARMATURE":
+            self.context.armatures.create_armature(this_object)
         elif this_object.type == "LAMP":
             self.create_lamp(this_object)
+        elif this_object.type == "EMPTY":
+            pass
         else:
             self.warning("Object '%s' is of type '%s', which is not (yet) supported." % (this_object.name, this_object.type))
 
@@ -280,7 +276,7 @@ class XML3DExporter():
 
         self._writer.start_element("xml3d", id=scene.name)
         if scene.camera:
-            self._writer.attribute("activeView", "#v_%s" % escape_html_id(scene.camera.name))
+            self._writer.attribute("activeView", "#v_%s" % tools.escape_html_id(scene.camera.name))
         else:
             self.warning("Scene '{0:s}' has no active camera set.".format(scene.name), "camera")
 
@@ -321,7 +317,7 @@ def create_active_views(blender_context):
     camera = blender_context.scene.camera
     if camera:
         result.append({
-            "view_matrix": matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
+            "view_matrix": tools.matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
             "perspective_matrix": "",  # TODO: Perspective matrix
             "translation": [e for e in camera.matrix_world.translation],
             "rotation": [e for e in camera.matrix_world.to_quaternion()]
@@ -332,8 +328,8 @@ def create_active_views(blender_context):
             for space in area.spaces:
                 if space.type == "VIEW_3D":
                     result.append({
-                        "view_matrix": matrix_to_ccs_matrix3d(space.region_3d.view_matrix),
-                        "perspective_matrix": matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix),
+                        "view_matrix": tools.matrix_to_ccs_matrix3d(space.region_3d.view_matrix),
+                        "perspective_matrix": tools.matrix_to_ccs_matrix3d(space.region_3d.perspective_matrix),
                         "translation": [e for e in space.region_3d.view_matrix.inverted().translation],
                         "rotation": [e for e in space.region_3d.view_matrix.inverted().to_quaternion()]
                     })
@@ -345,7 +341,10 @@ def write_blender_config(dir, context):
     with open(os.path.join(dir, "blender-config.json"), "w") as stats_file:
         stats_file.write(json.dumps({
             "layers": [e for e in context.scene.layers],
-            "views": create_active_views(context)
+            "views": create_active_views(context),
+            "render-settings": {
+                "fps": context.scene.render.fps
+            }
         }))
         stats_file.close()
 
@@ -393,7 +392,7 @@ def save(operator,
         data = Template(templateFile.read())
         file = open(filepath, 'w')
         file.write(data.substitute(title=context.scene.name, xml3d=scene,
-                                   version=version, generator="xml3d-blender-exporter v0.1.0"))
+                                   version=version, generator="xml3d-blender-exporter v" + VERSION))
         file.close()
         size = os.path.getsize(filepath)
         xml3d_exporter.stats().scene = {"name": os.path.basename(filepath), "size": size}
