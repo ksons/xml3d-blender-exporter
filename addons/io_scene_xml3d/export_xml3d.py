@@ -62,14 +62,9 @@ class XML3DExporter():
         self.context.warning(message, category, issue)
 
     def add_asset_from_geometry(self, geo_obj):
-        url = None
-        asset_config = None
-
-        # try:
         assert geo_obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}
 
-        # TODO: Safe name
-        asset_name = tools.safe_query_selector_id(geo_obj.name)
+        asset_name = tools.safe_query_selector_id(geo_obj.data.name)
 
         path = self.create_asset_directory()
         path = os.path.join(path, asset_name + ".xml")
@@ -165,14 +160,11 @@ class XML3DExporter():
 
     def create_model_configuration(self, model_config):
         for child_config in model_config.children:
-            if child_config is not None and len(child_config.armatures):
-                self._writer.start_element("asset", name=child_config.name)
-                for armature in child_config.armatures:
-                    self._writer.start_element("assetdata", name=armature["name"])
-                    for entry in armature["data"]:
-                            write_generic_entry_html(self._writer, entry)
-                    self._writer.end_element("assetdata")
-                self._writer.end_element("asset")
+            if child_config is not None:
+                self._writer.start_element("assetdata", name=child_config.name)
+                for entry in child_config.data:
+                        write_generic_entry_html(self._writer, entry)
+                self._writer.end_element("assetdata")
 
     def create_geometry(self, original_obj):
         url, model_config = self.add_asset_from_geometry(original_obj)

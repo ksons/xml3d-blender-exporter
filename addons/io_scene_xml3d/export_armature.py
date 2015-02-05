@@ -2,6 +2,7 @@ import os
 import mathutils
 from xml.dom.minidom import Document
 from . import tools
+from .export_asset import ModelConfiguration
 from .data import DataType, DataEntry, DataReference, write_generic_entry
 
 
@@ -37,15 +38,11 @@ class Armature:
         if not len(self.animations):
             return None
 
-        config = []
-        for animation in self.animations:
-            config.append({
-                "name": self.id,
-                "data": [
-                    DataEntry("animKey", DataType.float, animation.start_frame, class_name="anim armature")
-                ]
-            })
-        return config
+        # TODO: Support multiple animations
+        animation = self.animations[0]
+        config = ModelConfiguration(name=self.id)
+        config.data.append(DataEntry("animKey", DataType.float, animation.start_frame, class_name="anim armature"))
+        return [config]
 
     @staticmethod
     def create_from_blender(armature_object, armature_id, context):

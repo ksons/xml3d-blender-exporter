@@ -53,26 +53,79 @@ class AssetExporter:
         return "#" + material.id
 
     def add_asset(self, obj):
+        model_configuration = None
         base_matrix = obj.matrix_basis.inverted()
         free, derived_objects = create_derived_objects(self._scene, obj)
+
         if derived_objects is None:
             return
 
-        parent = Asset(id_=tools.safe_query_selector_id(obj.name))
+        asset = Asset(id_=tools.safe_query_selector_id(obj.data.name))
 
-        asset_configs = ModelConfiguration()
-
-        for derived_object, matrix in derived_objects:
-            if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
-                continue
-            subasset_configs = self.add_subasset(parent, derived_object, base_matrix * matrix)
-            asset_configs.children.append(subasset_configs)
+        if len(derived_objects) == 1:
+            (derived_object, matrix) = derived_objects[0]
+            asset.matrix = base_matrix * matrix
+            model_configuration = self.add_asset_data(asset, derived_object)
+        else:
+            for derived_object, matrix in derived_objects:
+                model_configuration = ModelConfiguration()
+                if derived_object.type not in {'MESH', 'CURVE', 'SURFACE', 'FONT', 'META'}:
+                    continue
+                submodel_configuration = self.add_subasset(asset, derived_object, base_matrix * matrix)
+                model_configuration.children.append(submodel_configuration)
 
         if free:
             free_derived_objects(obj)
 
-        self.assets.append(parent)
-        return asset_configs
+        self.assets.append(asset)
+        return model_configuration
+
+    def add_asset_data(self, asset, derived_object):
+        model_configuration = ModelConfiguration()
+        armature_info = None
+        armature_object, warn = tools.get_armature_object(derived_object)
+
+        if warn:
+            self.context.warning(warn)
+
+        if armature_object is not None:
+            armature, armature_url = self.context.armatures.create_armature(armature_object)
+            armature_info = {
+                "vertex_groups": derived_object.vertex_groups,
+                "global_inverse_matrix": (armature_object.matrix_world.inverted() * derived_object.matrix_world).inverted(),
+                "offset_matrix": self.armature_offset_matrix(armature_object, derived_object),
+                "bone_map": armature.bone_map,
+                "src": "../armatures.xml#" + armature.id,
+                "name": armature.id
+            }
+            armature_config = armature.get_config()
+            if armature_config:
+                model_configuration.children += armature_config
+
+        try:
+            apply_modifiers = armature_object is None
+            mesh = derived_object.to_mesh(self._scene, apply_modifiers, 'RENDER', True, False)
+        except:
+            mesh = None
+
+        if mesh:
+            self.add_mesh_data(asset, mesh, armature_info)
+
+        return model_configuration
+
+    def add_subasset(self, parent_asset, derived_object, matrix):
+        name = tools.safe_query_selector_id(derived_object.name)
+
+        if name in parent_asset.sub_assets:
+            ref_asset = Asset(src="#" + name, matrix=matrix)
+            parent_asset.ref_assets.append(ref_asset)
+            return None
+
+        sub_asset = Asset(id_=name, matrix=matrix.copy())
+        model_configuration = self.add_asset_data(sub_asset, derived_object)
+
+        parent_asset.sub_assets[name] = sub_asset
+        return model_configuration
 
     def armature_offset_matrix(self, armature_object, obj):
         pose = armature_object.pose
@@ -92,50 +145,6 @@ class AssetExporter:
             bind_matrices += tools.matrix_to_list(matrix)
 
         return bind_matrices
-
-    def add_subasset(self, parent_asset, derived_object, matrix):
-        name = tools.safe_query_selector_id(derived_object.name)
-
-        if name in parent_asset.sub_assets:
-            ref_asset = Asset(src="#" + name, matrix=matrix)
-            parent_asset.ref_assets.append(ref_asset)
-            return
-
-        sub_asset = Asset(name=name, matrix=matrix.copy())
-        subasset_config = ModelConfiguration(name=name)
-
-        armature_info = None
-        armature_object, warn = tools.get_armature_object(derived_object)
-
-        if warn:
-            self.context.warning(warn)
-
-        if armature_object is not None:
-            armature, armature_url = self.context.armatures.create_armature(armature_object)
-            armature_info = {
-                "vertex_groups": derived_object.vertex_groups,
-                "global_inverse_matrix": (armature_object.matrix_world.inverted() * derived_object.matrix_world).inverted(),
-                "offset_matrix": self.armature_offset_matrix(armature_object, derived_object),
-                "bone_map": armature.bone_map,
-                "src": "../armatures.xml#" + armature.id,
-                "name": armature.id
-            }
-            # print(derived_object.matrix_local.inverted())
-            armature_config = armature.get_config()
-            if armature_config:
-                subasset_config.armatures += armature_config
-
-        try:
-            apply_modifiers = armature_object is None
-            mesh = derived_object.to_mesh(self._scene, apply_modifiers, 'RENDER', True, False)
-        except:
-            mesh = None
-
-        if mesh:
-            self.add_mesh_data(sub_asset, mesh, armature_info)
-            parent_asset.sub_assets[name] = sub_asset
-
-        return subasset_config
 
     def export_mesh_textures(self, mesh):
         textures = [None] * len(mesh.materials)
@@ -284,10 +293,12 @@ class AssetExporter:
 
 class ModelConfiguration:
     children = []
+    data = []
     name = None
-    armatures = []
 
     def __init__(self, name=None):
         self.children = []
         self.name = name
-        self.armatures = []
+
+    def __str__(self):
+        return "ModelConfiguration(%s, %s, %s)" % (self.name, self.data, self.children)
