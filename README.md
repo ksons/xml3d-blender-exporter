@@ -3,6 +3,12 @@ XML3D-Blender
 
 This is a very early version of a XML3D exporter for Blender.
 
+<p align="center">
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=sGsUhVLiUso
+" target="_blank"><img src="http://img.youtube.com/vi/sGsUhVLiUso/0.jpg" 
+alt="Blender XML3D Export" width="480" height="360" border="10" /></a>
+</p>
+
 ## Installation
 
 The add-on is not yet in the Blender repository. You need to checkout the repository:
