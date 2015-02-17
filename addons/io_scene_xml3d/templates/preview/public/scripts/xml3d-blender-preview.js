@@ -126,10 +126,13 @@ $(function () {
         }
         createSunburst({
             name: "scene",
+            size: "56lkB",
             children: [
-		{ name: "scene", size: data.scene.size },
+		        { name: "scene", size: data.scene.size },
                 { name: "assets", children: data.assets},
-                { name: "textures", children: data.textures}
+                { name: "textures", children: data.textures},
+                { name: "materials", children: data.materials}
+
             ]
         })
     });
@@ -183,17 +186,37 @@ $(function () {
 
 
     function createSunburst(root) {
+        var palette = {
+            "scene": "#EAD177",
+            "assets": "#D95B45",
+            "materials": "#C12940"
+        }
 
-        var width = 500, height = 500, radius = Math.min(width, height) / 2, color = d3.scale.category20c();
+        var width = 500, height = 500, radius = Math.min(width, height) * 0.45;// color = d3.scale.category20c();
+        var color = function(d) {
+            if (d in palette) {
+                return palette[d];
+            }
+            console.log("color", d);
+            return "#efefef";
+        }
 
-        var svg = d3.select(".d3Target").append("svg").attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + width / 2 + "," + height * .52 + ")");
+ var svg = d3.select(".d3Target").append("svg").attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + width /2 + "," + height /2 + ")");
 
-          var partition = d3.layout.partition()
+    var partition = d3.layout.partition()
                             .sort(null)
                             .size([2 * Math.PI, radius * radius])
                             .value(function (d) {
                                 return d.size;
                         });
+
+        var groups = svg.datum(root).selectAll('g')
+      .data(partition.nodes)
+    .enter()
+      .append('g');
+
+
+
 
          var title = svg.append('text')
             .text(root.name)
@@ -203,7 +226,16 @@ $(function () {
             .style('fill', 'black')
             .style('font-weight', 500)
             .style('alignment-baseline', 'middle')
-            .style('text-anchor', 'middle')
+            .style('text-anchor', 'middle');
+
+              var size = svg.append('text')
+    .text(root.size)
+    .attr('x', 0)
+    .attr('y', 15)
+    .style('fill', 'black')
+    .style('font-size', '10px')
+    .style('alignment-baseline', 'middle')
+    .style('text-anchor', 'middle');
 
         var arc = d3.svg.arc().startAngle(function (d) {
             return d.x;
@@ -212,16 +244,25 @@ $(function () {
         }).innerRadius(function (d) {
             return Math.sqrt(d.y);
         }).outerRadius(function (d) {
-            return Math.sqrt(d.y + d.dy);
+            return Math.sqrt(d.y + d.dy * 0.75);
         });
 
-            var path = svg.datum(root).selectAll("path").data(partition.nodes).enter().append("path").attr("display", function (d) {
+            var path = groups.append("path").attr("display", function (d) {
                 return d.depth ? null : "none";
             }) // hide inner ring
                 .attr("d", arc).style("stroke", "#000").style("fill", function (d) {
                     return color((d.children ? d : d.parent).name);
-                }).style("fill-rule", "evenodd").each(stash);
+                }).style("fill-rule", "evenodd").style("stroke-width", "1").each(stash);
 
+  groups.on('mouseover', function(d) {
+    //highlight(d)
+    title.text(d.name)
+    size.text(d.size)
+  }).on('mouseout', function(d) {
+    //unhighlight(d)
+    title.text(root.name)
+    size.text(root.size)
+  })
             d3.selectAll("input").on("change", function change() {
                 var value = this.value === "count" ? function () {
                     return 1;
