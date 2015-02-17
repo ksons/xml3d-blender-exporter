@@ -10,6 +10,7 @@ BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, transparency) =
 
 TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
+IMG_FORMAT_2_EXTENSION = dict(JPEG=".jpg", PNG=".png")
 
 class Material:
     context = None
@@ -162,22 +163,29 @@ def export_image(image, context):
 
     if image.file_format in {'PNG', 'JPEG'}:
         if image.packed_file:
-            return save_packed_image(image, context)
+            image_src = save_packed_image(image, context)
         else:
-            return copy_image(image, context)
+            image_src = copy_image(image, context)
+    else:
+        image_src = convert_and_export(image, texture_path, context)
 
-    return convert_and_export(image, texture_path, context)
+    # Save the image to not export it again
+    context.images[image] = image_src
+    return image_src
 
 
 def save_packed_image(image, context):
     image_data = image.packed_file.data
+    image_name = tools.safe_filename_from_image(image) + IMG_FORMAT_2_EXTENSION[image.file_format]
 
-    image_src = os.path.join("textures", image.name)
+    image_src = os.path.join("textures", image_name)
     file_path = os.path.join(context.base_url, image_src)
     if not os.path.exists(file_path):
         with open(file_path, "wb") as image_file:
             image_file.write(image_data)
             image_file.close()
+
+    image_src = image_src.replace('\\', '/')
     return image_src
 
 
@@ -204,5 +212,4 @@ def convert_and_export(image, texture_path, context):
         image_file.close()
 
     image_src = image_src.replace('\\', '/')
-    context.images[image] = image_src
     return image_src
