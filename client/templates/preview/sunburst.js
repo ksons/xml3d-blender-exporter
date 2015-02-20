@@ -3,22 +3,24 @@ var d3 = require('d3')
 
 
 module.exports = function(root) {
-        var palette = {
-            "scene": "#EAD177",
-            "assets": "#D95B45",
-            "materials": "#C12940"
+        var palette = { // pastell 6
+            "overall": "#EAD177",
+            "textures": "#D95B45",
+            "assets": "#52787B",
+            "materials": "#552437",
+            "animations": "#C12940"
         }
 
-        var width = 500, height = 500, radius = Math.min(width, height) * 0.45;// color = d3.scale.category20c();
+        var width = 520, height = 520, radius = Math.min(width, height) * 0.45;// color = d3.scale.category20c();
         var color = function(d) {
             if (d in palette) {
                 return palette[d];
             }
-            console.log("color", d);
+            // console.log("color", d);
             return "#efefef";
         }
 
- var svg = d3.select(".d3Target").append("svg").attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + width /2 + "," + height /2 + ")");
+ var svg = d3.select(".d3Target").append("div").attr("class", "stats-container").append("svg").attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + width /2 + "," + height /2 + ")");
 
     var partition = d3.layout.partition()
                             .sort(null)
@@ -40,7 +42,7 @@ module.exports = function(root) {
             .attr('x', 0)
             .attr('y', -5)
             .style('font-size', '12px')
-            .style('fill', 'black')
+            .style('fill', 'white')
             .style('font-weight', 500)
             .style('alignment-baseline', 'middle')
             .style('text-anchor', 'middle');
@@ -49,7 +51,7 @@ module.exports = function(root) {
     .text(pretty(root.size))
     .attr('x', 0)
     .attr('y', 15)
-    .style('fill', 'black')
+    .style('fill', 'white')
     .style('font-size', '10px')
     .style('alignment-baseline', 'middle')
     .style('text-anchor', 'middle');

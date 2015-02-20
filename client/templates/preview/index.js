@@ -110,7 +110,7 @@ $(function() {
 
 
     $.get("./info/xml3d-info.json", function (data) {
-        $('#statisticsModal').foundation('reveal', 'open');
+        // $('#statisticsModal').foundation('reveal', 'open');
         getAnimationFrames(data.animations)
         var warnings = data.warnings;
         if (warnings.length) {
@@ -128,19 +128,38 @@ $(function() {
                 $("#bell").children(".message-position").remove();
             });
         }
-        sunburst({
-            name: "scene",
-            size: data.scene.size,
-            children: [
-		        { name: "scene", size: data.scene.size },
-                { name: "assets", children: data.assets},
-                { name: "textures", children: data.textures},
-                { name: "materials", children: data.materials}
-
-            ]
-        })
+        sunburst(createSunburstData(data));
     });
 
+
+    function accumulateSize(data) {
+        if(Array.isArray(data)) {
+            return data.reduce(function(prev,curr) {
+                return prev + accumulateSize(curr);
+            }, 0)
+        }
+        return data.size || 0;
+    }
+
+    function createSunburstData(data) {
+        var assetSize = accumulateSize(data.assets);
+        var textureSize = accumulateSize(data.textures);
+        var materialSize = accumulateSize(data.materials);
+        var animationSize = accumulateSize(data.armatures);
+        var result = {
+            name: "overall",
+            size: data.scene.size + assetSize + textureSize + materialSize + animationSize,
+            children: [
+		        { name: "scene", size: data.scene.size, children: [] },
+                { name: "assets", size: assetSize, children: data.assets},
+                { name: "textures", size: textureSize, children: data.textures},
+                { name: "materials", size: materialSize, children: data.materials},
+                { name: "animations", size: animationSize, children: data.armatures}
+            ]
+        }
+        return result;
+
+    }
 
     var xml3d = document.querySelector("xml3d");
     var activeObject = "";

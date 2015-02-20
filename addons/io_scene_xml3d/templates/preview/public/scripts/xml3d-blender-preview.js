@@ -111,7 +111,7 @@ $(function() {
 
 
     $.get("./info/xml3d-info.json", function (data) {
-        $('#statisticsModal').foundation('reveal', 'open');
+        // $('#statisticsModal').foundation('reveal', 'open');
         getAnimationFrames(data.animations)
         var warnings = data.warnings;
         if (warnings.length) {
@@ -129,19 +129,38 @@ $(function() {
                 $("#bell").children(".message-position").remove();
             });
         }
-        sunburst({
-            name: "scene",
-            size: data.scene.size,
-            children: [
-		        { name: "scene", size: data.scene.size },
-                { name: "assets", children: data.assets},
-                { name: "textures", children: data.textures},
-                { name: "materials", children: data.materials}
-
-            ]
-        })
+        sunburst(createSunburstData(data));
     });
 
+
+    function accumulateSize(data) {
+        if(Array.isArray(data)) {
+            return data.reduce(function(prev,curr) {
+                return prev + accumulateSize(curr);
+            }, 0)
+        }
+        return data.size || 0;
+    }
+
+    function createSunburstData(data) {
+        var assetSize = accumulateSize(data.assets);
+        var textureSize = accumulateSize(data.textures);
+        var materialSize = accumulateSize(data.materials);
+        var animationSize = accumulateSize(data.armatures);
+        var result = {
+            name: "overall",
+            size: data.scene.size + assetSize + textureSize + materialSize + animationSize,
+            children: [
+		        { name: "scene", size: data.scene.size, children: [] },
+                { name: "assets", size: assetSize, children: data.assets},
+                { name: "textures", size: textureSize, children: data.textures},
+                { name: "materials", size: materialSize, children: data.materials},
+                { name: "animations", size: animationSize, children: data.armatures}
+            ]
+        }
+        return result;
+
+    }
 
     var xml3d = document.querySelector("xml3d");
     var activeObject = "";
@@ -198,22 +217,24 @@ var d3 = require('d3')
 
 
 module.exports = function(root) {
-        var palette = {
-            "scene": "#EAD177",
-            "assets": "#D95B45",
-            "materials": "#C12940"
+        var palette = { // pastell 6
+            "overall": "#EAD177",
+            "textures": "#D95B45",
+            "assets": "#52787B",
+            "materials": "#552437",
+            "animations": "#C12940"
         }
 
-        var width = 500, height = 500, radius = Math.min(width, height) * 0.45;// color = d3.scale.category20c();
+        var width = 520, height = 520, radius = Math.min(width, height) * 0.45;// color = d3.scale.category20c();
         var color = function(d) {
             if (d in palette) {
                 return palette[d];
             }
-            console.log("color", d);
+            // console.log("color", d);
             return "#efefef";
         }
 
- var svg = d3.select(".d3Target").append("svg").attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + width /2 + "," + height /2 + ")");
+ var svg = d3.select(".d3Target").append("div").attr("class", "stats-container").append("svg").attr("width", width).attr("height", height).append("g").attr("transform", "translate(" + width /2 + "," + height /2 + ")");
 
     var partition = d3.layout.partition()
                             .sort(null)
@@ -235,7 +256,7 @@ module.exports = function(root) {
             .attr('x', 0)
             .attr('y', -5)
             .style('font-size', '12px')
-            .style('fill', 'black')
+            .style('fill', 'white')
             .style('font-weight', 500)
             .style('alignment-baseline', 'middle')
             .style('text-anchor', 'middle');
@@ -244,7 +265,7 @@ module.exports = function(root) {
     .text(pretty(root.size))
     .attr('x', 0)
     .attr('y', 15)
-    .style('fill', 'black')
+    .style('fill', 'white')
     .style('font-size', '10px')
     .style('alignment-baseline', 'middle')
     .style('text-anchor', 'middle');

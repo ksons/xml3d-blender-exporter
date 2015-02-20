@@ -80,3 +80,9 @@ rect.layer.active {
 .bbutton.light {
 	background-position:-27px 0px;
 }
+
+.stats-container {
+    margin: 0px auto;
+    width: 50%;
+    min-width: 520px;
+}
