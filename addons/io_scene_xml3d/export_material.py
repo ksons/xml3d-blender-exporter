@@ -12,6 +12,7 @@ TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
 IMG_FORMAT_2_EXTENSION = dict(JPEG=".jpg", PNG=".png")
 
+
 class Material:
     context = None
     id = ""
@@ -185,6 +186,9 @@ def save_packed_image(image, context):
             image_file.write(image_data)
             image_file.close()
 
+    # Save file and file size in stats
+    context.stats.textures.append({"name": image_name, "size": os.path.getsize(file_path)})
+
     image_src = image_src.replace('\\', '/')
     return image_src
 
@@ -193,6 +197,7 @@ def copy_image(image, context):
     base_src = os.path.dirname(bpy.data.filepath)
     filepath_full = bpy.path.abspath(image.filepath, library=image.library)
     image_src = path_reference(filepath_full, base_src, context.base_url, 'COPY', "textures", context.copy_set, image.library)
+    # Stats are written when files have been copied (see Context.finalize)
     return image_src
 
 
@@ -210,6 +215,9 @@ def convert_and_export(image, texture_path, context):
     with open(file_path, "wb") as image_file:
         w.write_packed(image_file, pixels)
         image_file.close()
+
+    # Save file and file size in stats
+    context.stats.textures.append({"name": file_name, "size": os.path.getsize(file_path)})
 
     image_src = image_src.replace('\\', '/')
     return image_src

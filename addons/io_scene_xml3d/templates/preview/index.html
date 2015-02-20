@@ -36,6 +36,8 @@
             <li class='divider'></li>
             <li><a href='#'><span class="fa fa-circle-o-notch fa-spin"></span></a></li>
             <li class='divider'></li>
+            <li><a href="#" data-reveal-id="statisticsModal"><span class='fa fa-bar-chart'></span></a>
+            <li class='divider'></li>
             <li><a href="#" data-reveal-id="warningsModal"><span id='bell' class='fa fa-bell-o fa-lg message-parent'></span></a>
             </li>
         </ul>
@@ -47,6 +49,10 @@ $xml3d
   <h4><i class="fa fa-exclamation-triangle"></i> Warnings</h4><hr>
   <div class="warningsList"></div>
   <a class="close-reveal-modal">&#215;</a>
+</div>
+<div id="statisticsModal" class="reveal-modal" data-reveal>
+    <div class="d3Target"></div>
+      <a class="close-reveal-modal">&#215;</a>
 </div>
 <script>
     $$(document).foundation();
