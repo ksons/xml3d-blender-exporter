@@ -87,7 +87,6 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default='css-matrix',
     )
 
-    # TODO: Format selection nicely (see FBX exporter)
     xml3d_minimized = BoolProperty(
         name="Minimized",
         description="Uses minimized version of xml3d.js",
@@ -117,6 +116,21 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
     #                ),
     #         default='Z',
     #         )
+    def draw(self, context):
+        layout = self.layout
+
+        template_box = layout.box()
+        template_box.label("Template Options:", icon="FILE_SCRIPT")
+        template_box.prop(self, "template_selection")
+        template_box.prop(self, "xml3djs_selection")
+
+        row = template_box.row()
+        row.alignment = "RIGHT"
+        row.prop(self, "xml3d_minimized")
+
+        scene_box = layout.box()
+        scene_box.label("Scene Options:", icon="SCENE_DATA")
+        scene_box.prop(self, "transform_representation")
 
     def execute(self, context):
         from . import export_xml3d
