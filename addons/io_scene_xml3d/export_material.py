@@ -39,6 +39,17 @@ class Material:
         mat.compute = BLENDER2XML_MATERIAL
         return mat
 
+    @staticmethod
+    def evaluate_location(material, option):
+        if option == "none":
+            return "external"
+        if option == "all":
+            return "internal"
+        # Single user means one user plus python environment which adds another user
+        if option == "shared" and material and material.users <= 2:
+            return "internal"
+        return "external"
+
     def from_material(self, material):
         data = self.data
         data.append(DataEntry("diffuse_intensity", DataType.float, material.diffuse_intensity))
@@ -126,17 +137,22 @@ class MaterialLibrary:
         doc.appendChild(xml3d)
 
         for material in self.materials:
-            shader = doc.createElement("shader")
-            shader.setAttribute("id", material.id)
-            shader.setAttribute("script", material.script)
-            if material.compute:
-                shader.setAttribute("compute", material.compute)
-            for entry in material.data:
-                entry_element = write_generic_entry(doc, entry)
-                shader.appendChild(entry_element)
-            xml3d.appendChild(shader)
+            MaterialLibrary.save_material_xml(material, xml3d)
 
         doc.writexml(file, "", "  ", "\n", "UTF-8")
+
+    @staticmethod
+    def save_material_xml(material, parent):
+        shader = parent.ownerDocument.createElement("shader")
+        shader.setAttribute("id", material.id)
+        shader.setAttribute("script", material.script)
+        if material.compute:
+            shader.setAttribute("compute", material.compute)
+        for entry in material.data:
+            entry_element = write_generic_entry(shader.ownerDocument, entry)
+            shader.appendChild(entry_element)
+        parent.appendChild(shader)
+        pass
 
     def save(self):
         if not len(self.materials):
@@ -147,7 +163,7 @@ class MaterialLibrary:
             materialFile.close()
             size = os.path.getsize(self.url)
 
-        self.context.stats.materials.append({"name": "material.xml", "size": size})
+        self.context.stats.materials.append({"name": os.path.basename(self.url), "size": size})
 
 
 def export_image(image, context):

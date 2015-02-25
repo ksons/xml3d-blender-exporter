@@ -1,6 +1,6 @@
 import os
 from xml.dom.minidom import Document
-from .export_material import Material, DefaultMaterial, export_image
+from .export_material import Material, DefaultMaterial, MaterialLibrary, export_image
 from .data import DataEntry, DataType, DataReference, TextureEntry, write_generic_entry
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from . import tools
@@ -40,17 +40,24 @@ class AssetExporter:
         self._dir = os.path.dirname(path)
         self._scene = scene
         self.assets = []
-        self._material = {}
+        self.materials = {}
 
     def add_material(self, material):
-        url = self.context.materials.add_material(material)
-        if url is not None:
-            # TODO: Good URL handling
-            return "../materials.xml#" + material.id
 
-        if material.id not in self._material:
-            self._material[material.id] = material
-        return "#" + material.id
+        if material:
+            converted = Material.from_blender_material(material, self.context, self._dir)
+        else:
+            converted = DefaultMaterial
+
+        store = Material.evaluate_location(material, self.context.options.asset_material_selection)
+
+        if store == "external":
+            self.context.materials.add_material(converted)
+            return "../shared-materials.xml#" + converted.id
+
+        if converted.id not in self.materials:
+            self.materials[converted.id] = converted
+        return "#" + converted.id
 
     def add_asset(self, obj):
         model_configuration = None
@@ -207,11 +214,7 @@ class AssetExporter:
 
             submeshName = meshName + "_" + materialName
 
-            if material:
-                converted = Material.from_blender_material(material, self.context, self._dir)
-                material_url = self.add_material(converted)
-            else:
-                material_url = self.add_material(DefaultMaterial)
+            material_url = self.add_material(material)
 
             asset.meshes.append(
                 {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
@@ -220,6 +223,9 @@ class AssetExporter:
         doc = Document()
         xml3d = doc.createElement("xml3d")
         doc.appendChild(xml3d)
+        for material in self.materials.values():
+            MaterialLibrary.save_material_xml(material, xml3d)
+
         for asset in self.assets:
             self.asset_xml(asset, xml3d)
         doc.writexml(f, "", "  ", "\n", "UTF-8")

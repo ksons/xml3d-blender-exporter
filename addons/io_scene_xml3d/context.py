@@ -22,6 +22,11 @@ class Stats(object):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
+class Options:
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+
+
 class Context():
     stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], armatures=[], animations=[], warnings=[], scene=None)
     base_url = None
@@ -29,10 +34,11 @@ class Context():
     materials = None
     scene = None
 
-    def __init__(self, base_url, scene):
+    def __init__(self, base_url, scene, options):
         self.base_url = base_url
         self.scene = scene
-        self.materials = MaterialLibrary(self, base_url + "/materials.xml")
+        self.options = Options(**options)
+        self.materials = MaterialLibrary(self, base_url + "/shared-materials.xml")
         self.armatures = ArmatureLibrary(self, base_url + "/armatures.xml")
         # maps Blender Image objects to output path used as img tag src in the XML3D scene
         self.images = {}

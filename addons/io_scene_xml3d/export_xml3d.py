@@ -40,13 +40,12 @@ def blender_lamp_to_xml3d_light(model):
 class XML3DExporter():
     context = None
 
-    def __init__(self, blender_context, dirname, transform, progress):
+    def __init__(self, blender_context, dirname, options, progress):
         self.blender_context = blender_context
-        self.context = context.Context(dirname, blender_context.scene)
+        self.context = context.Context(dirname, blender_context.scene, options)
         self._output = io.StringIO()
         self._writer = xml_writer.XMLWriter(self._output, 0)
         self._resource = {}
-        self._transform = transform
         self._object_progress = progress
 
     def create_asset_directory(self):
@@ -111,7 +110,8 @@ class XML3DExporter():
         # try:
         matrix = obj.matrix_basis
 
-        if self._transform == "css":
+        options = self.context.options
+        if options.transform_representation == "css":
             matrices = []
 
             if not tools.is_identity(obj.matrix_parent_inverse):
@@ -349,15 +349,7 @@ def write_blender_config(dir, context):
         stats_file.close()
 
 
-def save(operator,
-         context, filepath="",
-         use_selection=True,
-         global_matrix=None,
-         template_selection="preview",
-         xml3djs_selection="",
-         xml3d_minimized=False,
-         transform_representation="css"
-         ):
+def save(operator, context, options):
     """Save the Blender scene to a XML3D/HTML file."""
 
     from string import Template
@@ -375,27 +367,28 @@ def save(operator,
     # TODO: Time the export
     # time1 = time.clock()
 
-    version = xml3djs_selection + ("-min" if xml3d_minimized else "") + ".js"
+    version = options['xml3djs_selection'] + ("-min" if options['xml3d_minimized'] else "") + ".js"
 
     dirName = os.path.dirname(__file__)
-    output_dir = os.path.dirname(filepath)
+    file_path = options['filepath']
+    output_dir = os.path.dirname(file_path)
 
     # export the scene with all its assets
-    xml3d_exporter = XML3DExporter(context, os.path.dirname(filepath), transform_representation, object_progress())
+    xml3d_exporter = XML3DExporter(context, output_dir, options, object_progress())
     scene = xml3d_exporter.scene()
     xml3d_exporter.finalize()
 
-    template_dir = os.path.join(dirName, "templates/%s/" % template_selection)
+    template_dir = os.path.join(dirName, "templates/%s/" % options['template_selection'])
     template_path = os.path.join(template_dir, 'index.html')
     # TODO: Handle case if template file does not exist
     with open(template_path, "r") as templateFile:
         data = Template(templateFile.read())
-        file = open(filepath, 'w')
+        file = open(file_path, 'w')
         file.write(data.substitute(title=context.scene.name, xml3d=scene,
                                    version=version, generator="xml3d-blender-exporter v" + VERSION))
         file.close()
-        size = os.path.getsize(filepath)
-        xml3d_exporter.stats().scene = {"name": os.path.basename(filepath), "size": size}
+        size = os.path.getsize(file_path)
+        xml3d_exporter.stats().scene = {"name": os.path.basename(file_path), "size": size}
 
     # TODO: Make writing out stats optional
     info_dir = os.path.join(output_dir, "info")

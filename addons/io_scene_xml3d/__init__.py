@@ -93,6 +93,15 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default=True,
     )
 
+    asset_material_selection = EnumProperty(
+        name="Materials",
+        items=(('all', "Include all", "Store all materials within asset."),
+               ('none', "External", "Store materials in external library."),
+               ('shared', "Shared", "Store single user materials in asset, shared materials in external library."),
+               ),
+        default='none',
+    )
+
     # axis_forward = EnumProperty(
     #         name="Forward",
     #         items=(('X', "X Forward", ""),
@@ -128,6 +137,10 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         row.alignment = "RIGHT"
         row.prop(self, "xml3d_minimized")
 
+        asset_box = layout.box()
+        asset_box.label("Asset Options:", icon="OBJECT_DATA")
+        asset_box.prop(self, "asset_material_selection")
+
         scene_box = layout.box()
         scene_box.label("Scene Options:", icon="SCENE_DATA")
         scene_box.prop(self, "transform_representation")
@@ -142,7 +155,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         #                                 to_up=self.axis_up,
         #                                 ).to_4x4()
         # keywords["global_matrix"] = global_matrix
-        return export_xml3d.save(self, context, **keywords)
+        return export_xml3d.save(self, context, keywords)
 
 
 # Add to a menu
