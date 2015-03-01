@@ -102,12 +102,13 @@ class Vertex:
             return None
         return mathutils.Vector((round(v[0], 8), round(v[1], 8)))
 
-    def __init__(self, index, normal=None, uvs=None, group_index=None, group_weights=None):
+    def __init__(self, index, normal=None, uvs=None, group_index=None, group_weights=None, bc=0):
         self.index = index
         self.normal = self.veckey3d(normal)
         self.texcoord = self.veckey2d(uvs)
         self.group_index = self.veckey4d(group_index)
         self.group_weights = self.veckey4d(group_weights)
+        self.bc = bc
 
     def __str__(self):
         return "i: " + str(self.index) + ", n: " + str(self.normal) + ", t: " + str(self.texcoord)
@@ -140,4 +141,4 @@ class Vertex:
         return self.index
 
     def __eq__(self, other):
-        return self.index == other.index and self.normal == other.normal and self.texcoord == other.texcoord and self.group_index == other.group_index and self.group_weights == other.group_weights
+        return self.index == other.index and self.normal == other.normal and self.texcoord == other.texcoord and self.group_index == other.group_index and self.group_weights == other.group_weights and self.bc == other.bc

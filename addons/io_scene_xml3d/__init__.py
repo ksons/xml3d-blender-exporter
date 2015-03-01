@@ -165,6 +165,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         keywords = self.as_keywords(ignore=("filter_glob",
                                             "check_existing",
                                             ))
+        keywords['store_barycentric_coordinates'] = True
         # global_matrix = axis_conversion(to_forward=self.axis_forward,
         #                                 to_up=self.axis_up,
         #                                 ).to_4x4()
