@@ -50,6 +50,8 @@ class AssetExporter:
             converted = DefaultMaterial
 
         store = Material.evaluate_location(material, self.context.options.asset_material_selection)
+        if not store:
+            return None
 
         if store == "external":
             self.context.materials.add_material(converted)
@@ -271,7 +273,8 @@ class AssetExporter:
             asset_mesh = doc.createElement("assetmesh")
             asset_mesh.setAttribute("name", mesh["name"])
             asset_mesh.setAttribute("includes", mesh["includes"])
-            asset_mesh.setAttribute("shader", mesh["shader"])
+            if mesh['shader']:
+                asset_mesh.setAttribute("shader", mesh["shader"])
             if "transform" in mesh:
                 asset_mesh.setAttribute("style", "transform: %s;" % mesh["transform"])
 

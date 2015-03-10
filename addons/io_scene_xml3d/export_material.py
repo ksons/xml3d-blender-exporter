@@ -41,13 +41,15 @@ class Material:
 
     @staticmethod
     def evaluate_location(material, option):
-        if option == "none":
+        if option == "external":
             return "external"
-        if option == "all":
+        if option == "include":
             return "internal"
         # Single user means one user plus python environment which adds another user
         if option == "shared" and material and material.users <= 2:
             return "internal"
+        if option == "none":
+            return None
         return "external"
 
     def from_material(self, material):

@@ -95,11 +95,12 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
 
     asset_material_selection = EnumProperty(
         name="Materials",
-        items=(('all', "Include all", "Store all materials within asset."),
-               ('none', "External", "Store materials in external library."),
+        items=(('include', "Include all", "Store all materials within asset."),
+               ('external', "External", "Store materials in external library."),
                ('shared', "Shared", "Store single user materials in asset, shared materials in external library."),
+               ('none', "None", "Do not save materials for assets."),
                ),
-        default='none',
+        default='external',
     )
 
     # axis_forward = EnumProperty(
