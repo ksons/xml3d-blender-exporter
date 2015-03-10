@@ -92,7 +92,7 @@ class AssetExporter:
     def add_asset_data(self, asset, derived_object):
         model_configuration = ModelConfiguration()
         armature_info = None
-        armature_object, warn = tools.get_armature_object(derived_object)
+        armature_object, warn = tools.get_armature_object(derived_object, self.context)
 
         if warn:
             self.context.warning(warn)

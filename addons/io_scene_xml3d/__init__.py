@@ -42,7 +42,6 @@ from bpy_extras.io_utils import ExportHelper
 
 
 class ExportXML3D(bpy.types.Operator, ExportHelper):
-
     """Export to XML3D (.xml3d)"""
     bl_idname = "export_scene.xml3d"
     bl_label = 'Export XML3D'
@@ -103,29 +102,12 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default='external',
     )
 
-    # axis_forward = EnumProperty(
-    #         name="Forward",
-    #         items=(('X', "X Forward", ""),
-    #                ('Y', "Y Forward", ""),
-    #                ('Z', "Z Forward", ""),
-    #                ('-X', "-X Forward", ""),
-    #                ('-Y', "-Y Forward", ""),
-    #                ('-Z', "-Z Forward", ""),
-    #                ),
-    #         default='Y',
-    #         )
+    asset_export_armature = BoolProperty(
+        name="Export armatures",
+        description="Export armatures including animations. Exports static mesh otherwise.",
+        default=True,
+    )
 
-    # axis_up = EnumProperty(
-    #         name="Up",
-    #         items=(('X', "X Up", ""),
-    #                ('Y', "Y Up", ""),
-    #                ('Z', "Z Up", ""),
-    #                ('-X', "-X Up", ""),
-    #                ('-Y', "-Y Up", ""),
-    #                ('-Z', "-Z Up", ""),
-    #                ),
-    #         default='Z',
-    #         )
     def draw(self, context):
         layout = self.layout
 
@@ -141,6 +123,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         asset_box = layout.box()
         asset_box.label("Asset Options:", icon="OBJECT_DATA")
         asset_box.prop(self, "asset_material_selection")
+        asset_box.prop(self, "asset_export_armature")
 
         scene_box = layout.box()
         scene_box.label("Scene Options:", icon="SCENE_DATA")

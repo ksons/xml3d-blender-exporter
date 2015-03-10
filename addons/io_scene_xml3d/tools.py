@@ -41,7 +41,9 @@ def normalize_vec4(vec):
     return vec * (1.0 / vec.length)
 
 
-def get_armature_object(obj):
+def get_armature_object(obj, context):
+    if not context.options.asset_export_armature:
+        return None, None
     if len(obj.modifiers) == 1 and obj.modifiers[0].type == 'ARMATURE':
         return obj.modifiers[0].object, None
     if 'ARMATURE' in [m.type for m in obj.modifiers]:
