@@ -170,7 +170,7 @@ class XML3DExporter():
         if not url:
             return
 
-        self._writer.start_element("model", id=tools.escape_html_id(original_obj.data.name))
+        self._writer.start_element("model")
         self._writer.attribute("src", url)
 
         if model_config:
