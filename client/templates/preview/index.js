@@ -1,5 +1,6 @@
 var domready = require('domready')
-  , sunburst = require("./sunburst");
+  , sunburst = require("./sunburst")
+  , Kefir = require("kefir");
 
 
 $(function() {
@@ -162,23 +163,30 @@ $(function() {
     }
 
     var xml3d = document.querySelector("xml3d");
-    var activeObject = "";
-    var renderStatText = "";
-
-    function updateRenderText() {
-        renderStats.text(version + " | " + renderStatText + (activeObject ? (" | " + activeObject) : ""));
-    }
 
     xml3d.addEventListener("load", function () {
         $("span.fa-spin").removeClass("fa-spin fa-circle-o-notch").addClass("fa-check");
     });
 
     var lastAnimation = window.performance.now();
-    xml3d.addEventListener("framedrawn", function (e) {
-        var count = e.detail.count;
-        renderStatText = "Tris:" + count.primitives + " | Objects:" + count.objects;
-        updateRenderText();
 
+    var renderStream = Kefir.fromEvent(xml3d, 'framedrawn', function(e) { return e.detail; });
+
+    var renderStatText = renderStream.map(function(e) { return "Tris:" + e.count.primitives + " | Objects:" + e.count.objects;}).toProperty("?");
+
+    var objectStream = Kefir.fromEvent(xml3d, 'mouseover', function(e) {
+        if (e.target.nodeName == "MODEL") {
+            return e.target.parentElement.id;
+        }
+        return "";
+    });
+
+    var displayTextStream = Kefir.combine([Kefir.constant(version), renderStatText, objectStream]);
+    displayTextStream.onValue(function(v) {
+        renderStats.text(v.join(" | "));
+    });
+
+    renderStream.onValue(function(e) {
         var now = window.performance.now();
         var deltaTime = now - lastAnimation;
         lastAnimation = now;
@@ -192,15 +200,6 @@ $(function() {
             }
             animation_keys.text(currentFrame)
         }
-    });
-    xml3d.addEventListener("mouseover", function (e) {
-        //console.log("mouseover", e.target);
-        if (e.target.nodeName == "MODEL") {
-            activeObject = e.target.parentElement.id;
-        } else {
-            activeObject = "";
-        }
-        updateRenderText();
     });
 
     var view = $("<view id='v_pview'></view>");
