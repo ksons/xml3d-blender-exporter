@@ -28,9 +28,9 @@ class Options:
 
 
 class Context():
-    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], armatures=[], animations=[], warnings=[], scene=None)
+    stats = None
     base_url = None
-    copy_set = set()
+    copy_set = None
     materials = None
     scene = None
 
@@ -42,6 +42,8 @@ class Context():
         self.armatures = ArmatureLibrary(self, base_url + "/armatures.xml")
         # maps Blender Image objects to output path used as img tag src in the XML3D scene
         self.images = {}
+        self.copy_set = set()
+        self.stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], armatures=[], animations=[], warnings=[], scene=None)
 
     def warning(self, message, category=None, issue=None, obj=None):
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
