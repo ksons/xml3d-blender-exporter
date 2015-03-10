@@ -2,6 +2,7 @@ import json
 import os
 from .export_material import MaterialLibrary
 from .export_armature import ArmatureLibrary
+from .tools import safe_query_selector_id
 from bpy_extras.io_utils import path_reference_copy
 
 
@@ -33,6 +34,7 @@ class Context():
     copy_set = None
     materials = None
     scene = None
+    current_bin = 0
 
     def __init__(self, base_url, scene, options):
         self.base_url = base_url
@@ -44,10 +46,23 @@ class Context():
         self.images = {}
         self.copy_set = set()
         self.stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], armatures=[], animations=[], warnings=[], scene=None)
+        self.current_bin = 0
 
     def warning(self, message, category=None, issue=None, obj=None):
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
         print("Warning:", message)
+
+    def get_asset_collection(self, obj):
+        if self.options.asset_cluster_strategy == "none":
+            return safe_query_selector_id(obj.name)
+        if self.options.asset_cluster_strategy == "layers":
+            for i in range(len(obj.layers)):
+                if obj.layers[i] is True:
+                    return "layer-%s" % i
+        if self.options.asset_cluster_strategy == "bins":
+            result = "assets-%s" % Context.current_bin
+            Context.current_bin = (Context.current_bin + 1) % self.options.asset_cluster_bins_limit
+            return result
 
     def __copy_report(self, msg):
         self.warning(msg.capitalize(), "texture")

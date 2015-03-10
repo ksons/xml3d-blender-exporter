@@ -47,6 +47,7 @@ class XML3DExporter():
         self._writer = xml_writer.XMLWriter(self._output, 0)
         self._resource = {}
         self._object_progress = progress
+        self.asset_collections = {}
 
     def create_asset_directory(self):
         assetDir = os.path.join(self.context.base_url, ASSETDIR)
@@ -60,21 +61,28 @@ class XML3DExporter():
     def warning(self, message, category=None, issue=None):
         self.context.warning(message, category, issue)
 
-    def add_asset_from_geometry(self, geo_obj):
+    def get_or_create_asset_collection(self, obj):
+        asset_collection_name = self.context.get_asset_collection(obj)
+        path = os.path.join(self.create_asset_directory(), asset_collection_name + ".xml")
+
+        if path in self.asset_collections:
+            print("reusing", path)
+            return self.asset_collections[path]
+
+        asset_collection = export_asset.AssetCollection(asset_collection_name, self.context, path, self.blender_context.scene)
+        self.asset_collections[path] = asset_collection
+        return asset_collection
+
+    def add_to_asset_collection(self, geo_obj):
         assert geo_obj.type in {"MESH", "FONT", "SURFACE", "CURVE", "ARMATURE"}
 
-        asset_name = tools.safe_query_selector_id(geo_obj.data.name)
-
-        path = self.create_asset_directory()
-        path = os.path.join(path, asset_name + ".xml")
-        exporter = export_asset.AssetExporter(asset_name, self.context, path, self.blender_context.scene)
-        asset_config = exporter.add_asset(geo_obj)
+        asset_collection = self.get_or_create_asset_collection(geo_obj)
+        fragment, asset_config = asset_collection.add_asset(geo_obj)
 
         if not asset_config:
             return None, None
 
-        url = "%s/%s.xml#%s" % (ASSETDIR, asset_name, asset_name)
-        exporter.save()
+        url = "%s/%s.xml#%s" % (ASSETDIR, asset_collection.name, fragment)
         return url, asset_config
 
     def build_hierarchy(self, objects):
@@ -166,7 +174,7 @@ class XML3DExporter():
                 self._writer.end_element("assetdata")
 
     def create_geometry(self, original_obj):
-        url, model_config = self.add_asset_from_geometry(original_obj)
+        url, model_config = self.add_to_asset_collection(original_obj)
         if not url:
             return
 
@@ -303,6 +311,9 @@ class XML3DExporter():
         return self._output.getvalue()
 
     def finalize(self):
+        for collection in self.asset_collections.values():
+            collection.save()
+
         self.context.finalize()
 
 

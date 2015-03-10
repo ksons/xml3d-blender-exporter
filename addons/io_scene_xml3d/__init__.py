@@ -37,7 +37,7 @@ bl_info = {
 
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, EnumProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper
 
 
@@ -92,6 +92,21 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default=True,
     )
 
+    asset_cluster_strategy = EnumProperty(
+        name="Asset clustering",
+        items=(('none', "None", "Do not cluster assets."),
+               ('layers', "Layer", "Cluster assets per layer."),
+               ('bins', "Fixed", "Distribute assets over fixed number of files."),
+               ),
+        default='bins',
+    )
+
+    asset_cluster_bins_limit = IntProperty(
+        name="Bin Limit",
+        description="Limit number of asset files.",
+        default=8
+    )
+
     asset_material_selection = EnumProperty(
         name="Materials",
         items=(('include', "Include all", "Store all materials within asset."),
@@ -122,6 +137,17 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
 
         asset_box = layout.box()
         asset_box.label("Asset Options:", icon="OBJECT_DATA")
+
+        asset_box.label("Clustering:")
+        row = asset_box.row()
+        row.prop(self, "asset_cluster_strategy", expand=True)
+
+        if self.asset_cluster_strategy == "bins":
+            row = asset_box.row()
+            row.prop(self, "asset_cluster_bins_limit")
+
+        asset_box.separator()
+
         asset_box.prop(self, "asset_material_selection")
         asset_box.prop(self, "asset_export_armature")
 

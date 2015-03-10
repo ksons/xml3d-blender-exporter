@@ -28,7 +28,7 @@ class Asset:
         self.ref_assets = []
 
 
-class AssetExporter:
+class AssetCollection:
     context = None
     name = ""
     assets = []
@@ -67,7 +67,7 @@ class AssetExporter:
         free, derived_objects = create_derived_objects(self._scene, obj)
 
         if derived_objects is None:
-            return None
+            return None, None
 
         asset = Asset(id_=tools.safe_query_selector_id(obj.data.name))
 
@@ -87,7 +87,7 @@ class AssetExporter:
             free_derived_objects(obj)
 
         self.assets.append(asset)
-        return model_configuration
+        return asset.id, model_configuration
 
     def add_asset_data(self, asset, derived_object):
         model_configuration = ModelConfiguration()
@@ -297,7 +297,7 @@ class AssetExporter:
             assetFile.close()
             size = os.path.getsize(self._path)
 
-        stats.assets.append({"url": self._path, "size": size, "name": self.name})
+        stats.assets.append({"url": self._path, "size": size, "name": os.path.basename(self._path)})
 
 
 class ModelConfiguration:
