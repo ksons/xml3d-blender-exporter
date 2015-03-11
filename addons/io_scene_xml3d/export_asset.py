@@ -1,6 +1,6 @@
 import os
 from xml.dom.minidom import Document
-from .export_material import Material, DefaultMaterial, export_image
+from .export_material import Material, DefaultMaterial, MaterialLibrary, export_image
 from .data import DataEntry, DataType, DataReference, TextureEntry, write_generic_entry
 from bpy_extras.io_utils import create_derived_objects, free_derived_objects
 from . import tools
@@ -28,7 +28,7 @@ class Asset:
         self.ref_assets = []
 
 
-class AssetExporter:
+class AssetCollection:
     context = None
     name = ""
     assets = []
@@ -40,17 +40,26 @@ class AssetExporter:
         self._dir = os.path.dirname(path)
         self._scene = scene
         self.assets = []
-        self._material = {}
+        self.materials = {}
 
     def add_material(self, material):
-        url = self.context.materials.add_material(material)
-        if url is not None:
-            # TODO: Good URL handling
-            return "../materials.xml#" + material.id
 
-        if material.id not in self._material:
-            self._material[material.id] = material
-        return "#" + material.id
+        if material:
+            converted = Material.from_blender_material(material, self.context, self._dir)
+        else:
+            converted = DefaultMaterial
+
+        store = Material.evaluate_location(material, self.context.options.asset_material_selection)
+        if not store:
+            return None
+
+        if store == "external":
+            self.context.materials.add_material(converted)
+            return "../shared-materials.xml#" + converted.id
+
+        if converted.id not in self.materials:
+            self.materials[converted.id] = converted
+        return "#" + converted.id
 
     def add_asset(self, obj):
         model_configuration = None
@@ -58,7 +67,7 @@ class AssetExporter:
         free, derived_objects = create_derived_objects(self._scene, obj)
 
         if derived_objects is None:
-            return None
+            return None, None
 
         asset = Asset(id_=tools.safe_query_selector_id(obj.data.name))
 
@@ -78,12 +87,12 @@ class AssetExporter:
             free_derived_objects(obj)
 
         self.assets.append(asset)
-        return model_configuration
+        return asset.id, model_configuration
 
     def add_asset_data(self, asset, derived_object):
         model_configuration = ModelConfiguration()
         armature_info = None
-        armature_object, warn = tools.get_armature_object(derived_object)
+        armature_object, warn = tools.get_armature_object(derived_object, self.context)
 
         if warn:
             self.context.warning(warn)
@@ -207,11 +216,7 @@ class AssetExporter:
 
             submeshName = meshName + "_" + materialName
 
-            if material:
-                converted = Material.from_blender_material(material, self.context, self._dir)
-                material_url = self.add_material(converted)
-            else:
-                material_url = self.add_material(DefaultMaterial)
+            material_url = self.add_material(material)
 
             asset.meshes.append(
                 {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
@@ -220,6 +225,9 @@ class AssetExporter:
         doc = Document()
         xml3d = doc.createElement("xml3d")
         doc.appendChild(xml3d)
+        for material in self.materials.values():
+            MaterialLibrary.save_material_xml(material, xml3d)
+
         for asset in self.assets:
             self.asset_xml(asset, xml3d)
         doc.writexml(f, "", "  ", "\n", "UTF-8")
@@ -265,7 +273,8 @@ class AssetExporter:
             asset_mesh = doc.createElement("assetmesh")
             asset_mesh.setAttribute("name", mesh["name"])
             asset_mesh.setAttribute("includes", mesh["includes"])
-            asset_mesh.setAttribute("shader", mesh["shader"])
+            if mesh['shader']:
+                asset_mesh.setAttribute("shader", mesh["shader"])
             if "transform" in mesh:
                 asset_mesh.setAttribute("style", "transform: %s;" % mesh["transform"])
 
@@ -288,7 +297,7 @@ class AssetExporter:
             assetFile.close()
             size = os.path.getsize(self._path)
 
-        stats.assets.append({"url": self._path, "size": size, "name": self.name})
+        stats.assets.append({"url": self._path, "size": size, "name": os.path.basename(self._path)})
 
 
 class ModelConfiguration:

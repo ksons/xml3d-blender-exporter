@@ -37,12 +37,11 @@ bl_info = {
 
 
 import bpy
-from bpy.props import StringProperty, BoolProperty, EnumProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, IntProperty
 from bpy_extras.io_utils import ExportHelper
 
 
 class ExportXML3D(bpy.types.Operator, ExportHelper):
-
     """Export to XML3D (.xml3d)"""
     bl_idname = "export_scene.xml3d"
     bl_label = 'Export XML3D'
@@ -87,36 +86,78 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default='css-matrix',
     )
 
-    # TODO: Format selection nicely (see FBX exporter)
     xml3d_minimized = BoolProperty(
         name="Minimized",
         description="Uses minimized version of xml3d.js",
         default=True,
     )
 
-    # axis_forward = EnumProperty(
-    #         name="Forward",
-    #         items=(('X', "X Forward", ""),
-    #                ('Y', "Y Forward", ""),
-    #                ('Z', "Z Forward", ""),
-    #                ('-X', "-X Forward", ""),
-    #                ('-Y', "-Y Forward", ""),
-    #                ('-Z', "-Z Forward", ""),
-    #                ),
-    #         default='Y',
-    #         )
+    asset_cluster_strategy = EnumProperty(
+        name="Asset clustering",
+        items=(('none', "None", "Do not cluster assets."),
+               ('layers', "Layer", "Cluster assets per layer."),
+               ('bins', "Fixed", "Distribute assets over fixed number of files."),
+               ),
+        default='bins',
+    )
 
-    # axis_up = EnumProperty(
-    #         name="Up",
-    #         items=(('X', "X Up", ""),
-    #                ('Y', "Y Up", ""),
-    #                ('Z', "Z Up", ""),
-    #                ('-X', "-X Up", ""),
-    #                ('-Y', "-Y Up", ""),
-    #                ('-Z', "-Z Up", ""),
-    #                ),
-    #         default='Z',
-    #         )
+    asset_cluster_bins_limit = IntProperty(
+        name="Bin Limit",
+        description="Limit number of asset files.",
+        default=8,
+        soft_min=1,
+    )
+
+    asset_material_selection = EnumProperty(
+        name="Materials",
+        items=(('include', "Include all", "Store all materials within asset."),
+               ('external', "External", "Store materials in external library."),
+               ('shared', "Shared", "Store single user materials in asset, shared materials in external library."),
+               ('none', "None", "Do not save materials for assets."),
+               ),
+        default='external',
+    )
+
+    asset_export_armature = BoolProperty(
+        name="Export armatures",
+        description="Export armatures including animations. Exports static mesh otherwise.",
+        default=True,
+    )
+
+    def draw(self, context):
+        layout = self.layout
+
+        template_box = layout.box()
+        template_box.label("Template Options:", icon="FILE_SCRIPT")
+        template_box.prop(self, "template_selection")
+        template_box.prop(self, "xml3djs_selection")
+
+        row = template_box.row()
+        row.alignment = "RIGHT"
+        row.prop(self, "xml3d_minimized")
+
+        asset_box = layout.box()
+        asset_box.label("Asset Options:", icon="OBJECT_DATA")
+
+        row = asset_box.row()
+        row.label("Clustering:")
+        row.operator("wm.url_open", text="", icon="QUESTION").url = "https://github.com/ksons/xml3d-blender-exporter/wiki/Exporter-Options#asset-clustering"
+
+        row = asset_box.row()
+        row.prop(self, "asset_cluster_strategy", expand=True)
+
+        if self.asset_cluster_strategy == "bins":
+            row = asset_box.row()
+            row.prop(self, "asset_cluster_bins_limit")
+
+        asset_box.separator()
+
+        asset_box.prop(self, "asset_material_selection")
+        asset_box.prop(self, "asset_export_armature")
+
+        scene_box = layout.box()
+        scene_box.label("Scene Options:", icon="SCENE_DATA")
+        scene_box.prop(self, "transform_representation")
 
     def execute(self, context):
         from . import export_xml3d
@@ -128,7 +169,7 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         #                                 to_up=self.axis_up,
         #                                 ).to_4x4()
         # keywords["global_matrix"] = global_matrix
-        return export_xml3d.save(self, context, **keywords)
+        return export_xml3d.save(self, context, keywords)
 
 
 # Add to a menu

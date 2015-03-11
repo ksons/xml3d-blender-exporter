@@ -2,6 +2,13 @@ XML3D-Blender
 =============
 
 This is a very early version of a XML3D exporter for Blender.
+<p align="center">
+<img src="http://xml3d.org/xml3d/material/images/xml3d-blender-preview-360.png"/>
+<img src="http://xml3d.org/xml3d/material/images/xml3d-blender-stats-360.png"/>
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=sGsUhVLiUso
+" target="_blank"><img src="http://img.youtube.com/vi/sGsUhVLiUso/0.jpg" 
+alt="Blender XML3D Export" width="360" height="264" /></a>
+</p>
 
 ## Installation
 
@@ -16,6 +23,15 @@ For instance, if you cloned the repository to ```C:\Users\paul\xml3d-blender-exp
 
 ## Changelog
 
+### 0.3.0 (2015-03-11)
+
+Features:
+
+  - Asset Clustering
+  - Statistics in Preview template
+  - Improved UI for exporter options
+  - Bugfixed: #9, #10
+  
 ### 0.2.0 (2015-02-05)
 
 Features:

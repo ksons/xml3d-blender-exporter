@@ -2,6 +2,7 @@ import json
 import os
 from .export_material import MaterialLibrary
 from .export_armature import ArmatureLibrary
+from .tools import safe_query_selector_id
 from bpy_extras.io_utils import path_reference_copy
 
 
@@ -22,24 +23,46 @@ class Stats(object):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
+class Options:
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+
+
 class Context():
-    stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], armatures=[], animations=[], warnings=[], scene=None)
+    stats = None
     base_url = None
-    copy_set = set()
+    copy_set = None
     materials = None
     scene = None
+    current_bin = 0
 
-    def __init__(self, base_url, scene):
+    def __init__(self, base_url, scene, options):
         self.base_url = base_url
         self.scene = scene
-        self.materials = MaterialLibrary(self, base_url + "/materials.xml")
+        self.options = Options(**options)
+        self.materials = MaterialLibrary(self, base_url + "/shared-materials.xml")
         self.armatures = ArmatureLibrary(self, base_url + "/armatures.xml")
         # maps Blender Image objects to output path used as img tag src in the XML3D scene
         self.images = {}
+        self.copy_set = set()
+        self.stats = Stats(assets=[], lights=0, views=0, groups=0, materials=[], textures=[], meshes=[], armatures=[], animations=[], warnings=[], scene=None)
+        self.current_bin = 0
 
     def warning(self, message, category=None, issue=None, obj=None):
         self.stats.warnings.append({"message": message, "issue": issue, "object": obj, "category": category})
         print("Warning:", message)
+
+    def get_asset_collection(self, obj):
+        if self.options.asset_cluster_strategy == "none":
+            return safe_query_selector_id(obj.name)
+        if self.options.asset_cluster_strategy == "layers":
+            for i in range(len(obj.layers)):
+                if obj.layers[i] is True:
+                    return "layer-%s" % i
+        if self.options.asset_cluster_strategy == "bins":
+            result = "assets-%s" % Context.current_bin
+            Context.current_bin = (Context.current_bin + 1) % self.options.asset_cluster_bins_limit
+            return result
 
     def __copy_report(self, msg):
         self.warning(msg.capitalize(), "texture")

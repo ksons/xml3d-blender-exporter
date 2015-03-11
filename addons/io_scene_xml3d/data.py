@@ -10,6 +10,7 @@ class DataType(Enum):
     float16 = "float4x4"
     int = "int"
     int4 = "int4"
+    bool = "bool"
     texture = "texture"
     data = "data"
 

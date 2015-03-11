@@ -10,6 +10,8 @@ BLENDER2XML_MATERIAL = "(diffuseColor, specularColor, shininess, transparency) =
 
 TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 
+IMG_FORMAT_2_EXTENSION = dict(JPEG=".jpg", PNG=".png")
+
 
 class Material:
     context = None
@@ -36,6 +38,19 @@ class Material:
         mat.from_material(material)
         mat.compute = BLENDER2XML_MATERIAL
         return mat
+
+    @staticmethod
+    def evaluate_location(material, option):
+        if option == "external":
+            return "external"
+        if option == "include":
+            return "internal"
+        # Single user means one user plus python environment which adds another user
+        if option == "shared" and material and material.users <= 2:
+            return "internal"
+        if option == "none":
+            return None
+        return "external"
 
     def from_material(self, material):
         data = self.data
@@ -124,17 +139,22 @@ class MaterialLibrary:
         doc.appendChild(xml3d)
 
         for material in self.materials:
-            shader = doc.createElement("shader")
-            shader.setAttribute("id", material.id)
-            shader.setAttribute("script", material.script)
-            if material.compute:
-                shader.setAttribute("compute", material.compute)
-            for entry in material.data:
-                entry_element = write_generic_entry(doc, entry)
-                shader.appendChild(entry_element)
-            xml3d.appendChild(shader)
+            MaterialLibrary.save_material_xml(material, xml3d)
 
         doc.writexml(file, "", "  ", "\n", "UTF-8")
+
+    @staticmethod
+    def save_material_xml(material, parent):
+        shader = parent.ownerDocument.createElement("shader")
+        shader.setAttribute("id", material.id)
+        shader.setAttribute("script", material.script)
+        if material.compute:
+            shader.setAttribute("compute", material.compute)
+        for entry in material.data:
+            entry_element = write_generic_entry(shader.ownerDocument, entry)
+            shader.appendChild(entry_element)
+        parent.appendChild(shader)
+        pass
 
     def save(self):
         if not len(self.materials):
@@ -145,7 +165,7 @@ class MaterialLibrary:
             materialFile.close()
             size = os.path.getsize(self.url)
 
-        self.context.stats.materials.append({"name": "material.xml", "size": size})
+        self.context.stats.materials.append({"name": os.path.basename(self.url), "size": size})
 
 
 def export_image(image, context):
@@ -162,22 +182,32 @@ def export_image(image, context):
 
     if image.file_format in {'PNG', 'JPEG'}:
         if image.packed_file:
-            return save_packed_image(image, context)
+            image_src = save_packed_image(image, context)
         else:
-            return copy_image(image, context)
+            image_src = copy_image(image, context)
+    else:
+        image_src = convert_and_export(image, texture_path, context)
 
-    return convert_and_export(image, texture_path, context)
+    # Save the image to not export it again
+    context.images[image] = image_src
+    return image_src
 
 
 def save_packed_image(image, context):
     image_data = image.packed_file.data
+    image_name = tools.safe_filename_from_image(image) + IMG_FORMAT_2_EXTENSION[image.file_format]
 
-    image_src = os.path.join("textures", image.name)
+    image_src = os.path.join("textures", image_name)
     file_path = os.path.join(context.base_url, image_src)
     if not os.path.exists(file_path):
         with open(file_path, "wb") as image_file:
             image_file.write(image_data)
             image_file.close()
+
+    # Save file and file size in stats
+    context.stats.textures.append({"name": image_name, "size": os.path.getsize(file_path)})
+
+    image_src = image_src.replace('\\', '/')
     return image_src
 
 
@@ -185,6 +215,7 @@ def copy_image(image, context):
     base_src = os.path.dirname(bpy.data.filepath)
     filepath_full = bpy.path.abspath(image.filepath, library=image.library)
     image_src = path_reference(filepath_full, base_src, context.base_url, 'COPY', "textures", context.copy_set, image.library)
+    # Stats are written when files have been copied (see Context.finalize)
     return image_src
 
 
@@ -203,6 +234,8 @@ def convert_and_export(image, texture_path, context):
         w.write_packed(image_file, pixels)
         image_file.close()
 
+    # Save file and file size in stats
+    context.stats.textures.append({"name": file_name, "size": os.path.getsize(file_path)})
+
     image_src = image_src.replace('\\', '/')
-    context.images[image] = image_src
     return image_src
