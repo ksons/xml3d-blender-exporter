@@ -66,7 +66,6 @@ class XML3DExporter():
         path = os.path.join(self.create_asset_directory(), asset_collection_name + ".xml")
 
         if path in self.asset_collections:
-            print("reusing", path)
             return self.asset_collections[path]
 
         asset_collection = export_asset.AssetCollection(asset_collection_name, self.context, path, self.blender_context.scene)
