@@ -104,7 +104,8 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
     asset_cluster_bins_limit = IntProperty(
         name="Bin Limit",
         description="Limit number of asset files.",
-        default=8
+        default=8,
+        soft_min=1,
     )
 
     asset_material_selection = EnumProperty(
@@ -138,7 +139,10 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         asset_box = layout.box()
         asset_box.label("Asset Options:", icon="OBJECT_DATA")
 
-        asset_box.label("Clustering:")
+        row = asset_box.row()
+        row.label("Clustering:")
+        row.operator("wm.url_open", text="", icon="QUESTION").url = "https://github.com/ksons/xml3d-blender-exporter/wiki/Exporter-Options#asset-clustering"
+
         row = asset_box.row()
         row.prop(self, "asset_cluster_strategy", expand=True)
 
