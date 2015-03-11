@@ -164,11 +164,6 @@ $(function() {
     }
 
     var xml3d = document.querySelector("xml3d");
-    var activeObject = "";
-
-    function updateRenderText() {
-        //renderStats.text(version + " | " + renderStatText + (activeObject ? (" | " + activeObject) : ""));
-    }
 
     xml3d.addEventListener("load", function () {
         $("span.fa-spin").removeClass("fa-spin fa-circle-o-notch").addClass("fa-check");
