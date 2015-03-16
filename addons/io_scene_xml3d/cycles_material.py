@@ -1,6 +1,6 @@
-from string import Template
+from .data import DataType, DataEntry, TextureEntry
 from .jscodegen import generate
-import json
+from .export_image import export_image
 
 
 class NotSupportedError(Exception):
@@ -17,7 +17,7 @@ class NodeContext:
         self.funcs = []
         self.name_hint = []
         self.bound_variables = set()
-        self.env = {}
+        self.env = []
 
     def create_variable(self, postfix):
         prefix = "" if not len(self.name_hint) else self.name_hint[-1] + "_"
@@ -31,8 +31,9 @@ class NodeContext:
 
 
 class CyclesMaterial:
-    def __init__(self, tree):
+    def __init__(self, tree, ctx):
         self.tree = tree
+        self.ctx = ctx
         self.bound_sockets = {}
 
     def output_material(self, node, ctx):
@@ -65,16 +66,24 @@ class CyclesMaterial:
         return [result[1], result[2]]
 
     def tex_image(self, node, ctx):
-        # TODO: Write image into env object
-        print(node.image)
         local_var = ctx.create_variable("texture")
         sample = MemberExpression(Identifier("env"), Identifier(local_var))
-        sample = MemberExpression(sample, Identifier("sample2d"))
+        sample = MemberExpression(sample, Identifier("sample2D"))
         # TODO: Walk along input "Vector" input
         sample = CallExpression(sample, [MemberExpression(Identifier("env"), Identifier("texcoord"))])
-        sample = ExpressionStatement(AssignmentExpression(Identifier(local_var), sample))
+        sample = VariableDeclaration(VariableDeclarator(Identifier(local_var),sample))
         ctx.body.append(sample)
+
+        # Export the texture to the environmet
+        src = export_image(node.image, self.ctx)
+        ctx.env.append(TextureEntry(local_var, src))
         return Identifier(local_var)
+
+    def tex_image_color(self, socket, node_result, ctx):
+        return CallExpression(MemberExpression(node_result, Identifier("rgb")))
+
+    def tex_image_alpha(self, socket, node_result, ctx):
+        return CallExpression(MemberExpression(node_result, Identifier("a")))
 
     def bsdf_diffuse(self, node, ctx):
         ctx.name_hint.append("diffuse")
@@ -109,9 +118,31 @@ class CyclesMaterial:
         return NewExpression(Identifier("Vec3"), [Literal(c) for c in vec3[:3]])
 
 
+    def cast_type(self, expr, is_type, should_type):
+        if is_type == should_type:
+            return expr
+
+        if is_type == "VALUE" and should_type == "RGBA":
+            return NewExpression(Identifier("Vec3"), [expr])
+
+        raise Exception("Can not cast from '%s' to '%s'" % (is_type, should_type))
+
+
     def walk_socket(self, socket, ctx, default=None):
         if socket.is_linked:
-            return self.walk(socket.links[0].from_node, ctx)
+            from_node = socket.links[0].from_node
+            from_socket = socket.links[0].from_socket
+            node_result = self.walk(from_node, ctx)
+            try:
+                socket_handler_name = from_node.bl_static_type.lower() + "_" + from_socket.identifier.lower()
+                socket_handler = getattr(self, socket_handler_name)
+                node_result = socket_handler(from_socket, node_result, ctx)
+            except AttributeError:
+                print("sockerhandler not found:", socket_handler_name)
+
+            # print(from_socket.bl_idname, from_socket.bl_rna, from_socket.identifier, from_socket.name, from_socket.type )
+            node_result = self.cast_type(node_result, from_socket.type, socket.type)
+            return node_result
         elif default:
             return default
         else:
@@ -143,22 +174,22 @@ class CyclesMaterial:
                     yield from node_generator(node_link.from_node)
 
         start_node = next((node for node in self.tree.nodes if node.bl_static_type == "OUTPUT_MATERIAL"))
+        ctx = NodeContext()
 
         try:
-            ctx = NodeContext()
             result = self.walk(start_node, ctx)
             body.extend(ctx.body)
             body.append(result)
             # print(result)
             program = generate(program)
         except NotSupportedError as err:
-            return None, str(err.value)
+            return None, None, str(err.value)
 
 
         # body.reverse()
         # program = generate(program)
         print(program)
-        return program, None
+        return program, ctx.env, None
 
 
 class Node(dict):

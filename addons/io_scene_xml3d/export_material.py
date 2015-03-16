@@ -34,7 +34,6 @@ class Material:
         material_id = tools.safe_query_selector_id(material.name)
         mat = Material(material_id, context, path)
         mat.from_material(material)
-        mat.compute = BLENDER2XML_MATERIAL
         return mat
 
     @staticmethod
@@ -53,11 +52,16 @@ class Material:
     def from_material(self, material):
         print("Material", material.name)
         if material.node_tree:
-            script, err = CyclesMaterial(material.node_tree).create()
+            script, data, err = CyclesMaterial(material.node_tree, self.context).create()
             if err:
                 self.context.warning("In material '{0:s}': {1:s}. Fallback to standard material model.".format(material.name, err))
             else:
                 self.script = script
+                self.data.extend(data)
+                return
+
+        # use Blender's standard material model
+        self.compute = BLENDER2XML_MATERIAL
 
         data = self.data
         data.append(DataEntry("diffuse_intensity", DataType.float, material.diffuse_intensity))
