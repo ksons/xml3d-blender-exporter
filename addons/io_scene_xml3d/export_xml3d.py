@@ -8,7 +8,7 @@ from . import tools
 from .data import write_generic_entry_html
 from shutil import copytree
 
-VERSION = "0.2.0"
+VERSION = "0.4.0"
 ASSETDIR = "assets"
 LIGHTMODELMAP = {
     "POINT": ("point", "intensity = xflow.blenderPoint(color, energy)"),
