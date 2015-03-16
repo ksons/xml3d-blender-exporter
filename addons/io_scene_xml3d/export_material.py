@@ -1,5 +1,6 @@
 import os
 from xml.dom.minidom import Document
+from .cycles_material import CyclesMaterial
 from .data import DataType, DataEntry, TextureEntry, write_generic_entry
 from .export_image import export_image
 from . import tools
@@ -50,6 +51,14 @@ class Material:
         return "external"
 
     def from_material(self, material):
+        print("Material", material.name)
+        if material.node_tree:
+            script, err = CyclesMaterial(material.node_tree).create()
+            if err:
+                self.context.warning("In material '{0:s}': {1:s}. Fallback to standard material model.".format(material.name, err))
+            else:
+                self.script = script
+
         data = self.data
         data.append(DataEntry("diffuse_intensity", DataType.float, material.diffuse_intensity))
         data.append(DataEntry("diffuse_color", DataType.float3, list(material.diffuse_color)))
@@ -142,9 +151,21 @@ class MaterialLibrary:
 
     @staticmethod
     def save_material_xml(material, parent):
-        shader = parent.ownerDocument.createElement("shader")
+        doc = parent.ownerDocument
+        shader = doc.createElement("shader")
         shader.setAttribute("id", material.id)
-        shader.setAttribute("script", material.script)
+
+        if material.script.startswith("urn:"):
+            shader.setAttribute("script", material.script)
+        else:
+            shader.setAttribute("script", "#s_" + material.id)
+            script = doc.createElement("script")
+            script.setAttribute("id", "s_" + material.id)
+            script.setAttribute("type", "text/shade-javascript")
+            text = doc.createTextNode(material.script)
+            script.appendChild(text)
+            parent.appendChild(script)
+
         if material.compute:
             shader.setAttribute("compute", material.compute)
         for entry in material.data:
