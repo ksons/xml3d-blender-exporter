@@ -10,6 +10,7 @@ def export_tessfaces(mesh, armature_info, context):
         return None, None
 
     material_count = len(mesh.materials)
+    store_barycentric_coordinates = context.options.mesh_export_barycentric_coordinates
 
     # Mesh indices:
     # For each material allocate an array
@@ -44,7 +45,7 @@ def export_tessfaces(mesh, armature_info, context):
 
             group_index, group_weights = get_bones_and_weights(mesh.vertices[vertexIndex].groups, armature_info)
 
-            mv = Vertex(vertexIndex, normal, uv_vertex, group_index, group_weights)
+            mv = Vertex(vertexIndex, normal, uv_vertex, group_index, group_weights, i if store_barycentric_coordinates else -1)
 
             index, added = append_unique(vertex_dict, mv)
             faceIndices.append(index)
@@ -121,11 +122,13 @@ def get_vertex_attributes(mesh, vertices):
     positions = []
     normals = []
     texcoord = []
+    barycentric = []
     group_weights = []
     group_indices = []
 
     has_texcoords = vertices[0].texcoord
     has_weights = vertices[0].group_weights
+    has_barycentric = vertices[0].bc != -1
     for v in vertices:
         positions += mesh.vertices[v.index].co[:]
         normals += v.normal[:]
@@ -135,10 +138,21 @@ def get_vertex_attributes(mesh, vertices):
             group_weights += v.group_weights[:] if v.group_weights else [0, 0, 0, 0]
             group_indices += v.group_index[:] if v.group_index else [0, 0, 0, 0]
 
+        if has_barycentric:
+            if v.bc == 0:
+                barycentric += [1, 0, 0]
+            elif v.bc == 1 or v.bc == 3:
+                barycentric += [0, 1, 0]
+            else:
+                barycentric += [0, 0, 1]
+
     content.append(DataEntry("position", DataType.float3, positions))
     content.append(DataEntry("normal", DataType.float3, normals))
     if has_texcoords:
         content.append(DataEntry("texcoord", DataType.float2, texcoord))
+
+    if has_barycentric:
+        content.append(DataEntry("barycentric", DataType.float3, barycentric))
 
     if has_weights:
         content.append(DataEntry("bone_index", DataType.int4, group_indices))

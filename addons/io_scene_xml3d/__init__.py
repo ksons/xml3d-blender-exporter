@@ -124,6 +124,12 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default=True,
     )
 
+    mesh_export_barycentric_coordinates = BoolProperty(
+        name="Export Barycentric Coordinates",
+        description="Export barycentric coordinates as vertex attributes. Required for instance for wireframe rendering.",
+        default=False
+    )
+
     def draw(self, context):
         layout = self.layout
 
@@ -158,6 +164,10 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         scene_box = layout.box()
         scene_box.label("Scene Options:", icon="SCENE_DATA")
         scene_box.prop(self, "transform_representation")
+
+        mesh_box = layout.box()
+        mesh_box.label("Mesh Options:", icon="OUTLINER_DATA_MESH")
+        mesh_box.prop(self, "mesh_export_barycentric_coordinates")
 
     def execute(self, context):
         from . import export_xml3d
