@@ -244,6 +244,10 @@ class XML3DExporter():
                 # TODO: How do spot light softness and blend correlate?
                 self._writer.element("float", name="softness", _content="%.4f" % lamp_data.spot_blend)
 
+                if lamp_data.shadow_method != 'NOSHADOW':
+                    self._writer.element("bool", name="castShadow", _content="true")
+                    self._writer.element("float", name="shadowBias", _content="%4f" % (lamp_data.shadow_buffer_bias / 100.0))
+
             if lamp_data.type in {"POINT", "SPOT"}:
                 attens = [1.0, 0.0, 0.0]
                 if lamp_data.falloff_type == 'CONSTANT':
