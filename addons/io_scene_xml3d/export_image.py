@@ -6,6 +6,7 @@ from bpy_extras.io_utils import path_reference
 
 IMG_FORMAT_2_EXTENSION = dict(JPEG=".jpg", PNG=".png")
 
+
 def export_image(image, context):
     if image in context.images:
         return context.images[image]
