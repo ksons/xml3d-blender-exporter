@@ -10,8 +10,7 @@ def export_tessfaces(mesh, armature_info, context):
         return None, None
 
     material_count = len(mesh.materials)
-    store_barycentric_coordinates = True
-
+    store_barycentric_coordinates = context.options.mesh_export_barycentric_coordinates
 
     # Mesh indices:
     # For each material allocate an array
@@ -46,7 +45,6 @@ def export_tessfaces(mesh, armature_info, context):
 
             group_index, group_weights = get_bones_and_weights(mesh.vertices[vertexIndex].groups, armature_info)
 
-            print(i)
             mv = Vertex(vertexIndex, normal, uv_vertex, group_index, group_weights, i if store_barycentric_coordinates else -1)
 
             index, added = append_unique(vertex_dict, mv)
@@ -148,8 +146,6 @@ def get_vertex_attributes(mesh, vertices):
             else:
                 barycentric += [0, 0, 1]
 
-
-
     content.append(DataEntry("position", DataType.float3, positions))
     content.append(DataEntry("normal", DataType.float3, normals))
     if has_texcoords:
@@ -157,7 +153,6 @@ def get_vertex_attributes(mesh, vertices):
 
     if has_barycentric:
         content.append(DataEntry("barycentric", DataType.float3, barycentric))
-
 
     if has_weights:
         content.append(DataEntry("bone_index", DataType.int4, group_indices))
