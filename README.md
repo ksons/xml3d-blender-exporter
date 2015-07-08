@@ -12,14 +12,13 @@ alt="Blender XML3D Export" width="360" height="264" /></a>
 
 ## Installation
 
-The add-on is not yet in the Blender repository. You need to checkout the repository:
-```bash
-git clone https://github.com/ksons/xml3d-blender-exporter.git
-```
+The add-on is not yet in the Blender repository. Find the [latest archive here](https://github.com/ksons/xml3d-blender-exporter/releases). It is called io_scene_xml3d-X.Y.Z.zip.
 
-Setup an additional search path for scripts in [User preferences](http://wiki.blender.org/index.php/Doc:2.6/Manual/Preferences/File#File_Paths) (_User Preferences → File_).
-For instance, if you cloned the repository to ```C:\Users\paul\xml3d-blender-exporter```, then add this path to the search path like this:
-<p align="center"><img width="50%" src="./doc/blender-user-scripts.png"/></p>
+You can install the archive using the ``Install from File...`` button in ``File->User preferences...->Add-ons``.
+After installing you have to find the add-on and activate it.
+<p align="center"><img width="50%" src="./doc/addon-install.png"/></p>
+
+After this procedure, the exporter is available from  ``File->Export->XML3D (.html)``.
 
 ## Changelog
 
