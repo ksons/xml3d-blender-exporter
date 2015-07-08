@@ -23,6 +23,13 @@ For instance, if you cloned the repository to ```C:\Users\paul\xml3d-blender-exp
 
 ## Changelog
 
+### 0.4.0 (2015-07-08)
+
+Features:
+  - xml3d.js 4.9 support
+  - Export barycentric coordinates
+  - Spot light shadows
+
 ### 0.3.0 (2015-03-11)
 
 Features:
