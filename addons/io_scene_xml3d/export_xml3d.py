@@ -187,14 +187,47 @@ class XML3DExporter():
 
     def create_lamp(self, obj):
 
-        lightdata = obj.data
+        lamp_data = obj.data
+        light_model, compute = blender_lamp_to_xml3d_light(lamp_data.type)
 
-        if not blender_lamp_to_xml3d_light(lightdata.type)[0]:
-            # Warning already reported in lightshader
+        if not light_model:
+            self.warning("Lamp '%s' is of type '%s', which is not (yet) supported. Skipped lamp." % (lamp_data.name, lamp_data.type), "lamp", 4)
             return
 
-        self._writer.start_element(
-            "light", shader="#" + tools.escape_html_id("ls_" + lightdata.name))
+        self._writer.start_element("light", model="urn:xml3d:light:" + light_model, compute=compute)
+
+        if lamp_data.type == "SPOT":
+            self._writer.element("float", name="falloffAngle", _content="%.4f" % (lamp_data.spot_size / 2.0))
+            # TODO: How do spot light softness and blend correlate?
+            self._writer.element("float", name="softness", _content="%.4f" % lamp_data.spot_blend)
+
+            if lamp_data.shadow_method != 'NOSHADOW':
+                self._writer.element("bool", name="castShadow", _content="true")
+                self._writer.element("float", name="shadowBias", _content="%4f" % (lamp_data.shadow_buffer_bias / 100.0))
+
+        if lamp_data.type in {"POINT", "SPOT"}:
+            attens = [1.0, 0.0, 0.0]
+            if lamp_data.falloff_type == 'CONSTANT':
+                attens = [1.0, 0.0, 0.0]
+            elif lamp_data.falloff_type == 'INVERSE_LINEAR':
+                attens = [1.0, 1.0 / lamp_data.distance, 0.0]
+            elif lamp_data.falloff_type == 'INVERSE_SQUARE':
+                attens = [
+                    1.0, 0.0, 1.0 / (lamp_data.distance * lamp_data.distance)]
+            elif lamp_data.falloff_type == 'LINEAR_QUADRATIC_WEIGHTED':
+                attens = [
+                    1.0, lamp_data.linear_attenuation, lamp_data.quadratic_attenuation]
+            else:
+                self.warning("Lamp '%s' has falloff type '%s', which is not (yet) supported. Using CONSTANT instead." % (lamp_data.name, lamp_data.falloff_type))
+
+            self._writer.element("float3", name="attenuation", _content="%.4f %.4f %.4f" % tuple(attens))
+
+        self._writer.element("float3", name="color", _content="%.4f %.4f %.4f" % tuple(lamp_data.color))
+        self._writer.element("float", name="energy", _content="%.4f" % lamp_data.energy)
+
+        # if lamp_data.shadow_method == 'RAY_SHADOW':
+        #    self._writer.element("bool", name="castShadow", _content="true")
+
         self._writer.end_element("light")
         self.context.stats.lights += 1
 
@@ -228,53 +261,7 @@ class XML3DExporter():
 
     def create_def(self):
         self._writer.start_element("defs")
-        for lamp_data in bpy.data.lamps:
-            light_model, compute = blender_lamp_to_xml3d_light(lamp_data.type)
 
-            if not light_model:
-                self.warning("Lamp '%s' is of type '%s', which is not (yet) supported. Skipped lamp." % (lamp_data.name, lamp_data.type), "lamp", 4)
-                continue
-
-            self._writer.start_element(
-                "lightshader", script="urn:xml3d:lightshader:" + light_model, compute=compute)
-            self.write_id(lamp_data, "ls_")
-
-            if lamp_data.type == "SPOT":
-                self._writer.element("float", name="falloffAngle", _content="%.4f" % (lamp_data.spot_size / 2.0))
-                # TODO: How do spot light softness and blend correlate?
-                self._writer.element("float", name="softness", _content="%.4f" % lamp_data.spot_blend)
-
-                if lamp_data.shadow_method != 'NOSHADOW':
-                    self._writer.element("bool", name="castShadow", _content="true")
-                    self._writer.element("float", name="shadowBias", _content="%4f" % (lamp_data.shadow_buffer_bias / 100.0))
-
-            if lamp_data.type in {"POINT", "SPOT"}:
-                attens = [1.0, 0.0, 0.0]
-                if lamp_data.falloff_type == 'CONSTANT':
-                    attens = [1.0, 0.0, 0.0]
-                elif lamp_data.falloff_type == 'INVERSE_LINEAR':
-                    attens = [1.0, 1.0 / lamp_data.distance, 0.0]
-                elif lamp_data.falloff_type == 'INVERSE_SQUARE':
-                    attens = [
-                        1.0, 0.0, 1.0 / (lamp_data.distance * lamp_data.distance)]
-                elif lamp_data.falloff_type == 'LINEAR_QUADRATIC_WEIGHTED':
-                    attens = [
-                        1.0, lamp_data.linear_attenuation, lamp_data.quadratic_attenuation]
-                else:
-                    self.warning("Lamp '%s' has falloff type '%s', which is not (yet) supported. Using CONSTANT instead." % (lamp_data.name, lamp_data.falloff_type))
-
-                self._writer.element(
-                    "float3", name="attenuation", _content="%.4f %.4f %.4f" % tuple(attens))
-
-            self._writer.element(
-                "float3", name="color", _content="%.4f %.4f %.4f" % tuple(lamp_data.color))
-            self._writer.element(
-                "float", name="energy", _content="%.4f" % lamp_data.energy)
-
-            # if lamp_data.shadow_method == 'RAY_SHADOW':
-            #    self._writer.element("bool", name="castShadow", _content="true")
-
-            self._writer.end_element("lightshader")
 
         self._writer.end_element("defs")
 
