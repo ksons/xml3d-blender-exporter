@@ -20,100 +20,77 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-@version: 4.9.0
+@version: 4.9.2
 **/
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /**
  * @fileoverview gl-matrix - High performance matrix and vector operations
  * @author Brandon Jones
  * @author Colin MacKenzie IV
- * @version 2.2.2
+ * @version 2.3.1
  */
 
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+// END HEADER
 
+exports.glMatrix = require("./gl-matrix/common.js");
+exports.mat2 = require("./gl-matrix/mat2.js");
+exports.mat2d = require("./gl-matrix/mat2d.js");
+exports.mat3 = require("./gl-matrix/mat3.js");
+exports.mat4 = require("./gl-matrix/mat4.js");
+exports.quat = require("./gl-matrix/quat.js");
+exports.vec2 = require("./gl-matrix/vec2.js");
+exports.vec3 = require("./gl-matrix/vec3.js");
+exports.vec4 = require("./gl-matrix/vec4.js");
+},{"./gl-matrix/common.js":2,"./gl-matrix/mat2.js":3,"./gl-matrix/mat2d.js":4,"./gl-matrix/mat3.js":5,"./gl-matrix/mat4.js":6,"./gl-matrix/quat.js":7,"./gl-matrix/vec2.js":8,"./gl-matrix/vec3.js":9,"./gl-matrix/vec4.js":10}],2:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
-(function(_global) {
-  "use strict";
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-  var shim = {};
-  if (typeof(exports) === 'undefined') {
-    if(typeof define == 'function' && typeof define.amd == 'object' && define.amd) {
-      shim.exports = {};
-      define(function() {
-        return shim.exports;
-      });
-    } else {
-      // gl-matrix lives in a browser, define its namespaces in global
-      shim.exports = typeof(window) !== 'undefined' ? window : _global;
-    }
-  }
-  else {
-    // gl-matrix lives in commonjs, define its namespaces in exports
-    shim.exports = exports;
-  }
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
 
-  (function(exports) {
-    /* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
-
-if(!GLMAT_EPSILON) {
-    var GLMAT_EPSILON = 0.000001;
-}
-
-if(!GLMAT_ARRAY_TYPE) {
-    var GLMAT_ARRAY_TYPE = (typeof Float32Array !== 'undefined') ? Float32Array : Array;
-}
-
-if(!GLMAT_RANDOM) {
-    var GLMAT_RANDOM = Math.random;
-}
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
 
 /**
  * @class Common utilities
  * @name glMatrix
  */
 var glMatrix = {};
+
+// Constants
+glMatrix.EPSILON = 0.000001;
+glMatrix.ARRAY_TYPE = (typeof Float32Array !== 'undefined') ? Float32Array : Array;
+glMatrix.RANDOM = Math.random;
 
 /**
  * Sets the type of array used when creating new vectors and matrices
@@ -122,10 +99,6 @@ var glMatrix = {};
  */
 glMatrix.setMatrixArrayType = function(type) {
     GLMAT_ARRAY_TYPE = type;
-}
-
-if(typeof(exports) !== 'undefined') {
-    exports.glMatrix = glMatrix;
 }
 
 var degree = Math.PI / 180;
@@ -138,1762 +111,36 @@ var degree = Math.PI / 180;
 glMatrix.toRadian = function(a){
      return a * degree;
 }
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
-/**
- * @class 2 Dimensional Vector
- * @name vec2
- */
-
-var vec2 = {};
-
-/**
- * Creates a new, empty vec2
- *
- * @returns {vec2} a new 2D vector
- */
-vec2.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(2);
-    out[0] = 0;
-    out[1] = 0;
-    return out;
-};
-
-/**
- * Creates a new vec2 initialized with values from an existing vector
- *
- * @param {vec2} a vector to clone
- * @returns {vec2} a new 2D vector
- */
-vec2.clone = function(a) {
-    var out = new GLMAT_ARRAY_TYPE(2);
-    out[0] = a[0];
-    out[1] = a[1];
-    return out;
-};
-
-/**
- * Creates a new vec2 initialized with the given values
- *
- * @param {Number} x X component
- * @param {Number} y Y component
- * @returns {vec2} a new 2D vector
- */
-vec2.fromValues = function(x, y) {
-    var out = new GLMAT_ARRAY_TYPE(2);
-    out[0] = x;
-    out[1] = y;
-    return out;
-};
-
-/**
- * Copy the values from one vec2 to another
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the source vector
- * @returns {vec2} out
- */
-vec2.copy = function(out, a) {
-    out[0] = a[0];
-    out[1] = a[1];
-    return out;
-};
-
-/**
- * Set the components of a vec2 to the given values
- *
- * @param {vec2} out the receiving vector
- * @param {Number} x X component
- * @param {Number} y Y component
- * @returns {vec2} out
- */
-vec2.set = function(out, x, y) {
-    out[0] = x;
-    out[1] = y;
-    return out;
-};
-
-/**
- * Adds two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-vec2.add = function(out, a, b) {
-    out[0] = a[0] + b[0];
-    out[1] = a[1] + b[1];
-    return out;
-};
-
-/**
- * Subtracts vector b from vector a
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-vec2.subtract = function(out, a, b) {
-    out[0] = a[0] - b[0];
-    out[1] = a[1] - b[1];
-    return out;
-};
-
-/**
- * Alias for {@link vec2.subtract}
- * @function
- */
-vec2.sub = vec2.subtract;
-
-/**
- * Multiplies two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-vec2.multiply = function(out, a, b) {
-    out[0] = a[0] * b[0];
-    out[1] = a[1] * b[1];
-    return out;
-};
-
-/**
- * Alias for {@link vec2.multiply}
- * @function
- */
-vec2.mul = vec2.multiply;
-
-/**
- * Divides two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-vec2.divide = function(out, a, b) {
-    out[0] = a[0] / b[0];
-    out[1] = a[1] / b[1];
-    return out;
-};
-
-/**
- * Alias for {@link vec2.divide}
- * @function
- */
-vec2.div = vec2.divide;
-
-/**
- * Returns the minimum of two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-vec2.min = function(out, a, b) {
-    out[0] = Math.min(a[0], b[0]);
-    out[1] = Math.min(a[1], b[1]);
-    return out;
-};
-
-/**
- * Returns the maximum of two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec2} out
- */
-vec2.max = function(out, a, b) {
-    out[0] = Math.max(a[0], b[0]);
-    out[1] = Math.max(a[1], b[1]);
-    return out;
-};
-
-/**
- * Scales a vec2 by a scalar number
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the vector to scale
- * @param {Number} b amount to scale the vector by
- * @returns {vec2} out
- */
-vec2.scale = function(out, a, b) {
-    out[0] = a[0] * b;
-    out[1] = a[1] * b;
-    return out;
-};
-
-/**
- * Adds two vec2's after scaling the second operand by a scalar value
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @param {Number} scale the amount to scale b by before adding
- * @returns {vec2} out
- */
-vec2.scaleAndAdd = function(out, a, b, scale) {
-    out[0] = a[0] + (b[0] * scale);
-    out[1] = a[1] + (b[1] * scale);
-    return out;
-};
-
-/**
- * Calculates the euclidian distance between two vec2's
- *
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {Number} distance between a and b
- */
-vec2.distance = function(a, b) {
-    var x = b[0] - a[0],
-        y = b[1] - a[1];
-    return Math.sqrt(x*x + y*y);
-};
-
-/**
- * Alias for {@link vec2.distance}
- * @function
- */
-vec2.dist = vec2.distance;
-
-/**
- * Calculates the squared euclidian distance between two vec2's
- *
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {Number} squared distance between a and b
- */
-vec2.squaredDistance = function(a, b) {
-    var x = b[0] - a[0],
-        y = b[1] - a[1];
-    return x*x + y*y;
-};
-
-/**
- * Alias for {@link vec2.squaredDistance}
- * @function
- */
-vec2.sqrDist = vec2.squaredDistance;
-
-/**
- * Calculates the length of a vec2
- *
- * @param {vec2} a vector to calculate length of
- * @returns {Number} length of a
- */
-vec2.length = function (a) {
-    var x = a[0],
-        y = a[1];
-    return Math.sqrt(x*x + y*y);
-};
-
-/**
- * Alias for {@link vec2.length}
- * @function
- */
-vec2.len = vec2.length;
-
-/**
- * Calculates the squared length of a vec2
- *
- * @param {vec2} a vector to calculate squared length of
- * @returns {Number} squared length of a
- */
-vec2.squaredLength = function (a) {
-    var x = a[0],
-        y = a[1];
-    return x*x + y*y;
-};
-
-/**
- * Alias for {@link vec2.squaredLength}
- * @function
- */
-vec2.sqrLen = vec2.squaredLength;
-
-/**
- * Negates the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a vector to negate
- * @returns {vec2} out
- */
-vec2.negate = function(out, a) {
-    out[0] = -a[0];
-    out[1] = -a[1];
-    return out;
-};
-
-/**
- * Returns the inverse of the components of a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a vector to invert
- * @returns {vec2} out
- */
-vec2.inverse = function(out, a) {
-  out[0] = 1.0 / a[0];
-  out[1] = 1.0 / a[1];
-  return out;
-};
-
-/**
- * Normalize a vec2
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a vector to normalize
- * @returns {vec2} out
- */
-vec2.normalize = function(out, a) {
-    var x = a[0],
-        y = a[1];
-    var len = x*x + y*y;
-    if (len > 0) {
-        //TODO: evaluate use of glm_invsqrt here?
-        len = 1 / Math.sqrt(len);
-        out[0] = a[0] * len;
-        out[1] = a[1] * len;
-    }
-    return out;
-};
-
-/**
- * Calculates the dot product of two vec2's
- *
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {Number} dot product of a and b
- */
-vec2.dot = function (a, b) {
-    return a[0] * b[0] + a[1] * b[1];
-};
-
-/**
- * Computes the cross product of two vec2's
- * Note that the cross product must by definition produce a 3D vector
- *
- * @param {vec3} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @returns {vec3} out
- */
-vec2.cross = function(out, a, b) {
-    var z = a[0] * b[1] - a[1] * b[0];
-    out[0] = out[1] = 0;
-    out[2] = z;
-    return out;
-};
-
-/**
- * Performs a linear interpolation between two vec2's
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the first operand
- * @param {vec2} b the second operand
- * @param {Number} t interpolation amount between the two inputs
- * @returns {vec2} out
- */
-vec2.lerp = function (out, a, b, t) {
-    var ax = a[0],
-        ay = a[1];
-    out[0] = ax + t * (b[0] - ax);
-    out[1] = ay + t * (b[1] - ay);
-    return out;
-};
-
-/**
- * Generates a random vector with the given scale
- *
- * @param {vec2} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
- * @returns {vec2} out
- */
-vec2.random = function (out, scale) {
-    scale = scale || 1.0;
-    var r = GLMAT_RANDOM() * 2.0 * Math.PI;
-    out[0] = Math.cos(r) * scale;
-    out[1] = Math.sin(r) * scale;
-    return out;
-};
-
-/**
- * Transforms the vec2 with a mat2
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the vector to transform
- * @param {mat2} m matrix to transform with
- * @returns {vec2} out
- */
-vec2.transformMat2 = function(out, a, m) {
-    var x = a[0],
-        y = a[1];
-    out[0] = m[0] * x + m[2] * y;
-    out[1] = m[1] * x + m[3] * y;
-    return out;
-};
-
-/**
- * Transforms the vec2 with a mat2d
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the vector to transform
- * @param {mat2d} m matrix to transform with
- * @returns {vec2} out
- */
-vec2.transformMat2d = function(out, a, m) {
-    var x = a[0],
-        y = a[1];
-    out[0] = m[0] * x + m[2] * y + m[4];
-    out[1] = m[1] * x + m[3] * y + m[5];
-    return out;
-};
-
-/**
- * Transforms the vec2 with a mat3
- * 3rd vector component is implicitly '1'
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the vector to transform
- * @param {mat3} m matrix to transform with
- * @returns {vec2} out
- */
-vec2.transformMat3 = function(out, a, m) {
-    var x = a[0],
-        y = a[1];
-    out[0] = m[0] * x + m[3] * y + m[6];
-    out[1] = m[1] * x + m[4] * y + m[7];
-    return out;
-};
-
-/**
- * Transforms the vec2 with a mat4
- * 3rd vector component is implicitly '0'
- * 4th vector component is implicitly '1'
- *
- * @param {vec2} out the receiving vector
- * @param {vec2} a the vector to transform
- * @param {mat4} m matrix to transform with
- * @returns {vec2} out
- */
-vec2.transformMat4 = function(out, a, m) {
-    var x = a[0], 
-        y = a[1];
-    out[0] = m[0] * x + m[4] * y + m[12];
-    out[1] = m[1] * x + m[5] * y + m[13];
-    return out;
-};
-
-/**
- * Perform some operation over an array of vec2s.
- *
- * @param {Array} a the array of vectors to iterate over
- * @param {Number} stride Number of elements between the start of each vec2. If 0 assumes tightly packed
- * @param {Number} offset Number of elements to skip at the beginning of the array
- * @param {Number} count Number of vec2s to iterate over. If 0 iterates over entire array
- * @param {Function} fn Function to call for each vector in the array
- * @param {Object} [arg] additional argument to pass to fn
- * @returns {Array} a
- * @function
- */
-vec2.forEach = (function() {
-    var vec = vec2.create();
-
-    return function(a, stride, offset, count, fn, arg) {
-        var i, l;
-        if(!stride) {
-            stride = 2;
-        }
-
-        if(!offset) {
-            offset = 0;
-        }
-        
-        if(count) {
-            l = Math.min((count * stride) + offset, a.length);
-        } else {
-            l = a.length;
-        }
-
-        for(i = offset; i < l; i += stride) {
-            vec[0] = a[i]; vec[1] = a[i+1];
-            fn(vec, vec, arg);
-            a[i] = vec[0]; a[i+1] = vec[1];
-        }
-        
-        return a;
-    };
-})();
-
-/**
- * Returns a string representation of a vector
- *
- * @param {vec2} vec vector to represent as a string
- * @returns {String} string representation of the vector
- */
-vec2.str = function (a) {
-    return 'vec2(' + a[0] + ', ' + a[1] + ')';
-};
-
-if(typeof(exports) !== 'undefined') {
-    exports.vec2 = vec2;
-}
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
-/**
- * @class 3 Dimensional Vector
- * @name vec3
- */
-
-var vec3 = {};
-
-/**
- * Creates a new, empty vec3
- *
- * @returns {vec3} a new 3D vector
- */
-vec3.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(3);
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-    return out;
-};
-
-/**
- * Creates a new vec3 initialized with values from an existing vector
- *
- * @param {vec3} a vector to clone
- * @returns {vec3} a new 3D vector
- */
-vec3.clone = function(a) {
-    var out = new GLMAT_ARRAY_TYPE(3);
-    out[0] = a[0];
-    out[1] = a[1];
-    out[2] = a[2];
-    return out;
-};
-
-/**
- * Creates a new vec3 initialized with the given values
- *
- * @param {Number} x X component
- * @param {Number} y Y component
- * @param {Number} z Z component
- * @returns {vec3} a new 3D vector
- */
-vec3.fromValues = function(x, y, z) {
-    var out = new GLMAT_ARRAY_TYPE(3);
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    return out;
-};
-
-/**
- * Copy the values from one vec3 to another
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the source vector
- * @returns {vec3} out
- */
-vec3.copy = function(out, a) {
-    out[0] = a[0];
-    out[1] = a[1];
-    out[2] = a[2];
-    return out;
-};
-
-/**
- * Set the components of a vec3 to the given values
- *
- * @param {vec3} out the receiving vector
- * @param {Number} x X component
- * @param {Number} y Y component
- * @param {Number} z Z component
- * @returns {vec3} out
- */
-vec3.set = function(out, x, y, z) {
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    return out;
-};
-
-/**
- * Adds two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-vec3.add = function(out, a, b) {
-    out[0] = a[0] + b[0];
-    out[1] = a[1] + b[1];
-    out[2] = a[2] + b[2];
-    return out;
-};
-
-/**
- * Subtracts vector b from vector a
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-vec3.subtract = function(out, a, b) {
-    out[0] = a[0] - b[0];
-    out[1] = a[1] - b[1];
-    out[2] = a[2] - b[2];
-    return out;
-};
-
-/**
- * Alias for {@link vec3.subtract}
- * @function
- */
-vec3.sub = vec3.subtract;
-
-/**
- * Multiplies two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-vec3.multiply = function(out, a, b) {
-    out[0] = a[0] * b[0];
-    out[1] = a[1] * b[1];
-    out[2] = a[2] * b[2];
-    return out;
-};
-
-/**
- * Alias for {@link vec3.multiply}
- * @function
- */
-vec3.mul = vec3.multiply;
-
-/**
- * Divides two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-vec3.divide = function(out, a, b) {
-    out[0] = a[0] / b[0];
-    out[1] = a[1] / b[1];
-    out[2] = a[2] / b[2];
-    return out;
-};
-
-/**
- * Alias for {@link vec3.divide}
- * @function
- */
-vec3.div = vec3.divide;
-
-/**
- * Returns the minimum of two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-vec3.min = function(out, a, b) {
-    out[0] = Math.min(a[0], b[0]);
-    out[1] = Math.min(a[1], b[1]);
-    out[2] = Math.min(a[2], b[2]);
-    return out;
-};
-
-/**
- * Returns the maximum of two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-vec3.max = function(out, a, b) {
-    out[0] = Math.max(a[0], b[0]);
-    out[1] = Math.max(a[1], b[1]);
-    out[2] = Math.max(a[2], b[2]);
-    return out;
-};
-
-/**
- * Scales a vec3 by a scalar number
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the vector to scale
- * @param {Number} b amount to scale the vector by
- * @returns {vec3} out
- */
-vec3.scale = function(out, a, b) {
-    out[0] = a[0] * b;
-    out[1] = a[1] * b;
-    out[2] = a[2] * b;
-    return out;
-};
-
-/**
- * Adds two vec3's after scaling the second operand by a scalar value
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @param {Number} scale the amount to scale b by before adding
- * @returns {vec3} out
- */
-vec3.scaleAndAdd = function(out, a, b, scale) {
-    out[0] = a[0] + (b[0] * scale);
-    out[1] = a[1] + (b[1] * scale);
-    out[2] = a[2] + (b[2] * scale);
-    return out;
-};
-
-/**
- * Calculates the euclidian distance between two vec3's
- *
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {Number} distance between a and b
- */
-vec3.distance = function(a, b) {
-    var x = b[0] - a[0],
-        y = b[1] - a[1],
-        z = b[2] - a[2];
-    return Math.sqrt(x*x + y*y + z*z);
-};
-
-/**
- * Alias for {@link vec3.distance}
- * @function
- */
-vec3.dist = vec3.distance;
-
-/**
- * Calculates the squared euclidian distance between two vec3's
- *
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {Number} squared distance between a and b
- */
-vec3.squaredDistance = function(a, b) {
-    var x = b[0] - a[0],
-        y = b[1] - a[1],
-        z = b[2] - a[2];
-    return x*x + y*y + z*z;
-};
-
-/**
- * Alias for {@link vec3.squaredDistance}
- * @function
- */
-vec3.sqrDist = vec3.squaredDistance;
-
-/**
- * Calculates the length of a vec3
- *
- * @param {vec3} a vector to calculate length of
- * @returns {Number} length of a
- */
-vec3.length = function (a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2];
-    return Math.sqrt(x*x + y*y + z*z);
-};
-
-/**
- * Alias for {@link vec3.length}
- * @function
- */
-vec3.len = vec3.length;
-
-/**
- * Calculates the squared length of a vec3
- *
- * @param {vec3} a vector to calculate squared length of
- * @returns {Number} squared length of a
- */
-vec3.squaredLength = function (a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2];
-    return x*x + y*y + z*z;
-};
-
-/**
- * Alias for {@link vec3.squaredLength}
- * @function
- */
-vec3.sqrLen = vec3.squaredLength;
-
-/**
- * Negates the components of a vec3
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a vector to negate
- * @returns {vec3} out
- */
-vec3.negate = function(out, a) {
-    out[0] = -a[0];
-    out[1] = -a[1];
-    out[2] = -a[2];
-    return out;
-};
-
-/**
- * Returns the inverse of the components of a vec3
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a vector to invert
- * @returns {vec3} out
- */
-vec3.inverse = function(out, a) {
-  out[0] = 1.0 / a[0];
-  out[1] = 1.0 / a[1];
-  out[2] = 1.0 / a[2];
-  return out;
-};
-
-/**
- * Normalize a vec3
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a vector to normalize
- * @returns {vec3} out
- */
-vec3.normalize = function(out, a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2];
-    var len = x*x + y*y + z*z;
-    if (len > 0) {
-        //TODO: evaluate use of glm_invsqrt here?
-        len = 1 / Math.sqrt(len);
-        out[0] = a[0] * len;
-        out[1] = a[1] * len;
-        out[2] = a[2] * len;
-    }
-    return out;
-};
-
-/**
- * Calculates the dot product of two vec3's
- *
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {Number} dot product of a and b
- */
-vec3.dot = function (a, b) {
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-};
-
-/**
- * Computes the cross product of two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @returns {vec3} out
- */
-vec3.cross = function(out, a, b) {
-    var ax = a[0], ay = a[1], az = a[2],
-        bx = b[0], by = b[1], bz = b[2];
-
-    out[0] = ay * bz - az * by;
-    out[1] = az * bx - ax * bz;
-    out[2] = ax * by - ay * bx;
-    return out;
-};
-
-/**
- * Performs a linear interpolation between two vec3's
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the first operand
- * @param {vec3} b the second operand
- * @param {Number} t interpolation amount between the two inputs
- * @returns {vec3} out
- */
-vec3.lerp = function (out, a, b, t) {
-    var ax = a[0],
-        ay = a[1],
-        az = a[2];
-    out[0] = ax + t * (b[0] - ax);
-    out[1] = ay + t * (b[1] - ay);
-    out[2] = az + t * (b[2] - az);
-    return out;
-};
-
-/**
- * Generates a random vector with the given scale
- *
- * @param {vec3} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
- * @returns {vec3} out
- */
-vec3.random = function (out, scale) {
-    scale = scale || 1.0;
-
-    var r = GLMAT_RANDOM() * 2.0 * Math.PI;
-    var z = (GLMAT_RANDOM() * 2.0) - 1.0;
-    var zScale = Math.sqrt(1.0-z*z) * scale;
-
-    out[0] = Math.cos(r) * zScale;
-    out[1] = Math.sin(r) * zScale;
-    out[2] = z * scale;
-    return out;
-};
-
-/**
- * Transforms the vec3 with a mat4.
- * 4th vector component is implicitly '1'
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the vector to transform
- * @param {mat4} m matrix to transform with
- * @returns {vec3} out
- */
-vec3.transformMat4 = function(out, a, m) {
-    var x = a[0], y = a[1], z = a[2],
-        w = m[3] * x + m[7] * y + m[11] * z + m[15];
-    w = w || 1.0;
-    out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
-    out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
-    out[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
-    return out;
-};
-
-/**
- * Transforms the vec3 with a mat3.
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the vector to transform
- * @param {mat4} m the 3x3 matrix to transform with
- * @returns {vec3} out
- */
-vec3.transformMat3 = function(out, a, m) {
-    var x = a[0], y = a[1], z = a[2];
-    out[0] = x * m[0] + y * m[3] + z * m[6];
-    out[1] = x * m[1] + y * m[4] + z * m[7];
-    out[2] = x * m[2] + y * m[5] + z * m[8];
-    return out;
-};
-
-/**
- * Transforms the vec3 with a quat
- *
- * @param {vec3} out the receiving vector
- * @param {vec3} a the vector to transform
- * @param {quat} q quaternion to transform with
- * @returns {vec3} out
- */
-vec3.transformQuat = function(out, a, q) {
-    // benchmarks: http://jsperf.com/quaternion-transform-vec3-implementations
-
-    var x = a[0], y = a[1], z = a[2],
-        qx = q[0], qy = q[1], qz = q[2], qw = q[3],
-
-        // calculate quat * vec
-        ix = qw * x + qy * z - qz * y,
-        iy = qw * y + qz * x - qx * z,
-        iz = qw * z + qx * y - qy * x,
-        iw = -qx * x - qy * y - qz * z;
-
-    // calculate result * inverse quat
-    out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-    out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-    out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-    return out;
-};
-
-/**
- * Rotate a 3D vector around the x-axis
- * @param {vec3} out The receiving vec3
- * @param {vec3} a The vec3 point to rotate
- * @param {vec3} b The origin of the rotation
- * @param {Number} c The angle of rotation
- * @returns {vec3} out
- */
-vec3.rotateX = function(out, a, b, c){
-   var p = [], r=[];
-	  //Translate point to the origin
-	  p[0] = a[0] - b[0];
-	  p[1] = a[1] - b[1];
-  	p[2] = a[2] - b[2];
-
-	  //perform rotation
-	  r[0] = p[0];
-	  r[1] = p[1]*Math.cos(c) - p[2]*Math.sin(c);
-	  r[2] = p[1]*Math.sin(c) + p[2]*Math.cos(c);
-
-	  //translate to correct position
-	  out[0] = r[0] + b[0];
-	  out[1] = r[1] + b[1];
-	  out[2] = r[2] + b[2];
-
-  	return out;
-};
-
-/**
- * Rotate a 3D vector around the y-axis
- * @param {vec3} out The receiving vec3
- * @param {vec3} a The vec3 point to rotate
- * @param {vec3} b The origin of the rotation
- * @param {Number} c The angle of rotation
- * @returns {vec3} out
- */
-vec3.rotateY = function(out, a, b, c){
-  	var p = [], r=[];
-  	//Translate point to the origin
-  	p[0] = a[0] - b[0];
-  	p[1] = a[1] - b[1];
-  	p[2] = a[2] - b[2];
-  
-  	//perform rotation
-  	r[0] = p[2]*Math.sin(c) + p[0]*Math.cos(c);
-  	r[1] = p[1];
-  	r[2] = p[2]*Math.cos(c) - p[0]*Math.sin(c);
-  
-  	//translate to correct position
-  	out[0] = r[0] + b[0];
-  	out[1] = r[1] + b[1];
-  	out[2] = r[2] + b[2];
-  
-  	return out;
-};
-
-/**
- * Rotate a 3D vector around the z-axis
- * @param {vec3} out The receiving vec3
- * @param {vec3} a The vec3 point to rotate
- * @param {vec3} b The origin of the rotation
- * @param {Number} c The angle of rotation
- * @returns {vec3} out
- */
-vec3.rotateZ = function(out, a, b, c){
-  	var p = [], r=[];
-  	//Translate point to the origin
-  	p[0] = a[0] - b[0];
-  	p[1] = a[1] - b[1];
-  	p[2] = a[2] - b[2];
-  
-  	//perform rotation
-  	r[0] = p[0]*Math.cos(c) - p[1]*Math.sin(c);
-  	r[1] = p[0]*Math.sin(c) + p[1]*Math.cos(c);
-  	r[2] = p[2];
-  
-  	//translate to correct position
-  	out[0] = r[0] + b[0];
-  	out[1] = r[1] + b[1];
-  	out[2] = r[2] + b[2];
-  
-  	return out;
-};
-
-/**
- * Perform some operation over an array of vec3s.
- *
- * @param {Array} a the array of vectors to iterate over
- * @param {Number} stride Number of elements between the start of each vec3. If 0 assumes tightly packed
- * @param {Number} offset Number of elements to skip at the beginning of the array
- * @param {Number} count Number of vec3s to iterate over. If 0 iterates over entire array
- * @param {Function} fn Function to call for each vector in the array
- * @param {Object} [arg] additional argument to pass to fn
- * @returns {Array} a
- * @function
- */
-vec3.forEach = (function() {
-    var vec = vec3.create();
-
-    return function(a, stride, offset, count, fn, arg) {
-        var i, l;
-        if(!stride) {
-            stride = 3;
-        }
-
-        if(!offset) {
-            offset = 0;
-        }
-        
-        if(count) {
-            l = Math.min((count * stride) + offset, a.length);
-        } else {
-            l = a.length;
-        }
-
-        for(i = offset; i < l; i += stride) {
-            vec[0] = a[i]; vec[1] = a[i+1]; vec[2] = a[i+2];
-            fn(vec, vec, arg);
-            a[i] = vec[0]; a[i+1] = vec[1]; a[i+2] = vec[2];
-        }
-        
-        return a;
-    };
-})();
-
-/**
- * Get the angle between two 3D vectors
- * @param {vec3} a The first operand
- * @param {vec3} b The second operand
- * @returns {Number} The angle in radians
- */
-vec3.angle = function(a, b) {
-   
-    var tempA = vec3.fromValues(a[0], a[1], a[2]);
-    var tempB = vec3.fromValues(b[0], b[1], b[2]);
- 
-    vec3.normalize(tempA, tempA);
-    vec3.normalize(tempB, tempB);
- 
-    var cosine = vec3.dot(tempA, tempB);
-
-    if(cosine > 1.0){
-        return 0;
-    } else {
-        return Math.acos(cosine);
-    }     
-};
-
-/**
- * Returns a string representation of a vector
- *
- * @param {vec3} vec vector to represent as a string
- * @returns {String} string representation of the vector
- */
-vec3.str = function (a) {
-    return 'vec3(' + a[0] + ', ' + a[1] + ', ' + a[2] + ')';
-};
-
-if(typeof(exports) !== 'undefined') {
-    exports.vec3 = vec3;
-}
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
-/**
- * @class 4 Dimensional Vector
- * @name vec4
- */
-
-var vec4 = {};
-
-/**
- * Creates a new, empty vec4
- *
- * @returns {vec4} a new 4D vector
- */
-vec4.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(4);
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 0;
-    return out;
-};
-
-/**
- * Creates a new vec4 initialized with values from an existing vector
- *
- * @param {vec4} a vector to clone
- * @returns {vec4} a new 4D vector
- */
-vec4.clone = function(a) {
-    var out = new GLMAT_ARRAY_TYPE(4);
-    out[0] = a[0];
-    out[1] = a[1];
-    out[2] = a[2];
-    out[3] = a[3];
-    return out;
-};
-
-/**
- * Creates a new vec4 initialized with the given values
- *
- * @param {Number} x X component
- * @param {Number} y Y component
- * @param {Number} z Z component
- * @param {Number} w W component
- * @returns {vec4} a new 4D vector
- */
-vec4.fromValues = function(x, y, z, w) {
-    var out = new GLMAT_ARRAY_TYPE(4);
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    out[3] = w;
-    return out;
-};
-
-/**
- * Copy the values from one vec4 to another
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the source vector
- * @returns {vec4} out
- */
-vec4.copy = function(out, a) {
-    out[0] = a[0];
-    out[1] = a[1];
-    out[2] = a[2];
-    out[3] = a[3];
-    return out;
-};
-
-/**
- * Set the components of a vec4 to the given values
- *
- * @param {vec4} out the receiving vector
- * @param {Number} x X component
- * @param {Number} y Y component
- * @param {Number} z Z component
- * @param {Number} w W component
- * @returns {vec4} out
- */
-vec4.set = function(out, x, y, z, w) {
-    out[0] = x;
-    out[1] = y;
-    out[2] = z;
-    out[3] = w;
-    return out;
-};
-
-/**
- * Adds two vec4's
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {vec4} out
- */
-vec4.add = function(out, a, b) {
-    out[0] = a[0] + b[0];
-    out[1] = a[1] + b[1];
-    out[2] = a[2] + b[2];
-    out[3] = a[3] + b[3];
-    return out;
-};
-
-/**
- * Subtracts vector b from vector a
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {vec4} out
- */
-vec4.subtract = function(out, a, b) {
-    out[0] = a[0] - b[0];
-    out[1] = a[1] - b[1];
-    out[2] = a[2] - b[2];
-    out[3] = a[3] - b[3];
-    return out;
-};
-
-/**
- * Alias for {@link vec4.subtract}
- * @function
- */
-vec4.sub = vec4.subtract;
-
-/**
- * Multiplies two vec4's
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {vec4} out
- */
-vec4.multiply = function(out, a, b) {
-    out[0] = a[0] * b[0];
-    out[1] = a[1] * b[1];
-    out[2] = a[2] * b[2];
-    out[3] = a[3] * b[3];
-    return out;
-};
-
-/**
- * Alias for {@link vec4.multiply}
- * @function
- */
-vec4.mul = vec4.multiply;
-
-/**
- * Divides two vec4's
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {vec4} out
- */
-vec4.divide = function(out, a, b) {
-    out[0] = a[0] / b[0];
-    out[1] = a[1] / b[1];
-    out[2] = a[2] / b[2];
-    out[3] = a[3] / b[3];
-    return out;
-};
-
-/**
- * Alias for {@link vec4.divide}
- * @function
- */
-vec4.div = vec4.divide;
-
-/**
- * Returns the minimum of two vec4's
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {vec4} out
- */
-vec4.min = function(out, a, b) {
-    out[0] = Math.min(a[0], b[0]);
-    out[1] = Math.min(a[1], b[1]);
-    out[2] = Math.min(a[2], b[2]);
-    out[3] = Math.min(a[3], b[3]);
-    return out;
-};
-
-/**
- * Returns the maximum of two vec4's
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {vec4} out
- */
-vec4.max = function(out, a, b) {
-    out[0] = Math.max(a[0], b[0]);
-    out[1] = Math.max(a[1], b[1]);
-    out[2] = Math.max(a[2], b[2]);
-    out[3] = Math.max(a[3], b[3]);
-    return out;
-};
-
-/**
- * Scales a vec4 by a scalar number
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the vector to scale
- * @param {Number} b amount to scale the vector by
- * @returns {vec4} out
- */
-vec4.scale = function(out, a, b) {
-    out[0] = a[0] * b;
-    out[1] = a[1] * b;
-    out[2] = a[2] * b;
-    out[3] = a[3] * b;
-    return out;
-};
-
-/**
- * Adds two vec4's after scaling the second operand by a scalar value
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @param {Number} scale the amount to scale b by before adding
- * @returns {vec4} out
- */
-vec4.scaleAndAdd = function(out, a, b, scale) {
-    out[0] = a[0] + (b[0] * scale);
-    out[1] = a[1] + (b[1] * scale);
-    out[2] = a[2] + (b[2] * scale);
-    out[3] = a[3] + (b[3] * scale);
-    return out;
-};
-
-/**
- * Calculates the euclidian distance between two vec4's
- *
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {Number} distance between a and b
- */
-vec4.distance = function(a, b) {
-    var x = b[0] - a[0],
-        y = b[1] - a[1],
-        z = b[2] - a[2],
-        w = b[3] - a[3];
-    return Math.sqrt(x*x + y*y + z*z + w*w);
-};
-
-/**
- * Alias for {@link vec4.distance}
- * @function
- */
-vec4.dist = vec4.distance;
-
-/**
- * Calculates the squared euclidian distance between two vec4's
- *
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {Number} squared distance between a and b
- */
-vec4.squaredDistance = function(a, b) {
-    var x = b[0] - a[0],
-        y = b[1] - a[1],
-        z = b[2] - a[2],
-        w = b[3] - a[3];
-    return x*x + y*y + z*z + w*w;
-};
-
-/**
- * Alias for {@link vec4.squaredDistance}
- * @function
- */
-vec4.sqrDist = vec4.squaredDistance;
-
-/**
- * Calculates the length of a vec4
- *
- * @param {vec4} a vector to calculate length of
- * @returns {Number} length of a
- */
-vec4.length = function (a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2],
-        w = a[3];
-    return Math.sqrt(x*x + y*y + z*z + w*w);
-};
-
-/**
- * Alias for {@link vec4.length}
- * @function
- */
-vec4.len = vec4.length;
-
-/**
- * Calculates the squared length of a vec4
- *
- * @param {vec4} a vector to calculate squared length of
- * @returns {Number} squared length of a
- */
-vec4.squaredLength = function (a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2],
-        w = a[3];
-    return x*x + y*y + z*z + w*w;
-};
-
-/**
- * Alias for {@link vec4.squaredLength}
- * @function
- */
-vec4.sqrLen = vec4.squaredLength;
-
-/**
- * Negates the components of a vec4
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a vector to negate
- * @returns {vec4} out
- */
-vec4.negate = function(out, a) {
-    out[0] = -a[0];
-    out[1] = -a[1];
-    out[2] = -a[2];
-    out[3] = -a[3];
-    return out;
-};
-
-/**
- * Returns the inverse of the components of a vec4
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a vector to invert
- * @returns {vec4} out
- */
-vec4.inverse = function(out, a) {
-  out[0] = 1.0 / a[0];
-  out[1] = 1.0 / a[1];
-  out[2] = 1.0 / a[2];
-  out[3] = 1.0 / a[3];
-  return out;
-};
-
-/**
- * Normalize a vec4
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a vector to normalize
- * @returns {vec4} out
- */
-vec4.normalize = function(out, a) {
-    var x = a[0],
-        y = a[1],
-        z = a[2],
-        w = a[3];
-    var len = x*x + y*y + z*z + w*w;
-    if (len > 0) {
-        len = 1 / Math.sqrt(len);
-        out[0] = a[0] * len;
-        out[1] = a[1] * len;
-        out[2] = a[2] * len;
-        out[3] = a[3] * len;
-    }
-    return out;
-};
-
-/**
- * Calculates the dot product of two vec4's
- *
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @returns {Number} dot product of a and b
- */
-vec4.dot = function (a, b) {
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-};
-
-/**
- * Performs a linear interpolation between two vec4's
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the first operand
- * @param {vec4} b the second operand
- * @param {Number} t interpolation amount between the two inputs
- * @returns {vec4} out
- */
-vec4.lerp = function (out, a, b, t) {
-    var ax = a[0],
-        ay = a[1],
-        az = a[2],
-        aw = a[3];
-    out[0] = ax + t * (b[0] - ax);
-    out[1] = ay + t * (b[1] - ay);
-    out[2] = az + t * (b[2] - az);
-    out[3] = aw + t * (b[3] - aw);
-    return out;
-};
-
-/**
- * Generates a random vector with the given scale
- *
- * @param {vec4} out the receiving vector
- * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
- * @returns {vec4} out
- */
-vec4.random = function (out, scale) {
-    scale = scale || 1.0;
-
-    //TODO: This is a pretty awful way of doing this. Find something better.
-    out[0] = GLMAT_RANDOM();
-    out[1] = GLMAT_RANDOM();
-    out[2] = GLMAT_RANDOM();
-    out[3] = GLMAT_RANDOM();
-    vec4.normalize(out, out);
-    vec4.scale(out, out, scale);
-    return out;
-};
-
-/**
- * Transforms the vec4 with a mat4.
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the vector to transform
- * @param {mat4} m matrix to transform with
- * @returns {vec4} out
- */
-vec4.transformMat4 = function(out, a, m) {
-    var x = a[0], y = a[1], z = a[2], w = a[3];
-    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
-    out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
-    out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
-    out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
-    return out;
-};
-
-/**
- * Transforms the vec4 with a quat
- *
- * @param {vec4} out the receiving vector
- * @param {vec4} a the vector to transform
- * @param {quat} q quaternion to transform with
- * @returns {vec4} out
- */
-vec4.transformQuat = function(out, a, q) {
-    var x = a[0], y = a[1], z = a[2],
-        qx = q[0], qy = q[1], qz = q[2], qw = q[3],
-
-        // calculate quat * vec
-        ix = qw * x + qy * z - qz * y,
-        iy = qw * y + qz * x - qx * z,
-        iz = qw * z + qx * y - qy * x,
-        iw = -qx * x - qy * y - qz * z;
-
-    // calculate result * inverse quat
-    out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-    out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-    out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-    return out;
-};
-
-/**
- * Perform some operation over an array of vec4s.
- *
- * @param {Array} a the array of vectors to iterate over
- * @param {Number} stride Number of elements between the start of each vec4. If 0 assumes tightly packed
- * @param {Number} offset Number of elements to skip at the beginning of the array
- * @param {Number} count Number of vec4s to iterate over. If 0 iterates over entire array
- * @param {Function} fn Function to call for each vector in the array
- * @param {Object} [arg] additional argument to pass to fn
- * @returns {Array} a
- * @function
- */
-vec4.forEach = (function() {
-    var vec = vec4.create();
-
-    return function(a, stride, offset, count, fn, arg) {
-        var i, l;
-        if(!stride) {
-            stride = 4;
-        }
-
-        if(!offset) {
-            offset = 0;
-        }
-        
-        if(count) {
-            l = Math.min((count * stride) + offset, a.length);
-        } else {
-            l = a.length;
-        }
-
-        for(i = offset; i < l; i += stride) {
-            vec[0] = a[i]; vec[1] = a[i+1]; vec[2] = a[i+2]; vec[3] = a[i+3];
-            fn(vec, vec, arg);
-            a[i] = vec[0]; a[i+1] = vec[1]; a[i+2] = vec[2]; a[i+3] = vec[3];
-        }
-        
-        return a;
-    };
-})();
-
-/**
- * Returns a string representation of a vector
- *
- * @param {vec4} vec vector to represent as a string
- * @returns {String} string representation of the vector
- */
-vec4.str = function (a) {
-    return 'vec4(' + a[0] + ', ' + a[1] + ', ' + a[2] + ', ' + a[3] + ')';
-};
-
-if(typeof(exports) !== 'undefined') {
-    exports.vec4 = vec4;
-}
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+module.exports = glMatrix;
+
+},{}],3:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
 
 /**
  * @class 2x2 Matrix
  * @name mat2
  */
-
 var mat2 = {};
 
 /**
@@ -1902,7 +149,7 @@ var mat2 = {};
  * @returns {mat2} a new 2x2 matrix
  */
 mat2.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(4);
+    var out = new glMatrix.ARRAY_TYPE(4);
     out[0] = 1;
     out[1] = 0;
     out[2] = 0;
@@ -1917,7 +164,7 @@ mat2.create = function() {
  * @returns {mat2} a new 2x2 matrix
  */
 mat2.clone = function(a) {
-    var out = new GLMAT_ARRAY_TYPE(4);
+    var out = new glMatrix.ARRAY_TYPE(4);
     out[0] = a[0];
     out[1] = a[1];
     out[2] = a[2];
@@ -2093,6 +340,46 @@ mat2.scale = function(out, a, v) {
 };
 
 /**
+ * Creates a matrix from a given angle
+ * This is equivalent to (but much faster than):
+ *
+ *     mat2.identity(dest);
+ *     mat2.rotate(dest, dest, rad);
+ *
+ * @param {mat2} out mat2 receiving operation result
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat2} out
+ */
+mat2.fromRotation = function(out, rad) {
+    var s = Math.sin(rad),
+        c = Math.cos(rad);
+    out[0] = c;
+    out[1] = s;
+    out[2] = -s;
+    out[3] = c;
+    return out;
+}
+
+/**
+ * Creates a matrix from a vector scaling
+ * This is equivalent to (but much faster than):
+ *
+ *     mat2.identity(dest);
+ *     mat2.scale(dest, dest, vec);
+ *
+ * @param {mat2} out mat2 receiving operation result
+ * @param {vec2} v Scaling vector
+ * @returns {mat2} out
+ */
+mat2.fromScaling = function(out, v) {
+    out[0] = v[0];
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = v[1];
+    return out;
+}
+
+/**
  * Returns a string representation of a mat2
  *
  * @param {mat2} mat matrix to represent as a string
@@ -2128,31 +415,31 @@ mat2.LDU = function (L, D, U, a) {
     return [L, D, U];       
 }; 
 
-if(typeof(exports) !== 'undefined') {
-    exports.mat2 = mat2;
-}
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+module.exports = mat2;
 
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
+},{"./common.js":2}],4:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
 
 /**
  * @class 2x3 Matrix
@@ -2172,7 +459,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
  * </pre>
  * The last row is ignored so the array is shorter and operations are faster.
  */
-
 var mat2d = {};
 
 /**
@@ -2181,7 +467,7 @@ var mat2d = {};
  * @returns {mat2d} a new 2x3 matrix
  */
 mat2d.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(6);
+    var out = new glMatrix.ARRAY_TYPE(6);
     out[0] = 1;
     out[1] = 0;
     out[2] = 0;
@@ -2198,7 +484,7 @@ mat2d.create = function() {
  * @returns {mat2d} a new 2x3 matrix
  */
 mat2d.clone = function(a) {
-    var out = new GLMAT_ARRAY_TYPE(6);
+    var out = new glMatrix.ARRAY_TYPE(6);
     out[0] = a[0];
     out[1] = a[1];
     out[2] = a[2];
@@ -2303,7 +589,6 @@ mat2d.multiply = function (out, a, b) {
  */
 mat2d.mul = mat2d.multiply;
 
-
 /**
  * Rotates a mat2d by the given angle
  *
@@ -2366,6 +651,70 @@ mat2d.translate = function(out, a, v) {
 };
 
 /**
+ * Creates a matrix from a given angle
+ * This is equivalent to (but much faster than):
+ *
+ *     mat2d.identity(dest);
+ *     mat2d.rotate(dest, dest, rad);
+ *
+ * @param {mat2d} out mat2d receiving operation result
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat2d} out
+ */
+mat2d.fromRotation = function(out, rad) {
+    var s = Math.sin(rad), c = Math.cos(rad);
+    out[0] = c;
+    out[1] = s;
+    out[2] = -s;
+    out[3] = c;
+    out[4] = 0;
+    out[5] = 0;
+    return out;
+}
+
+/**
+ * Creates a matrix from a vector scaling
+ * This is equivalent to (but much faster than):
+ *
+ *     mat2d.identity(dest);
+ *     mat2d.scale(dest, dest, vec);
+ *
+ * @param {mat2d} out mat2d receiving operation result
+ * @param {vec2} v Scaling vector
+ * @returns {mat2d} out
+ */
+mat2d.fromScaling = function(out, v) {
+    out[0] = v[0];
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = v[1];
+    out[4] = 0;
+    out[5] = 0;
+    return out;
+}
+
+/**
+ * Creates a matrix from a vector translation
+ * This is equivalent to (but much faster than):
+ *
+ *     mat2d.identity(dest);
+ *     mat2d.translate(dest, dest, vec);
+ *
+ * @param {mat2d} out mat2d receiving operation result
+ * @param {vec2} v Translation vector
+ * @returns {mat2d} out
+ */
+mat2d.fromTranslation = function(out, v) {
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 1;
+    out[4] = v[0];
+    out[5] = v[1];
+    return out;
+}
+
+/**
  * Returns a string representation of a mat2d
  *
  * @param {mat2d} a matrix to represent as a string
@@ -2386,37 +735,35 @@ mat2d.frob = function (a) {
     return(Math.sqrt(Math.pow(a[0], 2) + Math.pow(a[1], 2) + Math.pow(a[2], 2) + Math.pow(a[3], 2) + Math.pow(a[4], 2) + Math.pow(a[5], 2) + 1))
 }; 
 
-if(typeof(exports) !== 'undefined') {
-    exports.mat2d = mat2d;
-}
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
+module.exports = mat2d;
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+},{"./common.js":2}],5:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
 
 /**
  * @class 3x3 Matrix
  * @name mat3
  */
-
 var mat3 = {};
 
 /**
@@ -2425,7 +772,7 @@ var mat3 = {};
  * @returns {mat3} a new 3x3 matrix
  */
 mat3.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(9);
+    var out = new glMatrix.ARRAY_TYPE(9);
     out[0] = 1;
     out[1] = 0;
     out[2] = 0;
@@ -2465,7 +812,7 @@ mat3.fromMat4 = function(out, a) {
  * @returns {mat3} a new 3x3 matrix
  */
 mat3.clone = function(a) {
-    var out = new GLMAT_ARRAY_TYPE(9);
+    var out = new glMatrix.ARRAY_TYPE(9);
     out[0] = a[0];
     out[1] = a[1];
     out[2] = a[2];
@@ -2744,6 +1091,84 @@ mat3.scale = function(out, a, v) {
 };
 
 /**
+ * Creates a matrix from a vector translation
+ * This is equivalent to (but much faster than):
+ *
+ *     mat3.identity(dest);
+ *     mat3.translate(dest, dest, vec);
+ *
+ * @param {mat3} out mat3 receiving operation result
+ * @param {vec2} v Translation vector
+ * @returns {mat3} out
+ */
+mat3.fromTranslation = function(out, v) {
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 1;
+    out[5] = 0;
+    out[6] = v[0];
+    out[7] = v[1];
+    out[8] = 1;
+    return out;
+}
+
+/**
+ * Creates a matrix from a given angle
+ * This is equivalent to (but much faster than):
+ *
+ *     mat3.identity(dest);
+ *     mat3.rotate(dest, dest, rad);
+ *
+ * @param {mat3} out mat3 receiving operation result
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat3} out
+ */
+mat3.fromRotation = function(out, rad) {
+    var s = Math.sin(rad), c = Math.cos(rad);
+
+    out[0] = c;
+    out[1] = s;
+    out[2] = 0;
+
+    out[3] = -s;
+    out[4] = c;
+    out[5] = 0;
+
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 1;
+    return out;
+}
+
+/**
+ * Creates a matrix from a vector scaling
+ * This is equivalent to (but much faster than):
+ *
+ *     mat3.identity(dest);
+ *     mat3.scale(dest, dest, vec);
+ *
+ * @param {mat3} out mat3 receiving operation result
+ * @param {vec2} v Scaling vector
+ * @returns {mat3} out
+ */
+mat3.fromScaling = function(out, v) {
+    out[0] = v[0];
+    out[1] = 0;
+    out[2] = 0;
+
+    out[3] = 0;
+    out[4] = v[1];
+    out[5] = 0;
+
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 1;
+    return out;
+}
+
+/**
  * Copies the values from a mat2d into a mat3
  *
  * @param {mat3} out the receiving matrix
@@ -2877,37 +1302,35 @@ mat3.frob = function (a) {
 };
 
 
-if(typeof(exports) !== 'undefined') {
-    exports.mat3 = mat3;
-}
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
+module.exports = mat3;
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+},{"./common.js":2}],6:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
 
 /**
  * @class 4x4 Matrix
  * @name mat4
  */
-
 var mat4 = {};
 
 /**
@@ -2916,7 +1339,7 @@ var mat4 = {};
  * @returns {mat4} a new 4x4 matrix
  */
 mat4.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(16);
+    var out = new glMatrix.ARRAY_TYPE(16);
     out[0] = 1;
     out[1] = 0;
     out[2] = 0;
@@ -2943,7 +1366,7 @@ mat4.create = function() {
  * @returns {mat4} a new 4x4 matrix
  */
 mat4.clone = function(a) {
-    var out = new GLMAT_ARRAY_TYPE(16);
+    var out = new glMatrix.ARRAY_TYPE(16);
     out[0] = a[0];
     out[1] = a[1];
     out[2] = a[2];
@@ -3294,7 +1717,7 @@ mat4.scale = function(out, a, v) {
 };
 
 /**
- * Rotates a mat4 by the given angle
+ * Rotates a mat4 by the given angle around the given axis
  *
  * @param {mat4} out the receiving matrix
  * @param {mat4} a the matrix to rotate
@@ -3313,7 +1736,7 @@ mat4.rotate = function (out, a, rad, axis) {
         b10, b11, b12,
         b20, b21, b22;
 
-    if (Math.abs(len) < GLMAT_EPSILON) { return null; }
+    if (Math.abs(len) < glMatrix.EPSILON) { return null; }
     
     len = 1 / len;
     x *= len;
@@ -3486,6 +1909,221 @@ mat4.rotateZ = function (out, a, rad) {
 };
 
 /**
+ * Creates a matrix from a vector translation
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.translate(dest, dest, vec);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {vec3} v Translation vector
+ * @returns {mat4} out
+ */
+mat4.fromTranslation = function(out, v) {
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = 1;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 0;
+    out[10] = 1;
+    out[11] = 0;
+    out[12] = v[0];
+    out[13] = v[1];
+    out[14] = v[2];
+    out[15] = 1;
+    return out;
+}
+
+/**
+ * Creates a matrix from a vector scaling
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.scale(dest, dest, vec);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {vec3} v Scaling vector
+ * @returns {mat4} out
+ */
+mat4.fromScaling = function(out, v) {
+    out[0] = v[0];
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = v[1];
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 0;
+    out[10] = v[2];
+    out[11] = 0;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+    return out;
+}
+
+/**
+ * Creates a matrix from a given angle around a given axis
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.rotate(dest, dest, rad, axis);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {Number} rad the angle to rotate the matrix by
+ * @param {vec3} axis the axis to rotate around
+ * @returns {mat4} out
+ */
+mat4.fromRotation = function(out, rad, axis) {
+    var x = axis[0], y = axis[1], z = axis[2],
+        len = Math.sqrt(x * x + y * y + z * z),
+        s, c, t;
+    
+    if (Math.abs(len) < glMatrix.EPSILON) { return null; }
+    
+    len = 1 / len;
+    x *= len;
+    y *= len;
+    z *= len;
+    
+    s = Math.sin(rad);
+    c = Math.cos(rad);
+    t = 1 - c;
+    
+    // Perform rotation-specific matrix multiplication
+    out[0] = x * x * t + c;
+    out[1] = y * x * t + z * s;
+    out[2] = z * x * t - y * s;
+    out[3] = 0;
+    out[4] = x * y * t - z * s;
+    out[5] = y * y * t + c;
+    out[6] = z * y * t + x * s;
+    out[7] = 0;
+    out[8] = x * z * t + y * s;
+    out[9] = y * z * t - x * s;
+    out[10] = z * z * t + c;
+    out[11] = 0;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+    return out;
+}
+
+/**
+ * Creates a matrix from the given angle around the X axis
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.rotateX(dest, dest, rad);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat4} out
+ */
+mat4.fromXRotation = function(out, rad) {
+    var s = Math.sin(rad),
+        c = Math.cos(rad);
+    
+    // Perform axis-specific matrix multiplication
+    out[0]  = 1;
+    out[1]  = 0;
+    out[2]  = 0;
+    out[3]  = 0;
+    out[4] = 0;
+    out[5] = c;
+    out[6] = s;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = -s;
+    out[10] = c;
+    out[11] = 0;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+    return out;
+}
+
+/**
+ * Creates a matrix from the given angle around the Y axis
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.rotateY(dest, dest, rad);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat4} out
+ */
+mat4.fromYRotation = function(out, rad) {
+    var s = Math.sin(rad),
+        c = Math.cos(rad);
+    
+    // Perform axis-specific matrix multiplication
+    out[0]  = c;
+    out[1]  = 0;
+    out[2]  = -s;
+    out[3]  = 0;
+    out[4] = 0;
+    out[5] = 1;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = s;
+    out[9] = 0;
+    out[10] = c;
+    out[11] = 0;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+    return out;
+}
+
+/**
+ * Creates a matrix from the given angle around the Z axis
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.rotateZ(dest, dest, rad);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat4} out
+ */
+mat4.fromZRotation = function(out, rad) {
+    var s = Math.sin(rad),
+        c = Math.cos(rad);
+    
+    // Perform axis-specific matrix multiplication
+    out[0]  = c;
+    out[1]  = s;
+    out[2]  = 0;
+    out[3]  = 0;
+    out[4] = -s;
+    out[5] = c;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 0;
+    out[10] = 1;
+    out[11] = 0;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+    return out;
+}
+
+/**
  * Creates a matrix from a quaternion rotation and vector translation
  * This is equivalent to (but much faster than):
  *
@@ -3535,6 +2173,128 @@ mat4.fromRotationTranslation = function (out, q, v) {
     out[15] = 1;
     
     return out;
+};
+
+/**
+ * Creates a matrix from a quaternion rotation, vector translation and vector scale
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.translate(dest, vec);
+ *     var quatMat = mat4.create();
+ *     quat4.toMat4(quat, quatMat);
+ *     mat4.multiply(dest, quatMat);
+ *     mat4.scale(dest, scale)
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {quat4} q Rotation quaternion
+ * @param {vec3} v Translation vector
+ * @param {vec3} s Scaling vector
+ * @returns {mat4} out
+ */
+mat4.fromRotationTranslationScale = function (out, q, v, s) {
+    // Quaternion math
+    var x = q[0], y = q[1], z = q[2], w = q[3],
+        x2 = x + x,
+        y2 = y + y,
+        z2 = z + z,
+
+        xx = x * x2,
+        xy = x * y2,
+        xz = x * z2,
+        yy = y * y2,
+        yz = y * z2,
+        zz = z * z2,
+        wx = w * x2,
+        wy = w * y2,
+        wz = w * z2,
+        sx = s[0],
+        sy = s[1],
+        sz = s[2];
+
+    out[0] = (1 - (yy + zz)) * sx;
+    out[1] = (xy + wz) * sx;
+    out[2] = (xz - wy) * sx;
+    out[3] = 0;
+    out[4] = (xy - wz) * sy;
+    out[5] = (1 - (xx + zz)) * sy;
+    out[6] = (yz + wx) * sy;
+    out[7] = 0;
+    out[8] = (xz + wy) * sz;
+    out[9] = (yz - wx) * sz;
+    out[10] = (1 - (xx + yy)) * sz;
+    out[11] = 0;
+    out[12] = v[0];
+    out[13] = v[1];
+    out[14] = v[2];
+    out[15] = 1;
+    
+    return out;
+};
+
+/**
+ * Creates a matrix from a quaternion rotation, vector translation and vector scale, rotating and scaling around the given origin
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.translate(dest, vec);
+ *     mat4.translate(dest, origin);
+ *     var quatMat = mat4.create();
+ *     quat4.toMat4(quat, quatMat);
+ *     mat4.multiply(dest, quatMat);
+ *     mat4.scale(dest, scale)
+ *     mat4.translate(dest, negativeOrigin);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {quat4} q Rotation quaternion
+ * @param {vec3} v Translation vector
+ * @param {vec3} s Scaling vector
+ * @param {vec3} o The origin vector around which to scale and rotate
+ * @returns {mat4} out
+ */
+mat4.fromRotationTranslationScaleOrigin = function (out, q, v, s, o) {
+  // Quaternion math
+  var x = q[0], y = q[1], z = q[2], w = q[3],
+      x2 = x + x,
+      y2 = y + y,
+      z2 = z + z,
+
+      xx = x * x2,
+      xy = x * y2,
+      xz = x * z2,
+      yy = y * y2,
+      yz = y * z2,
+      zz = z * z2,
+      wx = w * x2,
+      wy = w * y2,
+      wz = w * z2,
+      
+      sx = s[0],
+      sy = s[1],
+      sz = s[2],
+
+      ox = o[0],
+      oy = o[1],
+      oz = o[2];
+      
+  out[0] = (1 - (yy + zz)) * sx;
+  out[1] = (xy + wz) * sx;
+  out[2] = (xz - wy) * sx;
+  out[3] = 0;
+  out[4] = (xy - wz) * sy;
+  out[5] = (1 - (xx + zz)) * sy;
+  out[6] = (yz + wx) * sy;
+  out[7] = 0;
+  out[8] = (xz + wy) * sz;
+  out[9] = (yz - wx) * sz;
+  out[10] = (1 - (xx + yy)) * sz;
+  out[11] = 0;
+  out[12] = v[0] + ox - (out[0] * ox + out[4] * oy + out[8] * oz);
+  out[13] = v[1] + oy - (out[1] * ox + out[5] * oy + out[9] * oz);
+  out[14] = v[2] + oz - (out[2] * ox + out[6] * oy + out[10] * oz);
+  out[15] = 1;
+        
+  return out;
 };
 
 mat4.fromQuat = function (out, q) {
@@ -3644,6 +2404,44 @@ mat4.perspective = function (out, fovy, aspect, near, far) {
 };
 
 /**
+ * Generates a perspective projection matrix with the given field of view.
+ * This is primarily useful for generating projection matrices to be used
+ * with the still experiemental WebVR API.
+ *
+ * @param {mat4} out mat4 frustum matrix will be written into
+ * @param {number} fov Object containing the following values: upDegrees, downDegrees, leftDegrees, rightDegrees
+ * @param {number} near Near bound of the frustum
+ * @param {number} far Far bound of the frustum
+ * @returns {mat4} out
+ */
+mat4.perspectiveFromFieldOfView = function (out, fov, near, far) {
+    var upTan = Math.tan(fov.upDegrees * Math.PI/180.0),
+        downTan = Math.tan(fov.downDegrees * Math.PI/180.0),
+        leftTan = Math.tan(fov.leftDegrees * Math.PI/180.0),
+        rightTan = Math.tan(fov.rightDegrees * Math.PI/180.0),
+        xScale = 2.0 / (leftTan + rightTan),
+        yScale = 2.0 / (upTan + downTan);
+
+    out[0] = xScale;
+    out[1] = 0.0;
+    out[2] = 0.0;
+    out[3] = 0.0;
+    out[4] = 0.0;
+    out[5] = yScale;
+    out[6] = 0.0;
+    out[7] = 0.0;
+    out[8] = -((leftTan - rightTan) * xScale * 0.5);
+    out[9] = ((upTan - downTan) * yScale * 0.5);
+    out[10] = far / (near - far);
+    out[11] = -1.0;
+    out[12] = 0.0;
+    out[13] = 0.0;
+    out[14] = (far * near) / (near - far);
+    out[15] = 0.0;
+    return out;
+}
+
+/**
  * Generates a orthogonal projection matrix with the given bounds
  *
  * @param {mat4} out mat4 frustum matrix will be written into
@@ -3699,9 +2497,9 @@ mat4.lookAt = function (out, eye, center, up) {
         centery = center[1],
         centerz = center[2];
 
-    if (Math.abs(eyex - centerx) < GLMAT_EPSILON &&
-        Math.abs(eyey - centery) < GLMAT_EPSILON &&
-        Math.abs(eyez - centerz) < GLMAT_EPSILON) {
+    if (Math.abs(eyex - centerx) < glMatrix.EPSILON &&
+        Math.abs(eyey - centery) < glMatrix.EPSILON &&
+        Math.abs(eyez - centerz) < glMatrix.EPSILON) {
         return mat4.identity(out);
     }
 
@@ -3789,37 +2587,38 @@ mat4.frob = function (a) {
 };
 
 
-if(typeof(exports) !== 'undefined') {
-    exports.mat4 = mat4;
-}
-;
-/* Copyright (c) 2013, Brandon Jones, Colin MacKenzie IV. All rights reserved.
+module.exports = mat4;
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+},{"./common.js":2}],7:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
 
-  * Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation 
-    and/or other materials provided with the distribution.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
+var mat3 = require("./mat3.js");
+var vec3 = require("./vec3.js");
+var vec4 = require("./vec4.js");
 
 /**
  * @class Quaternion
  * @name quat
  */
-
 var quat = {};
 
 /**
@@ -3828,7 +2627,7 @@ var quat = {};
  * @returns {quat} a new quaternion
  */
 quat.create = function() {
-    var out = new GLMAT_ARRAY_TYPE(4);
+    var out = new glMatrix.ARRAY_TYPE(4);
     out[0] = 0;
     out[1] = 0;
     out[2] = 0;
@@ -4187,6 +2986,30 @@ quat.slerp = function (out, a, b, t) {
 };
 
 /**
+ * Performs a spherical linear interpolation with two control points
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a the first operand
+ * @param {quat} b the second operand
+ * @param {quat} c the third operand
+ * @param {quat} d the fourth operand
+ * @param {Number} t interpolation amount
+ * @returns {quat} out
+ */
+quat.sqlerp = (function () {
+  var temp1 = quat.create();
+  var temp2 = quat.create();
+  
+  return function (out, a, b, c, d, t) {
+    quat.slerp(temp1, a, d, t);
+    quat.slerp(temp2, b, c, t);
+    quat.slerp(out, temp1, temp2, 2 * t * (1 - t));
+    
+    return out;
+  };
+}());
+
+/**
  * Calculates the inverse of a quat
  *
  * @param {quat} out the receiving quaternion
@@ -4319,63 +3142,2239 @@ quat.str = function (a) {
     return 'quat(' + a[0] + ', ' + a[1] + ', ' + a[2] + ', ' + a[3] + ')';
 };
 
-if(typeof(exports) !== 'undefined') {
-    exports.quat = quat;
+module.exports = quat;
+
+},{"./common.js":2,"./mat3.js":5,"./vec3.js":9,"./vec4.js":10}],8:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
+
+/**
+ * @class 2 Dimensional Vector
+ * @name vec2
+ */
+var vec2 = {};
+
+/**
+ * Creates a new, empty vec2
+ *
+ * @returns {vec2} a new 2D vector
+ */
+vec2.create = function() {
+    var out = new glMatrix.ARRAY_TYPE(2);
+    out[0] = 0;
+    out[1] = 0;
+    return out;
+};
+
+/**
+ * Creates a new vec2 initialized with values from an existing vector
+ *
+ * @param {vec2} a vector to clone
+ * @returns {vec2} a new 2D vector
+ */
+vec2.clone = function(a) {
+    var out = new glMatrix.ARRAY_TYPE(2);
+    out[0] = a[0];
+    out[1] = a[1];
+    return out;
+};
+
+/**
+ * Creates a new vec2 initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @returns {vec2} a new 2D vector
+ */
+vec2.fromValues = function(x, y) {
+    var out = new glMatrix.ARRAY_TYPE(2);
+    out[0] = x;
+    out[1] = y;
+    return out;
+};
+
+/**
+ * Copy the values from one vec2 to another
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the source vector
+ * @returns {vec2} out
+ */
+vec2.copy = function(out, a) {
+    out[0] = a[0];
+    out[1] = a[1];
+    return out;
+};
+
+/**
+ * Set the components of a vec2 to the given values
+ *
+ * @param {vec2} out the receiving vector
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @returns {vec2} out
+ */
+vec2.set = function(out, x, y) {
+    out[0] = x;
+    out[1] = y;
+    return out;
+};
+
+/**
+ * Adds two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+vec2.add = function(out, a, b) {
+    out[0] = a[0] + b[0];
+    out[1] = a[1] + b[1];
+    return out;
+};
+
+/**
+ * Subtracts vector b from vector a
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+vec2.subtract = function(out, a, b) {
+    out[0] = a[0] - b[0];
+    out[1] = a[1] - b[1];
+    return out;
+};
+
+/**
+ * Alias for {@link vec2.subtract}
+ * @function
+ */
+vec2.sub = vec2.subtract;
+
+/**
+ * Multiplies two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+vec2.multiply = function(out, a, b) {
+    out[0] = a[0] * b[0];
+    out[1] = a[1] * b[1];
+    return out;
+};
+
+/**
+ * Alias for {@link vec2.multiply}
+ * @function
+ */
+vec2.mul = vec2.multiply;
+
+/**
+ * Divides two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+vec2.divide = function(out, a, b) {
+    out[0] = a[0] / b[0];
+    out[1] = a[1] / b[1];
+    return out;
+};
+
+/**
+ * Alias for {@link vec2.divide}
+ * @function
+ */
+vec2.div = vec2.divide;
+
+/**
+ * Returns the minimum of two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+vec2.min = function(out, a, b) {
+    out[0] = Math.min(a[0], b[0]);
+    out[1] = Math.min(a[1], b[1]);
+    return out;
+};
+
+/**
+ * Returns the maximum of two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+vec2.max = function(out, a, b) {
+    out[0] = Math.max(a[0], b[0]);
+    out[1] = Math.max(a[1], b[1]);
+    return out;
+};
+
+/**
+ * Scales a vec2 by a scalar number
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to scale
+ * @param {Number} b amount to scale the vector by
+ * @returns {vec2} out
+ */
+vec2.scale = function(out, a, b) {
+    out[0] = a[0] * b;
+    out[1] = a[1] * b;
+    return out;
+};
+
+/**
+ * Adds two vec2's after scaling the second operand by a scalar value
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @param {Number} scale the amount to scale b by before adding
+ * @returns {vec2} out
+ */
+vec2.scaleAndAdd = function(out, a, b, scale) {
+    out[0] = a[0] + (b[0] * scale);
+    out[1] = a[1] + (b[1] * scale);
+    return out;
+};
+
+/**
+ * Calculates the euclidian distance between two vec2's
+ *
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {Number} distance between a and b
+ */
+vec2.distance = function(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1];
+    return Math.sqrt(x*x + y*y);
+};
+
+/**
+ * Alias for {@link vec2.distance}
+ * @function
+ */
+vec2.dist = vec2.distance;
+
+/**
+ * Calculates the squared euclidian distance between two vec2's
+ *
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+vec2.squaredDistance = function(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1];
+    return x*x + y*y;
+};
+
+/**
+ * Alias for {@link vec2.squaredDistance}
+ * @function
+ */
+vec2.sqrDist = vec2.squaredDistance;
+
+/**
+ * Calculates the length of a vec2
+ *
+ * @param {vec2} a vector to calculate length of
+ * @returns {Number} length of a
+ */
+vec2.length = function (a) {
+    var x = a[0],
+        y = a[1];
+    return Math.sqrt(x*x + y*y);
+};
+
+/**
+ * Alias for {@link vec2.length}
+ * @function
+ */
+vec2.len = vec2.length;
+
+/**
+ * Calculates the squared length of a vec2
+ *
+ * @param {vec2} a vector to calculate squared length of
+ * @returns {Number} squared length of a
+ */
+vec2.squaredLength = function (a) {
+    var x = a[0],
+        y = a[1];
+    return x*x + y*y;
+};
+
+/**
+ * Alias for {@link vec2.squaredLength}
+ * @function
+ */
+vec2.sqrLen = vec2.squaredLength;
+
+/**
+ * Negates the components of a vec2
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a vector to negate
+ * @returns {vec2} out
+ */
+vec2.negate = function(out, a) {
+    out[0] = -a[0];
+    out[1] = -a[1];
+    return out;
+};
+
+/**
+ * Returns the inverse of the components of a vec2
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a vector to invert
+ * @returns {vec2} out
+ */
+vec2.inverse = function(out, a) {
+  out[0] = 1.0 / a[0];
+  out[1] = 1.0 / a[1];
+  return out;
+};
+
+/**
+ * Normalize a vec2
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a vector to normalize
+ * @returns {vec2} out
+ */
+vec2.normalize = function(out, a) {
+    var x = a[0],
+        y = a[1];
+    var len = x*x + y*y;
+    if (len > 0) {
+        //TODO: evaluate use of glm_invsqrt here?
+        len = 1 / Math.sqrt(len);
+        out[0] = a[0] * len;
+        out[1] = a[1] * len;
+    }
+    return out;
+};
+
+/**
+ * Calculates the dot product of two vec2's
+ *
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {Number} dot product of a and b
+ */
+vec2.dot = function (a, b) {
+    return a[0] * b[0] + a[1] * b[1];
+};
+
+/**
+ * Computes the cross product of two vec2's
+ * Note that the cross product must by definition produce a 3D vector
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec3} out
+ */
+vec2.cross = function(out, a, b) {
+    var z = a[0] * b[1] - a[1] * b[0];
+    out[0] = out[1] = 0;
+    out[2] = z;
+    return out;
+};
+
+/**
+ * Performs a linear interpolation between two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec2} out
+ */
+vec2.lerp = function (out, a, b, t) {
+    var ax = a[0],
+        ay = a[1];
+    out[0] = ax + t * (b[0] - ax);
+    out[1] = ay + t * (b[1] - ay);
+    return out;
+};
+
+/**
+ * Generates a random vector with the given scale
+ *
+ * @param {vec2} out the receiving vector
+ * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
+ * @returns {vec2} out
+ */
+vec2.random = function (out, scale) {
+    scale = scale || 1.0;
+    var r = glMatrix.RANDOM() * 2.0 * Math.PI;
+    out[0] = Math.cos(r) * scale;
+    out[1] = Math.sin(r) * scale;
+    return out;
+};
+
+/**
+ * Transforms the vec2 with a mat2
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat2} m matrix to transform with
+ * @returns {vec2} out
+ */
+vec2.transformMat2 = function(out, a, m) {
+    var x = a[0],
+        y = a[1];
+    out[0] = m[0] * x + m[2] * y;
+    out[1] = m[1] * x + m[3] * y;
+    return out;
+};
+
+/**
+ * Transforms the vec2 with a mat2d
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat2d} m matrix to transform with
+ * @returns {vec2} out
+ */
+vec2.transformMat2d = function(out, a, m) {
+    var x = a[0],
+        y = a[1];
+    out[0] = m[0] * x + m[2] * y + m[4];
+    out[1] = m[1] * x + m[3] * y + m[5];
+    return out;
+};
+
+/**
+ * Transforms the vec2 with a mat3
+ * 3rd vector component is implicitly '1'
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat3} m matrix to transform with
+ * @returns {vec2} out
+ */
+vec2.transformMat3 = function(out, a, m) {
+    var x = a[0],
+        y = a[1];
+    out[0] = m[0] * x + m[3] * y + m[6];
+    out[1] = m[1] * x + m[4] * y + m[7];
+    return out;
+};
+
+/**
+ * Transforms the vec2 with a mat4
+ * 3rd vector component is implicitly '0'
+ * 4th vector component is implicitly '1'
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat4} m matrix to transform with
+ * @returns {vec2} out
+ */
+vec2.transformMat4 = function(out, a, m) {
+    var x = a[0], 
+        y = a[1];
+    out[0] = m[0] * x + m[4] * y + m[12];
+    out[1] = m[1] * x + m[5] * y + m[13];
+    return out;
+};
+
+/**
+ * Perform some operation over an array of vec2s.
+ *
+ * @param {Array} a the array of vectors to iterate over
+ * @param {Number} stride Number of elements between the start of each vec2. If 0 assumes tightly packed
+ * @param {Number} offset Number of elements to skip at the beginning of the array
+ * @param {Number} count Number of vec2s to iterate over. If 0 iterates over entire array
+ * @param {Function} fn Function to call for each vector in the array
+ * @param {Object} [arg] additional argument to pass to fn
+ * @returns {Array} a
+ * @function
+ */
+vec2.forEach = (function() {
+    var vec = vec2.create();
+
+    return function(a, stride, offset, count, fn, arg) {
+        var i, l;
+        if(!stride) {
+            stride = 2;
+        }
+
+        if(!offset) {
+            offset = 0;
+        }
+        
+        if(count) {
+            l = Math.min((count * stride) + offset, a.length);
+        } else {
+            l = a.length;
+        }
+
+        for(i = offset; i < l; i += stride) {
+            vec[0] = a[i]; vec[1] = a[i+1];
+            fn(vec, vec, arg);
+            a[i] = vec[0]; a[i+1] = vec[1];
+        }
+        
+        return a;
+    };
+})();
+
+/**
+ * Returns a string representation of a vector
+ *
+ * @param {vec2} vec vector to represent as a string
+ * @returns {String} string representation of the vector
+ */
+vec2.str = function (a) {
+    return 'vec2(' + a[0] + ', ' + a[1] + ')';
+};
+
+module.exports = vec2;
+
+},{"./common.js":2}],9:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
+
+/**
+ * @class 3 Dimensional Vector
+ * @name vec3
+ */
+var vec3 = {};
+
+/**
+ * Creates a new, empty vec3
+ *
+ * @returns {vec3} a new 3D vector
+ */
+vec3.create = function() {
+    var out = new glMatrix.ARRAY_TYPE(3);
+    out[0] = 0;
+    out[1] = 0;
+    out[2] = 0;
+    return out;
+};
+
+/**
+ * Creates a new vec3 initialized with values from an existing vector
+ *
+ * @param {vec3} a vector to clone
+ * @returns {vec3} a new 3D vector
+ */
+vec3.clone = function(a) {
+    var out = new glMatrix.ARRAY_TYPE(3);
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    return out;
+};
+
+/**
+ * Creates a new vec3 initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @returns {vec3} a new 3D vector
+ */
+vec3.fromValues = function(x, y, z) {
+    var out = new glMatrix.ARRAY_TYPE(3);
+    out[0] = x;
+    out[1] = y;
+    out[2] = z;
+    return out;
+};
+
+/**
+ * Copy the values from one vec3 to another
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the source vector
+ * @returns {vec3} out
+ */
+vec3.copy = function(out, a) {
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    return out;
+};
+
+/**
+ * Set the components of a vec3 to the given values
+ *
+ * @param {vec3} out the receiving vector
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @returns {vec3} out
+ */
+vec3.set = function(out, x, y, z) {
+    out[0] = x;
+    out[1] = y;
+    out[2] = z;
+    return out;
+};
+
+/**
+ * Adds two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+vec3.add = function(out, a, b) {
+    out[0] = a[0] + b[0];
+    out[1] = a[1] + b[1];
+    out[2] = a[2] + b[2];
+    return out;
+};
+
+/**
+ * Subtracts vector b from vector a
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+vec3.subtract = function(out, a, b) {
+    out[0] = a[0] - b[0];
+    out[1] = a[1] - b[1];
+    out[2] = a[2] - b[2];
+    return out;
+};
+
+/**
+ * Alias for {@link vec3.subtract}
+ * @function
+ */
+vec3.sub = vec3.subtract;
+
+/**
+ * Multiplies two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+vec3.multiply = function(out, a, b) {
+    out[0] = a[0] * b[0];
+    out[1] = a[1] * b[1];
+    out[2] = a[2] * b[2];
+    return out;
+};
+
+/**
+ * Alias for {@link vec3.multiply}
+ * @function
+ */
+vec3.mul = vec3.multiply;
+
+/**
+ * Divides two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+vec3.divide = function(out, a, b) {
+    out[0] = a[0] / b[0];
+    out[1] = a[1] / b[1];
+    out[2] = a[2] / b[2];
+    return out;
+};
+
+/**
+ * Alias for {@link vec3.divide}
+ * @function
+ */
+vec3.div = vec3.divide;
+
+/**
+ * Returns the minimum of two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+vec3.min = function(out, a, b) {
+    out[0] = Math.min(a[0], b[0]);
+    out[1] = Math.min(a[1], b[1]);
+    out[2] = Math.min(a[2], b[2]);
+    return out;
+};
+
+/**
+ * Returns the maximum of two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+vec3.max = function(out, a, b) {
+    out[0] = Math.max(a[0], b[0]);
+    out[1] = Math.max(a[1], b[1]);
+    out[2] = Math.max(a[2], b[2]);
+    return out;
+};
+
+/**
+ * Scales a vec3 by a scalar number
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to scale
+ * @param {Number} b amount to scale the vector by
+ * @returns {vec3} out
+ */
+vec3.scale = function(out, a, b) {
+    out[0] = a[0] * b;
+    out[1] = a[1] * b;
+    out[2] = a[2] * b;
+    return out;
+};
+
+/**
+ * Adds two vec3's after scaling the second operand by a scalar value
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @param {Number} scale the amount to scale b by before adding
+ * @returns {vec3} out
+ */
+vec3.scaleAndAdd = function(out, a, b, scale) {
+    out[0] = a[0] + (b[0] * scale);
+    out[1] = a[1] + (b[1] * scale);
+    out[2] = a[2] + (b[2] * scale);
+    return out;
+};
+
+/**
+ * Calculates the euclidian distance between two vec3's
+ *
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {Number} distance between a and b
+ */
+vec3.distance = function(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1],
+        z = b[2] - a[2];
+    return Math.sqrt(x*x + y*y + z*z);
+};
+
+/**
+ * Alias for {@link vec3.distance}
+ * @function
+ */
+vec3.dist = vec3.distance;
+
+/**
+ * Calculates the squared euclidian distance between two vec3's
+ *
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+vec3.squaredDistance = function(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1],
+        z = b[2] - a[2];
+    return x*x + y*y + z*z;
+};
+
+/**
+ * Alias for {@link vec3.squaredDistance}
+ * @function
+ */
+vec3.sqrDist = vec3.squaredDistance;
+
+/**
+ * Calculates the length of a vec3
+ *
+ * @param {vec3} a vector to calculate length of
+ * @returns {Number} length of a
+ */
+vec3.length = function (a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2];
+    return Math.sqrt(x*x + y*y + z*z);
+};
+
+/**
+ * Alias for {@link vec3.length}
+ * @function
+ */
+vec3.len = vec3.length;
+
+/**
+ * Calculates the squared length of a vec3
+ *
+ * @param {vec3} a vector to calculate squared length of
+ * @returns {Number} squared length of a
+ */
+vec3.squaredLength = function (a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2];
+    return x*x + y*y + z*z;
+};
+
+/**
+ * Alias for {@link vec3.squaredLength}
+ * @function
+ */
+vec3.sqrLen = vec3.squaredLength;
+
+/**
+ * Negates the components of a vec3
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a vector to negate
+ * @returns {vec3} out
+ */
+vec3.negate = function(out, a) {
+    out[0] = -a[0];
+    out[1] = -a[1];
+    out[2] = -a[2];
+    return out;
+};
+
+/**
+ * Returns the inverse of the components of a vec3
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a vector to invert
+ * @returns {vec3} out
+ */
+vec3.inverse = function(out, a) {
+  out[0] = 1.0 / a[0];
+  out[1] = 1.0 / a[1];
+  out[2] = 1.0 / a[2];
+  return out;
+};
+
+/**
+ * Normalize a vec3
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a vector to normalize
+ * @returns {vec3} out
+ */
+vec3.normalize = function(out, a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2];
+    var len = x*x + y*y + z*z;
+    if (len > 0) {
+        //TODO: evaluate use of glm_invsqrt here?
+        len = 1 / Math.sqrt(len);
+        out[0] = a[0] * len;
+        out[1] = a[1] * len;
+        out[2] = a[2] * len;
+    }
+    return out;
+};
+
+/**
+ * Calculates the dot product of two vec3's
+ *
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {Number} dot product of a and b
+ */
+vec3.dot = function (a, b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+};
+
+/**
+ * Computes the cross product of two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+vec3.cross = function(out, a, b) {
+    var ax = a[0], ay = a[1], az = a[2],
+        bx = b[0], by = b[1], bz = b[2];
+
+    out[0] = ay * bz - az * by;
+    out[1] = az * bx - ax * bz;
+    out[2] = ax * by - ay * bx;
+    return out;
+};
+
+/**
+ * Performs a linear interpolation between two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec3} out
+ */
+vec3.lerp = function (out, a, b, t) {
+    var ax = a[0],
+        ay = a[1],
+        az = a[2];
+    out[0] = ax + t * (b[0] - ax);
+    out[1] = ay + t * (b[1] - ay);
+    out[2] = az + t * (b[2] - az);
+    return out;
+};
+
+/**
+ * Performs a hermite interpolation with two control points
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @param {vec3} c the third operand
+ * @param {vec3} d the fourth operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec3} out
+ */
+vec3.hermite = function (out, a, b, c, d, t) {
+  var factorTimes2 = t * t,
+      factor1 = factorTimes2 * (2 * t - 3) + 1,
+      factor2 = factorTimes2 * (t - 2) + t,
+      factor3 = factorTimes2 * (t - 1),
+      factor4 = factorTimes2 * (3 - 2 * t);
+  
+  out[0] = a[0] * factor1 + b[0] * factor2 + c[0] * factor3 + d[0] * factor4;
+  out[1] = a[1] * factor1 + b[1] * factor2 + c[1] * factor3 + d[1] * factor4;
+  out[2] = a[2] * factor1 + b[2] * factor2 + c[2] * factor3 + d[2] * factor4;
+  
+  return out;
+};
+
+/**
+ * Performs a bezier interpolation with two control points
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @param {vec3} c the third operand
+ * @param {vec3} d the fourth operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec3} out
+ */
+vec3.bezier = function (out, a, b, c, d, t) {
+  var inverseFactor = 1 - t,
+      inverseFactorTimesTwo = inverseFactor * inverseFactor,
+      factorTimes2 = t * t,
+      factor1 = inverseFactorTimesTwo * inverseFactor,
+      factor2 = 3 * t * inverseFactorTimesTwo,
+      factor3 = 3 * factorTimes2 * inverseFactor,
+      factor4 = factorTimes2 * t;
+  
+  out[0] = a[0] * factor1 + b[0] * factor2 + c[0] * factor3 + d[0] * factor4;
+  out[1] = a[1] * factor1 + b[1] * factor2 + c[1] * factor3 + d[1] * factor4;
+  out[2] = a[2] * factor1 + b[2] * factor2 + c[2] * factor3 + d[2] * factor4;
+  
+  return out;
+};
+
+/**
+ * Generates a random vector with the given scale
+ *
+ * @param {vec3} out the receiving vector
+ * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
+ * @returns {vec3} out
+ */
+vec3.random = function (out, scale) {
+    scale = scale || 1.0;
+
+    var r = glMatrix.RANDOM() * 2.0 * Math.PI;
+    var z = (glMatrix.RANDOM() * 2.0) - 1.0;
+    var zScale = Math.sqrt(1.0-z*z) * scale;
+
+    out[0] = Math.cos(r) * zScale;
+    out[1] = Math.sin(r) * zScale;
+    out[2] = z * scale;
+    return out;
+};
+
+/**
+ * Transforms the vec3 with a mat4.
+ * 4th vector component is implicitly '1'
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to transform
+ * @param {mat4} m matrix to transform with
+ * @returns {vec3} out
+ */
+vec3.transformMat4 = function(out, a, m) {
+    var x = a[0], y = a[1], z = a[2],
+        w = m[3] * x + m[7] * y + m[11] * z + m[15];
+    w = w || 1.0;
+    out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w;
+    out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w;
+    out[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w;
+    return out;
+};
+
+/**
+ * Transforms the vec3 with a mat3.
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to transform
+ * @param {mat4} m the 3x3 matrix to transform with
+ * @returns {vec3} out
+ */
+vec3.transformMat3 = function(out, a, m) {
+    var x = a[0], y = a[1], z = a[2];
+    out[0] = x * m[0] + y * m[3] + z * m[6];
+    out[1] = x * m[1] + y * m[4] + z * m[7];
+    out[2] = x * m[2] + y * m[5] + z * m[8];
+    return out;
+};
+
+/**
+ * Transforms the vec3 with a quat
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to transform
+ * @param {quat} q quaternion to transform with
+ * @returns {vec3} out
+ */
+vec3.transformQuat = function(out, a, q) {
+    // benchmarks: http://jsperf.com/quaternion-transform-vec3-implementations
+
+    var x = a[0], y = a[1], z = a[2],
+        qx = q[0], qy = q[1], qz = q[2], qw = q[3],
+
+        // calculate quat * vec
+        ix = qw * x + qy * z - qz * y,
+        iy = qw * y + qz * x - qx * z,
+        iz = qw * z + qx * y - qy * x,
+        iw = -qx * x - qy * y - qz * z;
+
+    // calculate result * inverse quat
+    out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+    out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+    out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    return out;
+};
+
+/**
+ * Rotate a 3D vector around the x-axis
+ * @param {vec3} out The receiving vec3
+ * @param {vec3} a The vec3 point to rotate
+ * @param {vec3} b The origin of the rotation
+ * @param {Number} c The angle of rotation
+ * @returns {vec3} out
+ */
+vec3.rotateX = function(out, a, b, c){
+   var p = [], r=[];
+	  //Translate point to the origin
+	  p[0] = a[0] - b[0];
+	  p[1] = a[1] - b[1];
+  	p[2] = a[2] - b[2];
+
+	  //perform rotation
+	  r[0] = p[0];
+	  r[1] = p[1]*Math.cos(c) - p[2]*Math.sin(c);
+	  r[2] = p[1]*Math.sin(c) + p[2]*Math.cos(c);
+
+	  //translate to correct position
+	  out[0] = r[0] + b[0];
+	  out[1] = r[1] + b[1];
+	  out[2] = r[2] + b[2];
+
+  	return out;
+};
+
+/**
+ * Rotate a 3D vector around the y-axis
+ * @param {vec3} out The receiving vec3
+ * @param {vec3} a The vec3 point to rotate
+ * @param {vec3} b The origin of the rotation
+ * @param {Number} c The angle of rotation
+ * @returns {vec3} out
+ */
+vec3.rotateY = function(out, a, b, c){
+  	var p = [], r=[];
+  	//Translate point to the origin
+  	p[0] = a[0] - b[0];
+  	p[1] = a[1] - b[1];
+  	p[2] = a[2] - b[2];
+  
+  	//perform rotation
+  	r[0] = p[2]*Math.sin(c) + p[0]*Math.cos(c);
+  	r[1] = p[1];
+  	r[2] = p[2]*Math.cos(c) - p[0]*Math.sin(c);
+  
+  	//translate to correct position
+  	out[0] = r[0] + b[0];
+  	out[1] = r[1] + b[1];
+  	out[2] = r[2] + b[2];
+  
+  	return out;
+};
+
+/**
+ * Rotate a 3D vector around the z-axis
+ * @param {vec3} out The receiving vec3
+ * @param {vec3} a The vec3 point to rotate
+ * @param {vec3} b The origin of the rotation
+ * @param {Number} c The angle of rotation
+ * @returns {vec3} out
+ */
+vec3.rotateZ = function(out, a, b, c){
+  	var p = [], r=[];
+  	//Translate point to the origin
+  	p[0] = a[0] - b[0];
+  	p[1] = a[1] - b[1];
+  	p[2] = a[2] - b[2];
+  
+  	//perform rotation
+  	r[0] = p[0]*Math.cos(c) - p[1]*Math.sin(c);
+  	r[1] = p[0]*Math.sin(c) + p[1]*Math.cos(c);
+  	r[2] = p[2];
+  
+  	//translate to correct position
+  	out[0] = r[0] + b[0];
+  	out[1] = r[1] + b[1];
+  	out[2] = r[2] + b[2];
+  
+  	return out;
+};
+
+/**
+ * Perform some operation over an array of vec3s.
+ *
+ * @param {Array} a the array of vectors to iterate over
+ * @param {Number} stride Number of elements between the start of each vec3. If 0 assumes tightly packed
+ * @param {Number} offset Number of elements to skip at the beginning of the array
+ * @param {Number} count Number of vec3s to iterate over. If 0 iterates over entire array
+ * @param {Function} fn Function to call for each vector in the array
+ * @param {Object} [arg] additional argument to pass to fn
+ * @returns {Array} a
+ * @function
+ */
+vec3.forEach = (function() {
+    var vec = vec3.create();
+
+    return function(a, stride, offset, count, fn, arg) {
+        var i, l;
+        if(!stride) {
+            stride = 3;
+        }
+
+        if(!offset) {
+            offset = 0;
+        }
+        
+        if(count) {
+            l = Math.min((count * stride) + offset, a.length);
+        } else {
+            l = a.length;
+        }
+
+        for(i = offset; i < l; i += stride) {
+            vec[0] = a[i]; vec[1] = a[i+1]; vec[2] = a[i+2];
+            fn(vec, vec, arg);
+            a[i] = vec[0]; a[i+1] = vec[1]; a[i+2] = vec[2];
+        }
+        
+        return a;
+    };
+})();
+
+/**
+ * Get the angle between two 3D vectors
+ * @param {vec3} a The first operand
+ * @param {vec3} b The second operand
+ * @returns {Number} The angle in radians
+ */
+vec3.angle = function(a, b) {
+   
+    var tempA = vec3.fromValues(a[0], a[1], a[2]);
+    var tempB = vec3.fromValues(b[0], b[1], b[2]);
+ 
+    vec3.normalize(tempA, tempA);
+    vec3.normalize(tempB, tempB);
+ 
+    var cosine = vec3.dot(tempA, tempB);
+
+    if(cosine > 1.0){
+        return 0;
+    } else {
+        return Math.acos(cosine);
+    }     
+};
+
+/**
+ * Returns a string representation of a vector
+ *
+ * @param {vec3} vec vector to represent as a string
+ * @returns {String} string representation of the vector
+ */
+vec3.str = function (a) {
+    return 'vec3(' + a[0] + ', ' + a[1] + ', ' + a[2] + ')';
+};
+
+module.exports = vec3;
+
+},{"./common.js":2}],10:[function(require,module,exports){
+/* Copyright (c) 2015, Brandon Jones, Colin MacKenzie IV.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE. */
+
+var glMatrix = require("./common.js");
+
+/**
+ * @class 4 Dimensional Vector
+ * @name vec4
+ */
+var vec4 = {};
+
+/**
+ * Creates a new, empty vec4
+ *
+ * @returns {vec4} a new 4D vector
+ */
+vec4.create = function() {
+    var out = new glMatrix.ARRAY_TYPE(4);
+    out[0] = 0;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    return out;
+};
+
+/**
+ * Creates a new vec4 initialized with values from an existing vector
+ *
+ * @param {vec4} a vector to clone
+ * @returns {vec4} a new 4D vector
+ */
+vec4.clone = function(a) {
+    var out = new glMatrix.ARRAY_TYPE(4);
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    out[3] = a[3];
+    return out;
+};
+
+/**
+ * Creates a new vec4 initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @param {Number} w W component
+ * @returns {vec4} a new 4D vector
+ */
+vec4.fromValues = function(x, y, z, w) {
+    var out = new glMatrix.ARRAY_TYPE(4);
+    out[0] = x;
+    out[1] = y;
+    out[2] = z;
+    out[3] = w;
+    return out;
+};
+
+/**
+ * Copy the values from one vec4 to another
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the source vector
+ * @returns {vec4} out
+ */
+vec4.copy = function(out, a) {
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    out[3] = a[3];
+    return out;
+};
+
+/**
+ * Set the components of a vec4 to the given values
+ *
+ * @param {vec4} out the receiving vector
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @param {Number} w W component
+ * @returns {vec4} out
+ */
+vec4.set = function(out, x, y, z, w) {
+    out[0] = x;
+    out[1] = y;
+    out[2] = z;
+    out[3] = w;
+    return out;
+};
+
+/**
+ * Adds two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+vec4.add = function(out, a, b) {
+    out[0] = a[0] + b[0];
+    out[1] = a[1] + b[1];
+    out[2] = a[2] + b[2];
+    out[3] = a[3] + b[3];
+    return out;
+};
+
+/**
+ * Subtracts vector b from vector a
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+vec4.subtract = function(out, a, b) {
+    out[0] = a[0] - b[0];
+    out[1] = a[1] - b[1];
+    out[2] = a[2] - b[2];
+    out[3] = a[3] - b[3];
+    return out;
+};
+
+/**
+ * Alias for {@link vec4.subtract}
+ * @function
+ */
+vec4.sub = vec4.subtract;
+
+/**
+ * Multiplies two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+vec4.multiply = function(out, a, b) {
+    out[0] = a[0] * b[0];
+    out[1] = a[1] * b[1];
+    out[2] = a[2] * b[2];
+    out[3] = a[3] * b[3];
+    return out;
+};
+
+/**
+ * Alias for {@link vec4.multiply}
+ * @function
+ */
+vec4.mul = vec4.multiply;
+
+/**
+ * Divides two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+vec4.divide = function(out, a, b) {
+    out[0] = a[0] / b[0];
+    out[1] = a[1] / b[1];
+    out[2] = a[2] / b[2];
+    out[3] = a[3] / b[3];
+    return out;
+};
+
+/**
+ * Alias for {@link vec4.divide}
+ * @function
+ */
+vec4.div = vec4.divide;
+
+/**
+ * Returns the minimum of two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+vec4.min = function(out, a, b) {
+    out[0] = Math.min(a[0], b[0]);
+    out[1] = Math.min(a[1], b[1]);
+    out[2] = Math.min(a[2], b[2]);
+    out[3] = Math.min(a[3], b[3]);
+    return out;
+};
+
+/**
+ * Returns the maximum of two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+vec4.max = function(out, a, b) {
+    out[0] = Math.max(a[0], b[0]);
+    out[1] = Math.max(a[1], b[1]);
+    out[2] = Math.max(a[2], b[2]);
+    out[3] = Math.max(a[3], b[3]);
+    return out;
+};
+
+/**
+ * Scales a vec4 by a scalar number
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the vector to scale
+ * @param {Number} b amount to scale the vector by
+ * @returns {vec4} out
+ */
+vec4.scale = function(out, a, b) {
+    out[0] = a[0] * b;
+    out[1] = a[1] * b;
+    out[2] = a[2] * b;
+    out[3] = a[3] * b;
+    return out;
+};
+
+/**
+ * Adds two vec4's after scaling the second operand by a scalar value
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @param {Number} scale the amount to scale b by before adding
+ * @returns {vec4} out
+ */
+vec4.scaleAndAdd = function(out, a, b, scale) {
+    out[0] = a[0] + (b[0] * scale);
+    out[1] = a[1] + (b[1] * scale);
+    out[2] = a[2] + (b[2] * scale);
+    out[3] = a[3] + (b[3] * scale);
+    return out;
+};
+
+/**
+ * Calculates the euclidian distance between two vec4's
+ *
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {Number} distance between a and b
+ */
+vec4.distance = function(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1],
+        z = b[2] - a[2],
+        w = b[3] - a[3];
+    return Math.sqrt(x*x + y*y + z*z + w*w);
+};
+
+/**
+ * Alias for {@link vec4.distance}
+ * @function
+ */
+vec4.dist = vec4.distance;
+
+/**
+ * Calculates the squared euclidian distance between two vec4's
+ *
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+vec4.squaredDistance = function(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1],
+        z = b[2] - a[2],
+        w = b[3] - a[3];
+    return x*x + y*y + z*z + w*w;
+};
+
+/**
+ * Alias for {@link vec4.squaredDistance}
+ * @function
+ */
+vec4.sqrDist = vec4.squaredDistance;
+
+/**
+ * Calculates the length of a vec4
+ *
+ * @param {vec4} a vector to calculate length of
+ * @returns {Number} length of a
+ */
+vec4.length = function (a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2],
+        w = a[3];
+    return Math.sqrt(x*x + y*y + z*z + w*w);
+};
+
+/**
+ * Alias for {@link vec4.length}
+ * @function
+ */
+vec4.len = vec4.length;
+
+/**
+ * Calculates the squared length of a vec4
+ *
+ * @param {vec4} a vector to calculate squared length of
+ * @returns {Number} squared length of a
+ */
+vec4.squaredLength = function (a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2],
+        w = a[3];
+    return x*x + y*y + z*z + w*w;
+};
+
+/**
+ * Alias for {@link vec4.squaredLength}
+ * @function
+ */
+vec4.sqrLen = vec4.squaredLength;
+
+/**
+ * Negates the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a vector to negate
+ * @returns {vec4} out
+ */
+vec4.negate = function(out, a) {
+    out[0] = -a[0];
+    out[1] = -a[1];
+    out[2] = -a[2];
+    out[3] = -a[3];
+    return out;
+};
+
+/**
+ * Returns the inverse of the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a vector to invert
+ * @returns {vec4} out
+ */
+vec4.inverse = function(out, a) {
+  out[0] = 1.0 / a[0];
+  out[1] = 1.0 / a[1];
+  out[2] = 1.0 / a[2];
+  out[3] = 1.0 / a[3];
+  return out;
+};
+
+/**
+ * Normalize a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a vector to normalize
+ * @returns {vec4} out
+ */
+vec4.normalize = function(out, a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2],
+        w = a[3];
+    var len = x*x + y*y + z*z + w*w;
+    if (len > 0) {
+        len = 1 / Math.sqrt(len);
+        out[0] = x * len;
+        out[1] = y * len;
+        out[2] = z * len;
+        out[3] = w * len;
+    }
+    return out;
+};
+
+/**
+ * Calculates the dot product of two vec4's
+ *
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {Number} dot product of a and b
+ */
+vec4.dot = function (a, b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+};
+
+/**
+ * Performs a linear interpolation between two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec4} out
+ */
+vec4.lerp = function (out, a, b, t) {
+    var ax = a[0],
+        ay = a[1],
+        az = a[2],
+        aw = a[3];
+    out[0] = ax + t * (b[0] - ax);
+    out[1] = ay + t * (b[1] - ay);
+    out[2] = az + t * (b[2] - az);
+    out[3] = aw + t * (b[3] - aw);
+    return out;
+};
+
+/**
+ * Generates a random vector with the given scale
+ *
+ * @param {vec4} out the receiving vector
+ * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
+ * @returns {vec4} out
+ */
+vec4.random = function (out, scale) {
+    scale = scale || 1.0;
+
+    //TODO: This is a pretty awful way of doing this. Find something better.
+    out[0] = glMatrix.RANDOM();
+    out[1] = glMatrix.RANDOM();
+    out[2] = glMatrix.RANDOM();
+    out[3] = glMatrix.RANDOM();
+    vec4.normalize(out, out);
+    vec4.scale(out, out, scale);
+    return out;
+};
+
+/**
+ * Transforms the vec4 with a mat4.
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the vector to transform
+ * @param {mat4} m matrix to transform with
+ * @returns {vec4} out
+ */
+vec4.transformMat4 = function(out, a, m) {
+    var x = a[0], y = a[1], z = a[2], w = a[3];
+    out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
+    out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
+    out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
+    out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
+    return out;
+};
+
+/**
+ * Transforms the vec4 with a quat
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the vector to transform
+ * @param {quat} q quaternion to transform with
+ * @returns {vec4} out
+ */
+vec4.transformQuat = function(out, a, q) {
+    var x = a[0], y = a[1], z = a[2],
+        qx = q[0], qy = q[1], qz = q[2], qw = q[3],
+
+        // calculate quat * vec
+        ix = qw * x + qy * z - qz * y,
+        iy = qw * y + qz * x - qx * z,
+        iz = qw * z + qx * y - qy * x,
+        iw = -qx * x - qy * y - qz * z;
+
+    // calculate result * inverse quat
+    out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+    out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+    out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    out[3] = a[3];
+    return out;
+};
+
+/**
+ * Perform some operation over an array of vec4s.
+ *
+ * @param {Array} a the array of vectors to iterate over
+ * @param {Number} stride Number of elements between the start of each vec4. If 0 assumes tightly packed
+ * @param {Number} offset Number of elements to skip at the beginning of the array
+ * @param {Number} count Number of vec4s to iterate over. If 0 iterates over entire array
+ * @param {Function} fn Function to call for each vector in the array
+ * @param {Object} [arg] additional argument to pass to fn
+ * @returns {Array} a
+ * @function
+ */
+vec4.forEach = (function() {
+    var vec = vec4.create();
+
+    return function(a, stride, offset, count, fn, arg) {
+        var i, l;
+        if(!stride) {
+            stride = 4;
+        }
+
+        if(!offset) {
+            offset = 0;
+        }
+        
+        if(count) {
+            l = Math.min((count * stride) + offset, a.length);
+        } else {
+            l = a.length;
+        }
+
+        for(i = offset; i < l; i += stride) {
+            vec[0] = a[i]; vec[1] = a[i+1]; vec[2] = a[i+2]; vec[3] = a[i+3];
+            fn(vec, vec, arg);
+            a[i] = vec[0]; a[i+1] = vec[1]; a[i+2] = vec[2]; a[i+3] = vec[3];
+        }
+        
+        return a;
+    };
+})();
+
+/**
+ * Returns a string representation of a vector
+ *
+ * @param {vec4} vec vector to represent as a string
+ * @returns {String} string representation of the vector
+ */
+vec4.str = function (a) {
+    return 'vec4(' + a[0] + ', ' + a[1] + ', ' + a[2] + ', ' + a[3] + ')';
+};
+
+module.exports = vec4;
+
+},{"./common.js":2}],11:[function(require,module,exports){
+// http://wiki.commonjs.org/wiki/Unit_Testing/1.0
+//
+// THIS IS NOT TESTED NOR LIKELY TO WORK OUTSIDE V8!
+//
+// Originally from narwhal.js (http://narwhaljs.org)
+// Copyright (c) 2009 Thomas Robinson <280north.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the 'Software'), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// when used in node, this will actually load the util module we depend on
+// versus loading the builtin util module as happens otherwise
+// this is a bug in node module loading as far as I am concerned
+var util = require('util/');
+
+var pSlice = Array.prototype.slice;
+var hasOwn = Object.prototype.hasOwnProperty;
+
+// 1. The assert module provides functions that throw
+// AssertionError's when particular conditions are not met. The
+// assert module must conform to the following interface.
+
+var assert = module.exports = ok;
+
+// 2. The AssertionError is defined in assert.
+// new assert.AssertionError({ message: message,
+//                             actual: actual,
+//                             expected: expected })
+
+assert.AssertionError = function AssertionError(options) {
+  this.name = 'AssertionError';
+  this.actual = options.actual;
+  this.expected = options.expected;
+  this.operator = options.operator;
+  if (options.message) {
+    this.message = options.message;
+    this.generatedMessage = false;
+  } else {
+    this.message = getMessage(this);
+    this.generatedMessage = true;
+  }
+  var stackStartFunction = options.stackStartFunction || fail;
+
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this, stackStartFunction);
+  }
+  else {
+    // non v8 browsers so we can have a stacktrace
+    var err = new Error();
+    if (err.stack) {
+      var out = err.stack;
+
+      // try to strip useless frames
+      var fn_name = stackStartFunction.name;
+      var idx = out.indexOf('\n' + fn_name);
+      if (idx >= 0) {
+        // once we have located the function frame
+        // we need to strip out everything before it (and its line)
+        var next_line = out.indexOf('\n', idx + 1);
+        out = out.substring(next_line + 1);
+      }
+
+      this.stack = out;
+    }
+  }
+};
+
+// assert.AssertionError instanceof Error
+util.inherits(assert.AssertionError, Error);
+
+function replacer(key, value) {
+  if (util.isUndefined(value)) {
+    return '' + value;
+  }
+  if (util.isNumber(value) && !isFinite(value)) {
+    return value.toString();
+  }
+  if (util.isFunction(value) || util.isRegExp(value)) {
+    return value.toString();
+  }
+  return value;
 }
-;
 
+function truncate(s, n) {
+  if (util.isString(s)) {
+    return s.length < n ? s : s.slice(0, n);
+  } else {
+    return s;
+  }
+}
 
+function getMessage(self) {
+  return truncate(JSON.stringify(self.actual, replacer), 128) + ' ' +
+         self.operator + ' ' +
+         truncate(JSON.stringify(self.expected, replacer), 128);
+}
 
+// At present only the three keys mentioned above are used and
+// understood by the spec. Implementations or sub modules can pass
+// other keys to the AssertionError's constructor - they will be
+// ignored.
 
+// 3. All of the following functions must throw an AssertionError
+// when a corresponding condition is not met, with a message that
+// may be undefined if not provided.  All assertion methods provide
+// both the actual and expected values to the assertion error for
+// display purposes.
 
+function fail(actual, expected, message, operator, stackStartFunction) {
+  throw new assert.AssertionError({
+    message: message,
+    actual: actual,
+    expected: expected,
+    operator: operator,
+    stackStartFunction: stackStartFunction
+  });
+}
 
+// EXTENSION! allows for well behaved errors defined elsewhere.
+assert.fail = fail;
 
+// 4. Pure assertion tests whether a value is truthy, as determined
+// by !!guard.
+// assert.ok(guard, message_opt);
+// This statement is equivalent to assert.equal(true, !!guard,
+// message_opt);. To test strictly for the value true, use
+// assert.strictEqual(true, guard, message_opt);.
 
+function ok(value, message) {
+  if (!value) fail(value, true, message, '==', assert.ok);
+}
+assert.ok = ok;
 
+// 5. The equality assertion tests shallow, coercive equality with
+// ==.
+// assert.equal(actual, expected, message_opt);
 
+assert.equal = function equal(actual, expected, message) {
+  if (actual != expected) fail(actual, expected, message, '==', assert.equal);
+};
 
+// 6. The non-equality assertion tests for whether two objects are not equal
+// with != assert.notEqual(actual, expected, message_opt);
 
+assert.notEqual = function notEqual(actual, expected, message) {
+  if (actual == expected) {
+    fail(actual, expected, message, '!=', assert.notEqual);
+  }
+};
 
-  })(shim.exports);
-})(this);
+// 7. The equivalence assertion tests a deep equality relation.
+// assert.deepEqual(actual, expected, message_opt);
 
-},{}],2:[function(require,module,exports){
+assert.deepEqual = function deepEqual(actual, expected, message) {
+  if (!_deepEqual(actual, expected)) {
+    fail(actual, expected, message, 'deepEqual', assert.deepEqual);
+  }
+};
+
+function _deepEqual(actual, expected) {
+  // 7.1. All identical values are equivalent, as determined by ===.
+  if (actual === expected) {
+    return true;
+
+  } else if (util.isBuffer(actual) && util.isBuffer(expected)) {
+    if (actual.length != expected.length) return false;
+
+    for (var i = 0; i < actual.length; i++) {
+      if (actual[i] !== expected[i]) return false;
+    }
+
+    return true;
+
+  // 7.2. If the expected value is a Date object, the actual value is
+  // equivalent if it is also a Date object that refers to the same time.
+  } else if (util.isDate(actual) && util.isDate(expected)) {
+    return actual.getTime() === expected.getTime();
+
+  // 7.3 If the expected value is a RegExp object, the actual value is
+  // equivalent if it is also a RegExp object with the same source and
+  // properties (`global`, `multiline`, `lastIndex`, `ignoreCase`).
+  } else if (util.isRegExp(actual) && util.isRegExp(expected)) {
+    return actual.source === expected.source &&
+           actual.global === expected.global &&
+           actual.multiline === expected.multiline &&
+           actual.lastIndex === expected.lastIndex &&
+           actual.ignoreCase === expected.ignoreCase;
+
+  // 7.4. Other pairs that do not both pass typeof value == 'object',
+  // equivalence is determined by ==.
+  } else if (!util.isObject(actual) && !util.isObject(expected)) {
+    return actual == expected;
+
+  // 7.5 For all other Object pairs, including Array objects, equivalence is
+  // determined by having the same number of owned properties (as verified
+  // with Object.prototype.hasOwnProperty.call), the same set of keys
+  // (although not necessarily the same order), equivalent values for every
+  // corresponding key, and an identical 'prototype' property. Note: this
+  // accounts for both named and indexed properties on Arrays.
+  } else {
+    return objEquiv(actual, expected);
+  }
+}
+
+function isArguments(object) {
+  return Object.prototype.toString.call(object) == '[object Arguments]';
+}
+
+function objEquiv(a, b) {
+  if (util.isNullOrUndefined(a) || util.isNullOrUndefined(b))
+    return false;
+  // an identical 'prototype' property.
+  if (a.prototype !== b.prototype) return false;
+  // if one is a primitive, the other must be same
+  if (util.isPrimitive(a) || util.isPrimitive(b)) {
+    return a === b;
+  }
+  var aIsArgs = isArguments(a),
+      bIsArgs = isArguments(b);
+  if ((aIsArgs && !bIsArgs) || (!aIsArgs && bIsArgs))
+    return false;
+  if (aIsArgs) {
+    a = pSlice.call(a);
+    b = pSlice.call(b);
+    return _deepEqual(a, b);
+  }
+  var ka = objectKeys(a),
+      kb = objectKeys(b),
+      key, i;
+  // having the same number of owned properties (keys incorporates
+  // hasOwnProperty)
+  if (ka.length != kb.length)
+    return false;
+  //the same set of keys (although not necessarily the same order),
+  ka.sort();
+  kb.sort();
+  //~~~cheap key test
+  for (i = ka.length - 1; i >= 0; i--) {
+    if (ka[i] != kb[i])
+      return false;
+  }
+  //equivalent values for every corresponding key, and
+  //~~~possibly expensive deep test
+  for (i = ka.length - 1; i >= 0; i--) {
+    key = ka[i];
+    if (!_deepEqual(a[key], b[key])) return false;
+  }
+  return true;
+}
+
+// 8. The non-equivalence assertion tests for any deep inequality.
+// assert.notDeepEqual(actual, expected, message_opt);
+
+assert.notDeepEqual = function notDeepEqual(actual, expected, message) {
+  if (_deepEqual(actual, expected)) {
+    fail(actual, expected, message, 'notDeepEqual', assert.notDeepEqual);
+  }
+};
+
+// 9. The strict equality assertion tests strict equality, as determined by ===.
+// assert.strictEqual(actual, expected, message_opt);
+
+assert.strictEqual = function strictEqual(actual, expected, message) {
+  if (actual !== expected) {
+    fail(actual, expected, message, '===', assert.strictEqual);
+  }
+};
+
+// 10. The strict non-equality assertion tests for strict inequality, as
+// determined by !==.  assert.notStrictEqual(actual, expected, message_opt);
+
+assert.notStrictEqual = function notStrictEqual(actual, expected, message) {
+  if (actual === expected) {
+    fail(actual, expected, message, '!==', assert.notStrictEqual);
+  }
+};
+
+function expectedException(actual, expected) {
+  if (!actual || !expected) {
+    return false;
+  }
+
+  if (Object.prototype.toString.call(expected) == '[object RegExp]') {
+    return expected.test(actual);
+  } else if (actual instanceof expected) {
+    return true;
+  } else if (expected.call({}, actual) === true) {
+    return true;
+  }
+
+  return false;
+}
+
+function _throws(shouldThrow, block, expected, message) {
+  var actual;
+
+  if (util.isString(expected)) {
+    message = expected;
+    expected = null;
+  }
+
+  try {
+    block();
+  } catch (e) {
+    actual = e;
+  }
+
+  message = (expected && expected.name ? ' (' + expected.name + ').' : '.') +
+            (message ? ' ' + message : '.');
+
+  if (shouldThrow && !actual) {
+    fail(actual, expected, 'Missing expected exception' + message);
+  }
+
+  if (!shouldThrow && expectedException(actual, expected)) {
+    fail(actual, expected, 'Got unwanted exception' + message);
+  }
+
+  if ((shouldThrow && actual && expected &&
+      !expectedException(actual, expected)) || (!shouldThrow && actual)) {
+    throw actual;
+  }
+}
+
+// 11. Expected to throw an error:
+// assert.throws(block, Error_opt, message_opt);
+
+assert.throws = function(block, /*optional*/error, /*optional*/message) {
+  _throws.apply(this, [true].concat(pSlice.call(arguments)));
+};
+
+// EXTENSION! This is annoying to write outside this module.
+assert.doesNotThrow = function(block, /*optional*/message) {
+  _throws.apply(this, [false].concat(pSlice.call(arguments)));
+};
+
+assert.ifError = function(err) { if (err) {throw err;}};
+
+var objectKeys = Object.keys || function (obj) {
+  var keys = [];
+  for (var key in obj) {
+    if (hasOwn.call(obj, key)) keys.push(key);
+  }
+  return keys;
+};
+
+},{"util/":15}],12:[function(require,module,exports){
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+},{}],13:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
 var queue = [];
 var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
 
 function drainQueue() {
     if (draining) {
         return;
     }
+    var timeout = setTimeout(cleanUpNextTick);
     draining = true;
-    var currentQueue;
+
     var len = queue.length;
     while(len) {
         currentQueue = queue;
         queue = [];
-        var i = -1;
-        while (++i < len) {
-            currentQueue[i]();
+        while (++queueIndex < len) {
+            currentQueue[queueIndex].run();
         }
+        queueIndex = -1;
         len = queue.length;
     }
+    currentQueue = null;
     draining = false;
+    clearTimeout(timeout);
 }
+
 process.nextTick = function (fun) {
-    queue.push(fun);
-    if (!draining) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
         setTimeout(drainQueue, 0);
     }
 };
 
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
 process.title = 'browser';
 process.browser = true;
 process.env = {};
 process.argv = [];
 process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
 
 function noop() {}
 
@@ -4398,10 +5397,607 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],3:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
+module.exports = function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.readUInt8 === 'function';
+}
+},{}],15:[function(require,module,exports){
+(function (process,global){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var formatRegExp = /%[sdj%]/g;
+exports.format = function(f) {
+  if (!isString(f)) {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function(x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s': return String(args[i++]);
+      case '%d': return Number(args[i++]);
+      case '%j':
+        try {
+          return JSON.stringify(args[i++]);
+        } catch (_) {
+          return '[Circular]';
+        }
+      default:
+        return x;
+    }
+  });
+  for (var x = args[i]; i < len; x = args[++i]) {
+    if (isNull(x) || !isObject(x)) {
+      str += ' ' + x;
+    } else {
+      str += ' ' + inspect(x);
+    }
+  }
+  return str;
+};
+
+
+// Mark that a method should not be used.
+// Returns a modified function which warns once by default.
+// If --no-deprecation is set, then it is a no-op.
+exports.deprecate = function(fn, msg) {
+  // Allow for deprecating things in the process of starting up.
+  if (isUndefined(global.process)) {
+    return function() {
+      return exports.deprecate(fn, msg).apply(this, arguments);
+    };
+  }
+
+  if (process.noDeprecation === true) {
+    return fn;
+  }
+
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (process.throwDeprecation) {
+        throw new Error(msg);
+      } else if (process.traceDeprecation) {
+        console.trace(msg);
+      } else {
+        console.error(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+
+  return deprecated;
+};
+
+
+var debugs = {};
+var debugEnviron;
+exports.debuglog = function(set) {
+  if (isUndefined(debugEnviron))
+    debugEnviron = process.env.NODE_DEBUG || '';
+  set = set.toUpperCase();
+  if (!debugs[set]) {
+    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+      var pid = process.pid;
+      debugs[set] = function() {
+        var msg = exports.format.apply(exports, arguments);
+        console.error('%s %d: %s', set, pid, msg);
+      };
+    } else {
+      debugs[set] = function() {};
+    }
+  }
+  return debugs[set];
+};
+
+
+/**
+ * Echos the value of a value. Trys to print the value out
+ * in the best way possible given the different types.
+ *
+ * @param {Object} obj The object to print out.
+ * @param {Object} opts Optional options object that alters the output.
+ */
+/* legacy: obj, showHidden, depth, colors*/
+function inspect(obj, opts) {
+  // default options
+  var ctx = {
+    seen: [],
+    stylize: stylizeNoColor
+  };
+  // legacy...
+  if (arguments.length >= 3) ctx.depth = arguments[2];
+  if (arguments.length >= 4) ctx.colors = arguments[3];
+  if (isBoolean(opts)) {
+    // legacy...
+    ctx.showHidden = opts;
+  } else if (opts) {
+    // got an "options" object
+    exports._extend(ctx, opts);
+  }
+  // set default options
+  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+  if (isUndefined(ctx.depth)) ctx.depth = 2;
+  if (isUndefined(ctx.colors)) ctx.colors = false;
+  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+  if (ctx.colors) ctx.stylize = stylizeWithColor;
+  return formatValue(ctx, obj, ctx.depth);
+}
+exports.inspect = inspect;
+
+
+// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+inspect.colors = {
+  'bold' : [1, 22],
+  'italic' : [3, 23],
+  'underline' : [4, 24],
+  'inverse' : [7, 27],
+  'white' : [37, 39],
+  'grey' : [90, 39],
+  'black' : [30, 39],
+  'blue' : [34, 39],
+  'cyan' : [36, 39],
+  'green' : [32, 39],
+  'magenta' : [35, 39],
+  'red' : [31, 39],
+  'yellow' : [33, 39]
+};
+
+// Don't use 'blue' not visible on cmd.exe
+inspect.styles = {
+  'special': 'cyan',
+  'number': 'yellow',
+  'boolean': 'yellow',
+  'undefined': 'grey',
+  'null': 'bold',
+  'string': 'green',
+  'date': 'magenta',
+  // "name": intentionally not styling
+  'regexp': 'red'
+};
+
+
+function stylizeWithColor(str, styleType) {
+  var style = inspect.styles[styleType];
+
+  if (style) {
+    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+           '\u001b[' + inspect.colors[style][1] + 'm';
+  } else {
+    return str;
+  }
+}
+
+
+function stylizeNoColor(str, styleType) {
+  return str;
+}
+
+
+function arrayToHash(array) {
+  var hash = {};
+
+  array.forEach(function(val, idx) {
+    hash[val] = true;
+  });
+
+  return hash;
+}
+
+
+function formatValue(ctx, value, recurseTimes) {
+  // Provide a hook for user-specified inspect functions.
+  // Check that value is an object with an inspect function on it
+  if (ctx.customInspect &&
+      value &&
+      isFunction(value.inspect) &&
+      // Filter out the util module, it's inspect function is special
+      value.inspect !== exports.inspect &&
+      // Also filter out any prototype objects using the circular check.
+      !(value.constructor && value.constructor.prototype === value)) {
+    var ret = value.inspect(recurseTimes, ctx);
+    if (!isString(ret)) {
+      ret = formatValue(ctx, ret, recurseTimes);
+    }
+    return ret;
+  }
+
+  // Primitive types cannot have properties
+  var primitive = formatPrimitive(ctx, value);
+  if (primitive) {
+    return primitive;
+  }
+
+  // Look up the keys of the object.
+  var keys = Object.keys(value);
+  var visibleKeys = arrayToHash(keys);
+
+  if (ctx.showHidden) {
+    keys = Object.getOwnPropertyNames(value);
+  }
+
+  // IE doesn't make error fields non-enumerable
+  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+  if (isError(value)
+      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+    return formatError(value);
+  }
+
+  // Some type of object without properties can be shortcutted.
+  if (keys.length === 0) {
+    if (isFunction(value)) {
+      var name = value.name ? ': ' + value.name : '';
+      return ctx.stylize('[Function' + name + ']', 'special');
+    }
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    }
+    if (isDate(value)) {
+      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+    }
+    if (isError(value)) {
+      return formatError(value);
+    }
+  }
+
+  var base = '', array = false, braces = ['{', '}'];
+
+  // Make Array say that they are Array
+  if (isArray(value)) {
+    array = true;
+    braces = ['[', ']'];
+  }
+
+  // Make functions say that they are functions
+  if (isFunction(value)) {
+    var n = value.name ? ': ' + value.name : '';
+    base = ' [Function' + n + ']';
+  }
+
+  // Make RegExps say that they are RegExps
+  if (isRegExp(value)) {
+    base = ' ' + RegExp.prototype.toString.call(value);
+  }
+
+  // Make dates with properties first say the date
+  if (isDate(value)) {
+    base = ' ' + Date.prototype.toUTCString.call(value);
+  }
+
+  // Make error with message first say the error
+  if (isError(value)) {
+    base = ' ' + formatError(value);
+  }
+
+  if (keys.length === 0 && (!array || value.length == 0)) {
+    return braces[0] + base + braces[1];
+  }
+
+  if (recurseTimes < 0) {
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    } else {
+      return ctx.stylize('[Object]', 'special');
+    }
+  }
+
+  ctx.seen.push(value);
+
+  var output;
+  if (array) {
+    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+  } else {
+    output = keys.map(function(key) {
+      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    });
+  }
+
+  ctx.seen.pop();
+
+  return reduceToSingleString(output, base, braces);
+}
+
+
+function formatPrimitive(ctx, value) {
+  if (isUndefined(value))
+    return ctx.stylize('undefined', 'undefined');
+  if (isString(value)) {
+    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                             .replace(/'/g, "\\'")
+                                             .replace(/\\"/g, '"') + '\'';
+    return ctx.stylize(simple, 'string');
+  }
+  if (isNumber(value))
+    return ctx.stylize('' + value, 'number');
+  if (isBoolean(value))
+    return ctx.stylize('' + value, 'boolean');
+  // For some reason typeof null is "object", so special case here.
+  if (isNull(value))
+    return ctx.stylize('null', 'null');
+}
+
+
+function formatError(value) {
+  return '[' + Error.prototype.toString.call(value) + ']';
+}
+
+
+function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+  var output = [];
+  for (var i = 0, l = value.length; i < l; ++i) {
+    if (hasOwnProperty(value, String(i))) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          String(i), true));
+    } else {
+      output.push('');
+    }
+  }
+  keys.forEach(function(key) {
+    if (!key.match(/^\d+$/)) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          key, true));
+    }
+  });
+  return output;
+}
+
+
+function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+  var name, str, desc;
+  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+  if (desc.get) {
+    if (desc.set) {
+      str = ctx.stylize('[Getter/Setter]', 'special');
+    } else {
+      str = ctx.stylize('[Getter]', 'special');
+    }
+  } else {
+    if (desc.set) {
+      str = ctx.stylize('[Setter]', 'special');
+    }
+  }
+  if (!hasOwnProperty(visibleKeys, key)) {
+    name = '[' + key + ']';
+  }
+  if (!str) {
+    if (ctx.seen.indexOf(desc.value) < 0) {
+      if (isNull(recurseTimes)) {
+        str = formatValue(ctx, desc.value, null);
+      } else {
+        str = formatValue(ctx, desc.value, recurseTimes - 1);
+      }
+      if (str.indexOf('\n') > -1) {
+        if (array) {
+          str = str.split('\n').map(function(line) {
+            return '  ' + line;
+          }).join('\n').substr(2);
+        } else {
+          str = '\n' + str.split('\n').map(function(line) {
+            return '   ' + line;
+          }).join('\n');
+        }
+      }
+    } else {
+      str = ctx.stylize('[Circular]', 'special');
+    }
+  }
+  if (isUndefined(name)) {
+    if (array && key.match(/^\d+$/)) {
+      return str;
+    }
+    name = JSON.stringify('' + key);
+    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+      name = name.substr(1, name.length - 2);
+      name = ctx.stylize(name, 'name');
+    } else {
+      name = name.replace(/'/g, "\\'")
+                 .replace(/\\"/g, '"')
+                 .replace(/(^"|"$)/g, "'");
+      name = ctx.stylize(name, 'string');
+    }
+  }
+
+  return name + ': ' + str;
+}
+
+
+function reduceToSingleString(output, base, braces) {
+  var numLinesEst = 0;
+  var length = output.reduce(function(prev, cur) {
+    numLinesEst++;
+    if (cur.indexOf('\n') >= 0) numLinesEst++;
+    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+  }, 0);
+
+  if (length > 60) {
+    return braces[0] +
+           (base === '' ? '' : base + '\n ') +
+           ' ' +
+           output.join(',\n  ') +
+           ' ' +
+           braces[1];
+  }
+
+  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+}
+
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+function isArray(ar) {
+  return Array.isArray(ar);
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return isObject(re) && objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return isObject(d) && objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return isObject(e) &&
+      (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = require('./support/isBuffer');
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+
+// log is just a thin wrapper to console.log that prepends a timestamp
+exports.log = function() {
+  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+};
+
+
+/**
+ * Inherit the prototype methods from one constructor into another.
+ *
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
+ *
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
+ */
+exports.inherits = require('inherits');
+
+exports._extend = function(origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
+};
+
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./support/isBuffer":14,"_process":13,"inherits":12}],16:[function(require,module,exports){
 module.exports = require( './lib/' );
 
-},{"./lib/":4}],4:[function(require,module,exports){
+},{"./lib/":17}],17:[function(require,module,exports){
 module.exports = function () {
 
     var now = require("performance-now");
@@ -4533,7 +6129,7 @@ module.exports = function () {
     };
 }();
 
-},{"performance-now":5}],5:[function(require,module,exports){
+},{"performance-now":18}],18:[function(require,module,exports){
 (function (process){
 // Generated by CoffeeScript 1.7.1
 (function() {
@@ -4569,7 +6165,7 @@ module.exports = function () {
 }).call(this);
 
 }).call(this,require('_process'))
-},{"_process":2}],6:[function(require,module,exports){
+},{"_process":13}],19:[function(require,module,exports){
 var Set = require("../xflow/utils/utils.js").set;
 var DataNode = require("../xflow/interface/graph.js").DataNode;
 
@@ -5305,7 +6901,7 @@ module.exports = {
     AssetResult: AssetResult
 };
 
-},{"../xflow/interface/graph.js":138,"../xflow/utils/utils.js":187}],7:[function(require,module,exports){
+},{"../xflow/interface/graph.js":151,"../xflow/utils/utils.js":200}],20:[function(require,module,exports){
 var registerFactory = require("./resourcemanager.js").registerFactory;
 var Resource = require("./resourcemanager.js").Resource;
 var Events = require("../interface/notification.js");
@@ -5562,7 +7158,7 @@ AdapterFactory : AdapterFactory,
 NodeAdapterFactory : NodeAdapterFactory
 };
 
-},{"../interface/elements.js":34,"../interface/notification.js":36,"./resourcemanager.js":10}],8:[function(require,module,exports){
+},{"../interface/elements.js":47,"../interface/notification.js":49,"./resourcemanager.js":23}],21:[function(require,module,exports){
 var Events = require("../interface/notification.js");
 
 "use strict";
@@ -5647,7 +7243,7 @@ AdapterHandle.prototype.removeListener = function(listener) {
 };
 
 module.exports = AdapterHandle;
-},{"../interface/notification.js":36}],9:[function(require,module,exports){
+},{"../interface/notification.js":49}],22:[function(require,module,exports){
 var AdapterFactory = require("./adapter.js").AdapterFactory;
 var registerFormat = require("./resourcemanager.js").registerFormat;
 var config = require("../interface/elements.js").config;
@@ -5813,7 +7409,7 @@ module.exports = {
     FormatHandler: FormatHandler,
     xml3dFormatHandler: xml3dFormatHandler
 };
-},{"../interface/elements.js":34,"./adapter.js":7,"./resourcemanager.js":10}],10:[function(require,module,exports){
+},{"../interface/elements.js":47,"./adapter.js":20,"./resourcemanager.js":23}],23:[function(require,module,exports){
 "use strict";
 
 var AdapterHandle = require("./adapterhandle.js");
@@ -6589,7 +8185,7 @@ module.exports = {
     Resource: Resource
 };
 
-},{"../utils/options.js":132,"../utils/uri.js":133,"./adapterhandle.js":8}],11:[function(require,module,exports){
+},{"../utils/options.js":145,"../utils/uri.js":146,"./adapterhandle.js":21}],24:[function(require,module,exports){
 
     /**
      * @author mrdoob / http://mrdoob.com/
@@ -6677,7 +8273,7 @@ EventDispatcher.prototype = {
 };
 
 module.exports = EventDispatcher;
-},{}],12:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*jslint white: false, onevar: false, undef: true, nomen: true, eqeqeq: true, plusplus: true, bitwise: true, regexp: true, newcap: true, immed: true, sub: true, nomen: false */
 
 /**
@@ -6870,7 +8466,7 @@ GLU.invertMatrix = function(m, invOut) {
 };
 
 module.exports = GLU;
-},{}],13:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 // Domain Public by Eric Wendelin http://eriwen.com/ (2008)
 //                  Luke Smith http://lucassmith.name/ (2008)
 //                  Loic Dachary <loic@dachary.org> (2008)
@@ -7320,7 +8916,7 @@ printStackTrace.implementation.prototype = {
 };
 
 module.exports = printStackTrace;
-},{}],14:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 
 var StateMachine = {
 
@@ -7480,7 +9076,7 @@ window.StateMachine = StateMachine;
 module.exports = StateMachine;
 
 
-},{}],15:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 var DOMTransformFetcher = require("../transform-fetcher.js");
 var DataAdapter = require("./data.js");
 var DataNode = require("../../xflow/interface/graph.js").DataNode;
@@ -7772,7 +9368,7 @@ module.exports = {
     AssetAdapter: AssetAdapter, AssetMeshAdapter: AssetMeshAdapter, AssetDataAdapter: AssetDataAdapter
 };
 
-},{"../../asset/asset.js":6,"../../base/adapter.js":7,"../../base/adapterhandle.js":8,"../../base/resourcemanager.js":10,"../../interface/notification.js":36,"../../utils/misc.js":131,"../../xflow/interface/graph.js":138,"../transform-fetcher.js":28,"./data.js":18}],16:[function(require,module,exports){
+},{"../../asset/asset.js":19,"../../base/adapter.js":20,"../../base/adapterhandle.js":21,"../../base/resourcemanager.js":23,"../../interface/notification.js":49,"../../utils/misc.js":144,"../../xflow/interface/graph.js":151,"../transform-fetcher.js":41,"./data.js":31}],29:[function(require,module,exports){
 var ComputeRequest = require("../../xflow/interface/request.js").ComputeRequest;
 var setShaderConstant = require("../../xflow/processing/vs-connect.js").setShaderConstant;
 var registerErrorCallback = require("../../xflow/base.js").registerErrorCallback;
@@ -7848,7 +9444,7 @@ registerErrorCallback(function(message, xflowNode){
 
 module.exports = BaseDataAdapter;
 
-},{"../../base/adapter.js":7,"../../utils/uri.js":133,"../../xflow/base.js":135,"../../xflow/interface/constants.js":136,"../../xflow/interface/request.js":139,"../../xflow/processing/vs-connect.js":186}],17:[function(require,module,exports){
+},{"../../base/adapter.js":20,"../../utils/uri.js":146,"../../xflow/base.js":148,"../../xflow/interface/constants.js":149,"../../xflow/interface/request.js":152,"../../xflow/processing/vs-connect.js":199}],30:[function(require,module,exports){
 var Events = require("../../interface/notification.js");
 var NodeAdapter = require("../../base/adapter.js").NodeAdapter;
 
@@ -7885,7 +9481,7 @@ ComputeDataAdapter.prototype.notifyChanged = function (evt) {
 
 module.exports = ComputeDataAdapter;
 
-},{"../../base/adapter.js":7,"../../interface/notification.js":36}],18:[function(require,module,exports){
+},{"../../base/adapter.js":20,"../../interface/notification.js":49}],31:[function(require,module,exports){
 var BaseDataAdapter = require("./base.js");
 var DataNode = require("../../xflow/interface/graph.js").DataNode;
 var XC = require("../../xflow/interface/constants.js");
@@ -8140,7 +9736,7 @@ module.exports = DataAdapter;
 
 
 
-},{"../../base/adapterhandle.js":8,"../../interface/notification.js":36,"../../utils/misc.js":131,"../../xflow/interface/constants.js":136,"../../xflow/interface/graph.js":138,"./base.js":16}],19:[function(require,module,exports){
+},{"../../base/adapterhandle.js":21,"../../interface/notification.js":49,"../../utils/misc.js":144,"../../xflow/interface/constants.js":149,"../../xflow/interface/graph.js":151,"./base.js":29}],32:[function(require,module,exports){
 var BaseDataAdapter = require("./base.js");
 var DataNode = require("../../xflow/interface/graph.js").DataNode;
 var XC = require("../../xflow/interface/constants.js");
@@ -8346,7 +9942,7 @@ function updateDataflowXflowNode(adapter, node) {
 
 module.exports = DataflowDataAdapter;
 
-},{"../../base/adapterhandle.js":8,"../../interface/notification.js":36,"../../xflow/interface/constants.js":136,"../../xflow/interface/graph.js":138,"./base.js":16}],20:[function(require,module,exports){
+},{"../../base/adapterhandle.js":21,"../../interface/notification.js":49,"../../xflow/interface/constants.js":149,"../../xflow/interface/graph.js":151,"./base.js":29}],33:[function(require,module,exports){
 var NodeAdapterFactory = require("../../base/adapter.js").NodeAdapterFactory;
 var Asset = require("./asset.js");
 var Misc = require("./misc.js");
@@ -8427,7 +10023,7 @@ XML3DDataAdapterFactory.prototype.createAdapter = function (node) {
 
 module.exports =  XML3DDataAdapterFactory;
 
-},{"../../base/adapter.js":7,"./asset.js":15,"./compute.js":17,"./data.js":18,"./dataflow.js":19,"./javascript/factory.js":21,"./json/factory.js":22,"./misc.js":23,"./script.js":24,"./texture.js":25,"./transform.js":26,"./values.js":27}],21:[function(require,module,exports){
+},{"../../base/adapter.js":20,"./asset.js":28,"./compute.js":30,"./data.js":31,"./dataflow.js":32,"./javascript/factory.js":34,"./json/factory.js":35,"./misc.js":36,"./script.js":37,"./texture.js":38,"./transform.js":39,"./values.js":40}],34:[function(require,module,exports){
 var registerFormat = require("../../../base/resourcemanager.js").registerFormat;
 var FormatHandler = require("../../../base/formathandler.js").FormatHandler;
 var AdapterFactory = require("../../../base/adapter.js").AdapterFactory;
@@ -8477,7 +10073,7 @@ ScriptFactory.prototype.createAdapter = function (xflowNode) {
 
 javaScriptFormatHandler.registerFactoryClass(ScriptFactory);
 
-},{"../../../base/adapter.js":7,"../../../base/formathandler.js":9,"../../../base/resourcemanager.js":10}],22:[function(require,module,exports){
+},{"../../../base/adapter.js":20,"../../../base/formathandler.js":22,"../../../base/resourcemanager.js":23}],35:[function(require,module,exports){
 var XC = require("../../../xflow/interface/constants.js");
 var InputNode = require("../../../xflow/interface/graph.js").InputNode;
 var DataNode = require("../../../xflow/interface/graph.js").DataNode;
@@ -8636,7 +10232,7 @@ JSONFactory.prototype.createAdapter = function(xflowNode) {
 
 xml3dJSonFormatHandler.registerFactoryClass(JSONFactory);
 
-},{"../../../base/adapter.js":7,"../../../base/formathandler.js":9,"../../../base/resourcemanager.js":10,"../../../xflow/interface/constants.js":136,"../../../xflow/interface/data.js":137,"../../../xflow/interface/graph.js":138}],23:[function(require,module,exports){
+},{"../../../base/adapter.js":20,"../../../base/formathandler.js":22,"../../../base/resourcemanager.js":23,"../../../xflow/interface/constants.js":149,"../../../xflow/interface/data.js":150,"../../../xflow/interface/graph.js":151}],36:[function(require,module,exports){
 var DataAdapter = require("./data.js");
 var Events = require("../../interface/notification.js");
 var URI = require("../../utils/uri.js").URI;
@@ -8841,7 +10437,7 @@ var createClass = XML3D.createClass;
     };
 
 
-},{"../../base/adapter.js":7,"../../base/resourcemanager.js":10,"../../interface/notification.js":36,"../../utils/misc.js":131,"../../utils/uri.js":133,"./data.js":18}],24:[function(require,module,exports){
+},{"../../base/adapter.js":20,"../../base/resourcemanager.js":23,"../../interface/notification.js":49,"../../utils/misc.js":144,"../../utils/uri.js":146,"./data.js":31}],37:[function(require,module,exports){
 var Events = require("../../interface/notification.js");
 var createClass = XML3D.createClass;
 var NodeAdapter = require("../../base/adapter.js").NodeAdapter;
@@ -8884,7 +10480,7 @@ ScriptDataAdapter.prototype.notifyChanged = function(evt) {
 };
 
 module.exports = ScriptDataAdapter;
-},{"../../base/adapter.js":7,"../../interface/notification.js":36}],25:[function(require,module,exports){
+},{"../../base/adapter.js":20,"../../interface/notification.js":49}],38:[function(require,module,exports){
 var TextureEntry = require("../../xflow/interface/data.js").TextureEntry;
 var InputNode = require("../../xflow/interface/graph.js").InputNode;
 var XC = require("../../xflow/interface/constants.js");
@@ -8997,7 +10593,7 @@ TextureDataAdapter.prototype.toString = function () {
 // Export
 module.exports = TextureDataAdapter;
 
-},{"../../base/adapter.js":7,"../../interface/notification.js":36,"../../xflow/interface/constants.js":136,"../../xflow/interface/data.js":137,"../../xflow/interface/graph.js":138}],26:[function(require,module,exports){
+},{"../../base/adapter.js":20,"../../interface/notification.js":49,"../../xflow/interface/constants.js":149,"../../xflow/interface/data.js":150,"../../xflow/interface/graph.js":151}],39:[function(require,module,exports){
 var Events = require("../../interface/notification.js");
 var NodeAdapter = require("../../base/adapter.js").NodeAdapter;
 
@@ -9093,7 +10689,7 @@ module.exports = TransformDataAdapter;
 
 
 
-},{"../../base/adapter.js":7,"../../interface/notification.js":36}],27:[function(require,module,exports){
+},{"../../base/adapter.js":20,"../../interface/notification.js":49}],40:[function(require,module,exports){
 var BufferEntry = require("../../xflow/interface/data.js").BufferEntry;
 var InputNode = require("../../xflow/interface/graph.js").InputNode;
 var XC = require("../../xflow/interface/constants.js");
@@ -9183,7 +10779,7 @@ ValueDataAdapter.prototype.checkForImproperNesting = function() {
 // Export
 module.exports = ValueDataAdapter;
 
-},{"../../base/adapter.js":7,"../../interface/notification.js":36,"../../xflow/interface/constants.js":136,"../../xflow/interface/data.js":137,"../../xflow/interface/graph.js":138}],28:[function(require,module,exports){
+},{"../../base/adapter.js":20,"../../interface/notification.js":49,"../../xflow/interface/constants.js":149,"../../xflow/interface/data.js":150,"../../xflow/interface/graph.js":151}],41:[function(require,module,exports){
 var ComputeRequest = require("../xflow/interface/request.js").ComputeRequest;
 var Events = require("../interface/notification.js");
 var CSS = require("../utils/css.js");
@@ -9256,7 +10852,7 @@ DOMTransformFetcher.prototype._onChange = function (evt) {
 
 module.exports = DOMTransformFetcher;
 
-},{"../interface/notification.js":36,"../utils/css.js":128,"../xflow/interface/request.js":139}],29:[function(require,module,exports){
+},{"../interface/notification.js":49,"../utils/css.js":141,"../xflow/interface/request.js":152}],42:[function(require,module,exports){
 if (window.XML3D !== undefined) {
     throw new Error("Tried to define the XML3D namespace a second time. Please ensure xml3d.js is only loaded once!");
 }
@@ -9266,7 +10862,7 @@ var Xflow = Xflow || {};
 window.XML3D = XML3D;
 window.Xflow = Xflow;
 
-XML3D.version = '4.9.0';
+XML3D.version = '4.9.2';
 /** @const */
 XML3D.xml3dNS = 'http://www.xml3d.org/2009/xml3d';
 /** @const */
@@ -9369,13 +10965,22 @@ XML3D.extend(Xflow, require("./xflow/interface/graph.js"));
 XML3D.extend(Xflow, require("./xflow/interface/data.js"));
 Xflow.ComputeRequest = require("./xflow/interface/request.js").ComputeRequest;
 
+XML3D.webgl = XML3D.webgl || {};
+XML3D.webgl.FullscreenQuad = require("./renderer/webgl/base/fullscreenquad.js");
+XML3D.webgl.BaseRenderPass = require("./renderer/webgl/render-passes/base.js");
+XML3D.webgl.ForwardRenderPass = require("./renderer/webgl/render-passes/forward.js");
+XML3D.webgl.BaseRenderTree = require("./renderer/webgl/render-trees/base.js");
+XML3D.extend(XML3D.webgl, require("./renderer/webgl/base/rendertarget.js"));
+
+
 require("./xflow/operator/default");
 
 module.exports = {
     XML3D : XML3D,
     Xflow : Xflow
 };
-},{"./base/resourcemanager.js":10,"./math/bbox.js":38,"./math/math.js":39,"./renderer/webgl/materials/urn/shaders.js":94,"./types/box.js":121,"./types/data-observer.js":122,"./types/matrix.js":123,"./types/ray.js":124,"./types/rotation.js":125,"./types/vec3.js":126,"./utils/debug.js":130,"./utils/misc.js":131,"./utils/options.js":132,"./utils/webcl.js":134,"./xflow/interface/constants.js":136,"./xflow/interface/data.js":137,"./xflow/interface/graph.js":138,"./xflow/interface/request.js":139,"./xflow/operator/default":156,"./xflow/operator/operator.js":176,"gl-matrix":1}],30:[function(require,module,exports){
+
+},{"./base/resourcemanager.js":23,"./math/bbox.js":51,"./math/math.js":52,"./renderer/webgl/base/fullscreenquad.js":87,"./renderer/webgl/base/rendertarget.js":90,"./renderer/webgl/materials/urn/shaders.js":107,"./renderer/webgl/render-passes/base.js":112,"./renderer/webgl/render-passes/forward.js":114,"./renderer/webgl/render-trees/base.js":123,"./types/box.js":134,"./types/data-observer.js":135,"./types/matrix.js":136,"./types/ray.js":137,"./types/rotation.js":138,"./types/vec3.js":139,"./utils/debug.js":143,"./utils/misc.js":144,"./utils/options.js":145,"./utils/webcl.js":147,"./xflow/interface/constants.js":149,"./xflow/interface/data.js":150,"./xflow/interface/graph.js":151,"./xflow/interface/request.js":152,"./xflow/operator/default":169,"./xflow/operator/operator.js":189,"gl-matrix":1}],43:[function(require,module,exports){
 var XML3D = require("./global.js").XML3D;
 var Config = require("./interface/elements.js").config;
 var sendAdapterEvent = require("./utils/misc.js").sendAdapterEvent;
@@ -9629,7 +11234,7 @@ window.addEventListener('reload', onUnload, false);
 module.exports = XML3D;
 
 
-},{"./global.js":29,"./interface/dom.js":33,"./interface/elements.js":34,"./renderer/renderer/configure.js":53,"./renderer/webgl/base/utils.js":79,"./utils/css.js":128,"./utils/debug.js":130,"./utils/misc.js":131,"./utils/options.js":132}],31:[function(require,module,exports){
+},{"./global.js":42,"./interface/dom.js":46,"./interface/elements.js":47,"./renderer/renderer/configure.js":66,"./renderer/webgl/base/utils.js":92,"./utils/css.js":141,"./utils/debug.js":143,"./utils/misc.js":144,"./utils/options.js":145}],44:[function(require,module,exports){
 require("../utils/array.js");
 var Resource = require("../base/resourcemanager.js").Resource;
 
@@ -10087,7 +11692,7 @@ handlers.CanvasClassHandler = function(id) {
 
 module.exports = handlers;
 
-},{"../base/resourcemanager.js":10,"../utils/array.js":127}],32:[function(require,module,exports){
+},{"../base/resourcemanager.js":23,"../utils/array.js":140}],45:[function(require,module,exports){
 var methods = require("./methods.js");
 var handlers = require("./attributes.js");
 var properties = require("./properties.js");
@@ -10701,7 +12306,7 @@ module.exports = {
     DataChannelOrigin : DataChannelOrigin
 };
 
-},{"./attributes.js":31,"./methods.js":35,"./properties.js":37}],33:[function(require,module,exports){
+},{"./attributes.js":44,"./methods.js":48,"./properties.js":50}],46:[function(require,module,exports){
 var config = require("./elements.js").config;
 var classInfo = require("./configuration.js").classInfo;
 
@@ -10741,7 +12346,7 @@ doc.createElement = function(name) {
 
 XML3D.extend(window.document, doc);
 
-},{"./configuration.js":32,"./elements.js":34}],34:[function(require,module,exports){
+},{"./configuration.js":45,"./elements.js":47}],47:[function(require,module,exports){
 var events = require("./notification.js");
 var ClassInfo = require("./configuration.js").classInfo;
 require("../utils/array.js");
@@ -11141,7 +12746,7 @@ module.exports = {
     config : config
 };
 
-},{"../base/resourcemanager.js":10,"../utils/array.js":127,"./configuration.js":32,"./notification.js":36}],35:[function(require,module,exports){
+},{"../base/resourcemanager.js":23,"../utils/array.js":140,"./configuration.js":45,"./notification.js":49}],48:[function(require,module,exports){
 var Resource = require("../base/resourcemanager.js").Resource;
 var sendAdapterEvent = require("../utils/misc.js").sendAdapterEvent;
 var callAdapterFunc = require("../utils/misc.js").callAdapterFunc;
@@ -11450,7 +13055,7 @@ methods.XML3DDataSourceTypeSetScriptValue = function(data){
 };
 
 module.exports = methods;
-},{"../base/resourcemanager.js":10,"../utils/misc.js":131}],36:[function(require,module,exports){
+},{"../base/resourcemanager.js":23,"../utils/misc.js":144}],49:[function(require,module,exports){
 
 /**
  * Types of change events
@@ -11515,7 +13120,7 @@ events.ConnectedAdapterNotification.prototype.toString = function() {
 };
 
 module.exports = events;
-},{}],37:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 var properties = {};
 
 properties.XML3DNestedDataContainerTypeComplete = {
@@ -11591,7 +13196,7 @@ properties.xml3dComplete = {
 
 module.exports = properties;
 
-},{}],38:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 (function (module) {
 
     /**
@@ -11840,7 +13445,7 @@ module.exports = properties;
 }(module));
 
 
-},{}],39:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 module.exports = function (math) {
 
 // Additional methods in glMatrix style
@@ -12070,7 +13675,7 @@ module.exports = function (math) {
 
 };
 
-},{}],40:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 var NodeAdapter = require("../../../base/adapter.js").NodeAdapter;
 
 var RenderAdapter = function (factory, node) {
@@ -12116,7 +13721,7 @@ RenderAdapter.prototype.getScene = function () {
 
 module.exports = RenderAdapter;
 
-},{"../../../base/adapter.js":7}],41:[function(require,module,exports){
+},{"../../../base/adapter.js":20}],54:[function(require,module,exports){
 var RenderAdapter = require("./base.js");
 
 //Adapter for <defs>
@@ -12127,7 +13732,7 @@ XML3D.createClass(DefsRenderAdapter, RenderAdapter);
 
 module.exports = DefsRenderAdapter;
 
-},{"./base.js":40}],42:[function(require,module,exports){
+},{"./base.js":53}],55:[function(require,module,exports){
 var NodeAdapterFactory = require("../../../base/adapter.js").NodeAdapterFactory;
 var DataAdapterFactory = require("../../../data/adapter/factory.js");
 require("../../../base/formathandler.js").xml3dFormatHandler.registerFactoryClass(DataAdapterFactory);
@@ -12189,7 +13794,7 @@ RenderAdapterFactory.prototype.getRenderer = function () {
 // Export
 module.exports = RenderAdapterFactory;
 
-},{"../../../base/adapter.js":7,"../../../base/formathandler.js":9,"../../../data/adapter/factory.js":20,"./defs.js":41,"./group.js":43,"./light.js":44,"./lightshader.js":45,"./mesh.js":46,"./model.js":47,"./shader.js":48,"./view.js":50,"./xml3d.js":51}],43:[function(require,module,exports){
+},{"../../../base/adapter.js":20,"../../../base/formathandler.js":22,"../../../data/adapter/factory.js":33,"./defs.js":54,"./group.js":56,"./light.js":57,"./lightshader.js":58,"./mesh.js":59,"./model.js":60,"./shader.js":61,"./view.js":63,"./xml3d.js":64}],56:[function(require,module,exports){
 var TransformableAdapter = require("./transformable.js");
 var Events = require("../../../interface/notification.js");
 
@@ -12291,7 +13896,7 @@ p.getWorldMatrix = function () {
 
 module.exports = GroupRenderAdapter;
 
-},{"../../../interface/notification.js":36,"./transformable.js":49}],44:[function(require,module,exports){
+},{"../../../interface/notification.js":49,"./transformable.js":62}],57:[function(require,module,exports){
 var TransformableAdapter = require("./transformable.js");
 var Events = require("../../../interface/notification.js");
 /**
@@ -12400,7 +14005,7 @@ LightRenderAdapter.prototype.getWorldMatrix = function () {
 module.exports = LightRenderAdapter;
 
 
-},{"../../../interface/notification.js":36,"./transformable.js":49}],45:[function(require,module,exports){
+},{"../../../interface/notification.js":49,"./transformable.js":62}],58:[function(require,module,exports){
 var RenderAdapter = require("./base.js");
 var Events = require("../../../interface/notification.js");
 var Resource = require("../../../base/resourcemanager.js").Resource;
@@ -12443,7 +14048,7 @@ XML3D.createClass(LightShaderRenderAdapter, RenderAdapter, {
 module.exports = LightShaderRenderAdapter;
 
 
-},{"../../../base/resourcemanager.js":10,"../../../interface/notification.js":36,"./base.js":40}],46:[function(require,module,exports){
+},{"../../../base/resourcemanager.js":23,"../../../interface/notification.js":49,"./base.js":53}],59:[function(require,module,exports){
 var TransformableAdapter = require("./transformable.js");
 var Events = require("../../../interface/notification.js");
 var Resource = require("../../../base/resourcemanager.js").Resource;
@@ -12561,7 +14166,7 @@ XML3D.extend(MeshRenderAdapter.prototype, {
 module.exports = MeshRenderAdapter;
 
 
-},{"../../../base/resourcemanager.js":10,"../../../interface/notification.js":36,"./transformable.js":49}],47:[function(require,module,exports){
+},{"../../../base/resourcemanager.js":23,"../../../interface/notification.js":49,"./transformable.js":62}],60:[function(require,module,exports){
 var TransformableAdapter = require("./transformable.js");
 var ComputeRequest = require("../../../xflow/interface/request.js").ComputeRequest;
 var Events = require("../../../interface/notification.js");
@@ -12816,7 +14421,7 @@ XML3D.extend(ModelRenderAdapter.prototype, {
 module.exports = ModelRenderAdapter;
 
 
-},{"../../../base/adapterhandle.js":8,"../../../base/resourcemanager.js":10,"../../../interface/notification.js":36,"../../../xflow/interface/request.js":139,"./transformable.js":49}],48:[function(require,module,exports){
+},{"../../../base/adapterhandle.js":21,"../../../base/resourcemanager.js":23,"../../../interface/notification.js":49,"../../../xflow/interface/request.js":152,"./transformable.js":62}],61:[function(require,module,exports){
 var RenderAdapter = require("./base.js");
 var Events = require("../../../interface/notification.js");
 var URI = require("../../../utils/uri.js").URI;
@@ -12909,7 +14514,7 @@ XML3D.extend(ShaderRenderAdapter.prototype, {
 module.exports = ShaderRenderAdapter;
 
 
-},{"../../../base/adapterhandle.js":8,"../../../base/resourcemanager.js":10,"../../../interface/notification.js":36,"../../../utils/uri.js":133,"./base.js":40}],49:[function(require,module,exports){
+},{"../../../base/adapterhandle.js":21,"../../../base/resourcemanager.js":23,"../../../interface/notification.js":49,"../../../utils/uri.js":146,"./base.js":53}],62:[function(require,module,exports){
 var RenderAdapter = require("./base.js");
 var DOMTransformFetcher = require("../../../data/transform-fetcher.js");
 var Events = require("../../../interface/notification.js");
@@ -13019,7 +14624,7 @@ function getShaderURI(node) {
 
 module.exports = TransformableAdapter;
 
-},{"../../../base/adapterhandle.js":8,"../../../data/transform-fetcher.js":28,"../../../interface/notification.js":36,"./base.js":40}],50:[function(require,module,exports){
+},{"../../../base/adapterhandle.js":21,"../../../data/transform-fetcher.js":41,"../../../interface/notification.js":49,"./base.js":53}],63:[function(require,module,exports){
 var TransformableAdapter = require("./transformable.js");
 var DOMTransformFetcher = require("../../../data/transform-fetcher.js");
 var Events = require("../../../interface/notification.js");
@@ -13080,7 +14685,7 @@ p.notifyChanged = function (evt) {
                 case "perspective":
                     this.perspectiveFetcher.update();
                     break;
-                case "fieldOfView":
+                case "fieldofview":
                     this.renderNode.updateFieldOfView(this.node.fieldOfView);
                     break;
                 default:
@@ -13108,7 +14713,7 @@ p.dispose = function () {
 module.exports = ViewRenderAdapter;
 
 
-},{"../../../data/transform-fetcher.js":28,"../../../interface/notification.js":36,"./transformable.js":49}],51:[function(require,module,exports){
+},{"../../../data/transform-fetcher.js":41,"../../../interface/notification.js":49,"./transformable.js":62}],64:[function(require,module,exports){
 var RenderAdapter = require("./base.js");
 var Utils = require("../utils.js");
 var Events = require("../../../interface/notification.js");
@@ -13277,7 +14882,7 @@ module.exports = XML3DRenderAdapter;
 
 
 
-},{"../../../base/resourcemanager.js":10,"../../../interface/notification.js":36,"../../../utils/misc.js":131,"../utils.js":72,"./base.js":40}],52:[function(require,module,exports){
+},{"../../../base/resourcemanager.js":23,"../../../interface/notification.js":49,"../../../utils/misc.js":144,"../utils.js":85,"./base.js":53}],65:[function(require,module,exports){
 var MouseEvents = require("./events/mouse.js");
 var TouchEvents = require("./events/touch.js");
 
@@ -13368,7 +14973,7 @@ AbstractCanvasHandler.prototype.dispatchFrameDrawnEvent = function (start, end, 
 
 module.exports = AbstractCanvasHandler;
 
-},{"./events/mouse.js":54,"./events/touch.js":55}],53:[function(require,module,exports){
+},{"./events/mouse.js":67,"./events/touch.js":68}],66:[function(require,module,exports){
 var RenderAdapterFactory = require("./adapter/factory.js");
 var xml3dFormatHandler = require("../../base/formathandler.js").xml3dFormatHandler;
 
@@ -13388,7 +14993,7 @@ var configure = function(xml3ds) {
 };
 
 module.exports = configure;
-},{"../../base/formathandler.js":9,"./adapter/factory.js":42,"./renderer-factory.js":58}],54:[function(require,module,exports){
+},{"../../base/formathandler.js":22,"./adapter/factory.js":55,"./renderer-factory.js":71}],67:[function(require,module,exports){
 var Options = require("../../../utils/options.js");
 
 var OPTION_MOUSEMOVE_PICKING = "renderer-mousemove-picking";
@@ -13672,7 +15277,7 @@ module.exports = {
     EVENTS: EVENTS, MouseEventHandler: MouseEventHandler
 };
 
-},{"../../../utils/options.js":132}],55:[function(require,module,exports){
+},{"../../../utils/options.js":145}],68:[function(require,module,exports){
 /**
  *
  * @param {Element} defaultTarget
@@ -13779,7 +15384,7 @@ module.exports = {
     EVENTS: EVENTS, TouchEventHandler: TouchEventHandler
 };
 
-},{}],56:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 function LightManager() {
     this._lights = [];
     this._models = {};
@@ -13834,7 +15439,11 @@ LightManager.prototype = {
             var model = light.model;
             var entry = that.getModelEntry(model.id);
             var offset = entry.lightModels.indexOf(model);
-            XML3D.debug.assert(offset != -1, "Light values changed for a light that is not managed by this LightManager");
+            if (offset < 0) {
+                //These changes are for a light that no longer exists so we can ignore them
+                //This can happen for ex. during a delayed change notification that isn't fired until after a remove()
+                return;
+            }
             model.fillLightParameters(entry.parameters, offset);
             model.getLightData(entry.parameters, offset);
             entry.changed = true;
@@ -13894,7 +15503,7 @@ LightManager.prototype = {
 
 module.exports = LightManager;
 
-},{}],57:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 var Frustum = require("../tools/frustum.js").Frustum;
 var XC = require("../../../xflow/interface/constants.js");
 var DataNode = require("../../../xflow/interface/graph.js").DataNode;
@@ -14288,7 +15897,7 @@ module.exports = {
 
 };
 
-},{"../../../xflow/interface/constants.js":136,"../../../xflow/interface/data.js":137,"../../../xflow/interface/graph.js":138,"../../../xflow/interface/request.js":139,"../tools/frustum.js":70}],58:[function(require,module,exports){
+},{"../../../xflow/interface/constants.js":149,"../../../xflow/interface/data.js":150,"../../../xflow/interface/graph.js":151,"../../../xflow/interface/request.js":152,"../tools/frustum.js":83}],71:[function(require,module,exports){
 var GLRenderer = require("../webgl/renderer.js");
 var GLCanvasHandler = require("../webgl/canvas-handler.js");
 
@@ -14311,7 +15920,7 @@ module.exports = new RendererFactory();
 
 
 
-},{"../webgl/canvas-handler.js":80,"../webgl/renderer.js":112}],59:[function(require,module,exports){
+},{"../webgl/canvas-handler.js":93,"../webgl/renderer.js":125}],72:[function(require,module,exports){
 module.exports = {
     NODE_TYPE: {
         GROUP: "group", OBJECT: "object", LIGHT: "light", VIEW: "view"
@@ -14328,7 +15937,7 @@ module.exports = {
     }
 };
 
-},{}],60:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 var EventDispatcher = require("../../../contrib/EventDispatcher.js");
 
 var DrawableClosure = function (context, type) {
@@ -14360,7 +15969,7 @@ XML3D.createClass(DrawableClosure, EventDispatcher, {
 module.exports = DrawableClosure;
 
 
-},{"../../../contrib/EventDispatcher.js":11}],61:[function(require,module,exports){
+},{"../../../contrib/EventDispatcher.js":24}],74:[function(require,module,exports){
 var uniqueObjectId = require("../../webgl/base/utils.js").getUniqueCounter();
 /**
  * Connects a material model with a set of default parameters defined by
@@ -14396,7 +16005,7 @@ var MaterialConfiguration = function(model, dataNode, opt) {
 
 module.exports = MaterialConfiguration;
 
-},{"../../webgl/base/utils.js":79}],62:[function(require,module,exports){
+},{"../../webgl/base/utils.js":92}],75:[function(require,module,exports){
 var EventDispatcher = require("../../../contrib/EventDispatcher.js");
 
 /**
@@ -14472,7 +16081,7 @@ Pager.PAGE_SIZE = 1 << 12;
 module.exports = Pager;
 
 
-},{"../../../contrib/EventDispatcher.js":11}],63:[function(require,module,exports){
+},{"../../../contrib/EventDispatcher.js":24}],76:[function(require,module,exports){
 var RenderNode = require("./rendernode.js");
 var Constants = require("./constants.js");
 
@@ -14665,7 +16274,7 @@ XML3D.extend(RenderGroup.prototype, {
 module.exports = RenderGroup;
 
 
-},{"./constants.js":59,"./rendernode.js":65}],64:[function(require,module,exports){
+},{"./constants.js":72,"./rendernode.js":78}],77:[function(require,module,exports){
 var RenderNode = require("./rendernode.js");
 var Constants = require("./constants.js");
 var LightModels = require("../lights/light-models.js");
@@ -14792,7 +16401,7 @@ module.exports = RenderLight;
 
 
 
-},{"../lights/light-models.js":57,"./constants.js":59,"./rendernode.js":65}],65:[function(require,module,exports){
+},{"../lights/light-models.js":70,"./constants.js":72,"./rendernode.js":78}],78:[function(require,module,exports){
 /** @const */
 var WORLD_MATRIX_OFFSET = 0;
 
@@ -14912,7 +16521,7 @@ XML3D.extend(RenderNode.prototype, {
 
 module.exports = RenderNode;
 
-},{}],66:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 var SystemNotifier = require("../../webgl/system/system-notifier.js");
 var RenderNode = require("./rendernode.js");
 var DrawableClosure= require("./drawableclosure.js");
@@ -15372,7 +16981,7 @@ XML3D.createClass(RenderObject, RenderNode, {
 module.exports = RenderObject;
 
 
-},{"../../../xflow/interface/request.js":139,"../../webgl/system/system-notifier.js":118,"./constants.js":59,"./drawableclosure.js":60,"./rendernode.js":65,"./scene.js":68}],67:[function(require,module,exports){
+},{"../../../xflow/interface/request.js":152,"../../webgl/system/system-notifier.js":131,"./constants.js":72,"./drawableclosure.js":73,"./rendernode.js":78,"./scene.js":81}],80:[function(require,module,exports){
 var RenderNode = require("./rendernode.js");
 var Constants = require("./constants.js");
 var Frustum = require("../tools/frustum.js").Frustum;
@@ -15599,7 +17208,7 @@ var EVENT_TYPE = Constants.EVENT_TYPE;
     module.exports = RenderView;
 
 
-},{"../tools/frustum.js":70,"./constants.js":59,"./rendernode.js":65}],68:[function(require,module,exports){
+},{"../tools/frustum.js":83,"./constants.js":72,"./rendernode.js":78}],81:[function(require,module,exports){
 var Pager = require("./pager.js");
 var RenderObject = require("./renderobject.js");
 var RenderView = require("./renderview.js");
@@ -15751,7 +17360,7 @@ XML3D.extend(Scene.prototype, {
 
 module.exports = Scene;
 
-},{"../../../utils/uri.js":133,"../../../xflow/interface/constants.js":136,"../../../xflow/interface/data.js":137,"../../../xflow/interface/graph.js":138,"../lights/light-manager.js":56,"./constants.js":59,"./material-configuration.js":61,"./pager.js":62,"./rendergroup.js":63,"./renderlight.js":64,"./renderobject.js":66,"./renderview.js":67}],69:[function(require,module,exports){
+},{"../../../utils/uri.js":146,"../../../xflow/interface/constants.js":149,"../../../xflow/interface/data.js":150,"../../../xflow/interface/graph.js":151,"../lights/light-manager.js":69,"./constants.js":72,"./material-configuration.js":74,"./pager.js":75,"./rendergroup.js":76,"./renderlight.js":77,"./renderobject.js":79,"./renderview.js":80}],82:[function(require,module,exports){
 var DataChangeNotifier = require("../../../xflow/interface/data.js").DataChangeNotifier;
 
 /**
@@ -15778,7 +17387,7 @@ DataChangeListener.prototype.dataEntryChanged = function (entry, notification) {
 
 module.exports = DataChangeListener;
 
-},{"../../../xflow/interface/data.js":137}],70:[function(require,module,exports){
+},{"../../../xflow/interface/data.js":150}],83:[function(require,module,exports){
 var vec3 = XML3D.math.vec3;
 var tmp1 = vec3.create();
 var tmp2 = vec3.create();
@@ -16025,7 +17634,7 @@ module.exports = {
     FrustumTest: FrustumTest
 };
 
-},{}],71:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 /**
  *
  * @constructor
@@ -16113,7 +17722,7 @@ module.exports = ObjectSorter;
 
 
 
-},{}],72:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 /** Calculate the offset of the given element and return it.
  *
  *  @param {Object} element
@@ -16165,7 +17774,7 @@ module.exports = {
     }
 };
 
-},{}],73:[function(require,module,exports){
+},{}],86:[function(require,module,exports){
 var TextureManager = require("texture-manager").SimpleTextureManager;
 var GLTexture = require("./texture.js").GLTexture;
 var GLCubeMap = require("./texture.js").GLCubeMap;
@@ -16213,7 +17822,7 @@ EXTENSIONS.MULTIPLE_RENDER_TARGETS = 'WEBGL_draw_buffers';
 EXTENSIONS.DEPTH_TEXTURE = 'WEBGL_depth_texture';
 EXTENSIONS.FLOAT_COLOR_BUFFER = 'WEBGL_color_buffer_float';
 EXTENSIONS.FLOAT_TEXTURES = 'OES_texture_float';
-EXTENSIONS.UINT32_INDICES = 'OES_element_index_uint';
+EXTENSIONS.UINT32_INDICES = 'OES_element_index_uint'; //Also defined in xflow/utils/utils.js
 
 XML3D.extend(GLContext.prototype, {
     getXflowEntryWebGlData: function (entry) {
@@ -16278,7 +17887,7 @@ module.exports = GLContext;
 
 
 
-},{"../../../xflow/interface/constants.js":136,"./../shader/programfactory.js":116,"./rendertarget.js":77,"./texture.js":78,"texture-manager":3}],74:[function(require,module,exports){
+},{"../../../xflow/interface/constants.js":149,"./../shader/programfactory.js":129,"./rendertarget.js":90,"./texture.js":91,"texture-manager":16}],87:[function(require,module,exports){
 var FullscreenQuad = function (context) {
     this.gl = context.gl;
     this.createGLAssets();
@@ -16310,7 +17919,7 @@ XML3D.extend(FullscreenQuad.prototype, {
 module.exports = FullscreenQuad;
 
 
-},{}],75:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 
 
 /**
@@ -16518,7 +18127,7 @@ var getGLTypeFromString = function (typeName) {
 
 module.exports = GLMesh;
 
-},{}],76:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 
 var utils = require("./utils.js");
 var SystemNotifier = require("../system/system-notifier.js");
@@ -16811,7 +18420,7 @@ XML3D.extend(ProgramObject.prototype, {
 module.exports = ProgramObject;
 
 
-},{"../system/system-notifier.js":118,"./utils.js":79}],77:[function(require,module,exports){
+},{"../system/system-notifier.js":131,"./utils.js":92}],90:[function(require,module,exports){
 /**
  * @interface
  */
@@ -17288,7 +18897,7 @@ module.exports = {
 
 
 
-},{}],78:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 var utils = require("./utils.js");
 var StateMachine = require("../../../contrib/state-machine.js");
 var SamplerConfig = require("../../../xflow/interface/data.js").SamplerConfig;
@@ -17672,7 +19281,7 @@ module.exports = {
 
 
 
-},{"../../../contrib/state-machine.js":14,"../../../xflow/interface/constants.js":136,"../../../xflow/interface/data.js":137,"./utils.js":79}],79:[function(require,module,exports){
+},{"../../../contrib/state-machine.js":27,"../../../xflow/interface/constants.js":149,"../../../xflow/interface/data.js":150,"./utils.js":92}],92:[function(require,module,exports){
 require("../../../utils/array.js");
 
 module.exports = {
@@ -17801,7 +19410,7 @@ module.exports = {
 };
 
 
-},{"../../../utils/array.js":127}],80:[function(require,module,exports){
+},{"../../../utils/array.js":140}],93:[function(require,module,exports){
 var AbstractCanvasHandler = require("../renderer/canvas-handler.js");
 var Options = require("../../utils/options.js");
 var xml3dFormatHandler = require("../../base/formathandler.js").xml3dFormatHandler;
@@ -17984,7 +19593,7 @@ GLCanvasHandler.prototype.getMousePosition = function (evt) {
 module.exports =  GLCanvasHandler;
 
 
-},{"../../base/formathandler.js":9,"../../utils/options.js":132,"../renderer/canvas-handler.js":52}],81:[function(require,module,exports){
+},{"../../base/formathandler.js":22,"../../utils/options.js":145,"../renderer/canvas-handler.js":65}],94:[function(require,module,exports){
 var GLProgramObject = require("../base/program.js");
 var XflowUtils= require("../xflow/utils.js");
 
@@ -18114,7 +19723,7 @@ XML3D.createClass(AbstractShaderClosure, null, {
 module.exports = AbstractShaderClosure;
 
 
-},{"../base/program.js":76,"../xflow/utils.js":119}],82:[function(require,module,exports){
+},{"../base/program.js":89,"../xflow/utils.js":132}],95:[function(require,module,exports){
 var GLScene = require("../scene/glscene.js");
 var GLLights = require("../scene/gllights.js");
 var MaterialEvents = require("../materials/events.js");
@@ -18371,13 +19980,13 @@ module.exports = {
 }
 
 
-},{"../../../contrib/EventDispatcher.js":11,"../../../xflow/interface/constants.js":136,"../../../xflow/interface/request.js":139,"../materials/events.js":83,"../scene/gllights.js":114,"../scene/glscene.js":115}],83:[function(require,module,exports){
+},{"../../../contrib/EventDispatcher.js":24,"../../../xflow/interface/constants.js":149,"../../../xflow/interface/request.js":152,"../materials/events.js":96,"../scene/gllights.js":127,"../scene/glscene.js":128}],96:[function(require,module,exports){
 module.exports = {
     MATERIAL_STRUCTURE_CHANGED: "material_structure_changed",
     MATERIAL_INITIALIZED: "material_initialized"
 };
 
-},{}],84:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 var AbstractShaderClosure = require("./../abstractshaderclosure.js");
 var JSShaderComposer = require("./jsshadercomposer.js");
 var SystemNotifier = require("../../system/system-notifier.js");
@@ -18385,18 +19994,6 @@ var getJSSystemConfiguration = require("./jssystemconfiguration.js");
 var XC = require("../../../../xflow/interface/constants.js");
 var Options = require("../../../../utils/options.js");
 
-var c_SystemUpdate = {
-    "pointLightOn": {
-        staticValue: "MAX_POINTLIGHTS",
-        staticSize: ["pointLightOn", "pointLightAttenuation", "pointLightIntensity", "pointLightPosition", "pointLightCastShadow", "pointLightShadowBias", "pointLightShadowMap", "pointLightMatrix", "pointLightNearFar"]
-    }, "directionalLightOn": {
-        staticValue: "MAX_DIRECTIONALLIGHTS",
-        staticSize: ["directionalLightOn", "directionalLightIntensity", "directionalLightDirection", "directionalLightCastShadow", "directionalLightShadowBias", "directionalLightShadowMap", "directionalLightMatrix"]
-    }, "spotLightOn": {
-        staticValue: "MAX_SPOTLIGHTS",
-        staticSize: ["spotLightOn", "spotLightAttenuation", "spotLightIntensity", "spotLightPosition", "spotLightDirection", "spotLightCosFalloffAngle", "spotLightCosSoftFalloffAngle", "spotLightCastShadow", "spotLightShadowBias", "spotLightShadowMap", "spotLightMatrix"]
-    }
-};
 
 var c_jsShaderCache = {};
 
@@ -18521,32 +20118,27 @@ XML3D.createClass(JSShaderClosure, AbstractShaderClosure, {
 
         var vsDataResult = vsRequest.getResult();
 
-        var contextData = {
-            "this": getJSSystemConfiguration(this.context),
-            "global.shade": [{"extra": {"type": "object", "kind": "any", "global": true, "info": {}}}]
-        };
+        var systemParameters = getSystemParameters(this.context, scene.systemUniforms);
+        var environmentParameters = {};
 
-        var systemUniforms = scene.systemUniforms, systemInfo = contextData["this"].info;
-        for (var systemSource in c_SystemUpdate) {
-            var entry = c_SystemUpdate[systemSource];
-            var length = systemUniforms[systemSource] && systemUniforms[systemSource].length;
-            systemInfo[entry.staticValue].staticValue = length;
-            for (var i = 0; i < entry.staticSize.length; ++i)
-                systemInfo[entry.staticSize[i]].staticSize = length;
-        }
 
-        var contextInfo = contextData["global.shade"][0].extra.info;
 
         var shaderEntries = shaderResult && shaderResult.getOutputMap(), vsShaderOutput = vsDataResult && vsDataResult.outputNames;
 
         for (var i = 0; i < this.extractedParams.length; ++i) {
             var paramName = this.extractedParams[i];
             if (vsShaderOutput && vsShaderOutput.indexOf(paramName) != -1) {
-                contextInfo[paramName] = convertXflow2ShadeType(vsDataResult.getOutputType(paramName), vsDataResult.isOutputUniform(paramName) ? Shade.SOURCES.UNIFORM : Shade.SOURCES.VERTEX);
+                environmentParameters[paramName] = convertXflow2ShadeType(vsDataResult.getOutputType(paramName), vsDataResult.isOutputUniform(paramName) ? Shade.SOURCES.UNIFORM : Shade.SOURCES.VERTEX);
             } else if (shaderEntries && shaderEntries[paramName]) {
-                contextInfo[paramName] = convertXflow2ShadeType(shaderEntries[paramName].type, Shade.SOURCES.UNIFORM);
+                environmentParameters[paramName] = convertXflow2ShadeType(shaderEntries[paramName].type, Shade.SOURCES.UNIFORM);
             }
         }
+
+        var contextData = {
+            "this": { "type": "object", "kind": "any", "info": systemParameters },
+            "global.shade": [{"extra": {"type": "object", "kind": "any", "global": true, "info": environmentParameters }}]
+        };
+
         XML3D.debug.logDebug("CONTEXT:", contextData);
 
         var options = {
@@ -18561,7 +20153,7 @@ XML3D.createClass(JSShaderClosure, AbstractShaderClosure, {
         };
         var implementation = scene.deferred ? "xml3d-glsl-deferred" : "xml3d-glsl-forward";
 
-        var jsShaderKey = implementation + ";" + JSON.stringify(options) + ";" + JSON.stringify(contextInfo) + ";" + this.sourceTemplate;
+        var jsShaderKey = implementation + ";" + JSON.stringify(options) + ";" + JSON.stringify(environmentParameters) + ";" + this.sourceTemplate;
 
         var cacheEntry;
         if (!(cacheEntry = c_jsShaderCache[jsShaderKey])) {
@@ -18574,12 +20166,14 @@ XML3D.createClass(JSShaderClosure, AbstractShaderClosure, {
 
                 cacheEntry = {
                     source: glslShader.source, uniformSetter: glslShader.uniformSetter, spaceInfo: spaceInfo
-                }
+                };
+                cacheEntry.hasTransparentShaderClosure = workSet.getProcessingData("isTransparent");
 
                 this.uniformSetter = glslShader.uniformSetter;
                 this.source = {
                     fragment: glslShader.source, vertex: this.createVertexShader(vsRequest, vsDataResult, spaceInfo)
                 }
+
                 if (scene.deferred) {
                     cacheEntry.signatures = workSet.getProcessingData("colorClosureSignatures");
                 }
@@ -18596,7 +20190,9 @@ XML3D.createClass(JSShaderClosure, AbstractShaderClosure, {
         }
         this.source = {
             fragment: cacheEntry.source, vertex: this.createVertexShader(vsRequest, vsDataResult, cacheEntry.spaceInfo)
-        }
+        };
+        this.hasTransparentShaderClosure = cacheEntry.hasTransparentShaderClosure;
+
         this.uniformSetter = cacheEntry.uniformSetter;
         if (scene.deferred) {
             scene.colorClosureSignatures.push.apply(scene.colorClosureSignatures, cacheEntry.signatures);
@@ -18630,7 +20226,7 @@ XML3D.createClass(JSShaderClosure, AbstractShaderClosure, {
 
     getTransparencyFromInputData: function (dataMap) {
         // TODO: Compute Transparency
-        return false;
+        return this.hasTransparentShaderClosure;
     },
 
     /* Default values are compiled into shade.js */
@@ -18638,10 +20234,65 @@ XML3D.createClass(JSShaderClosure, AbstractShaderClosure, {
     }
 
 });
+
+/**
+ * @param {GLContext} context
+ * @param {{}} globals
+ * @returns {{}}
+ */
+function getSystemParameters(context, globals) {
+    var result = getJSSystemConfiguration(context);
+
+    // Update light parameters which vary in their size depending on number of lights defined
+    ["point", "directional", "spot"].forEach(function(model) {
+        var on = model + "LightOn";
+        result["MAX_" + model.toUpperCase() + "LIGHTS"].staticValue = globals[on] && globals[on].length;
+    });
+
+    for (var global in globals) {
+        var entry = result[global];
+        if(entry && entry.staticSize) {
+            var aLength = globals[global].length;
+            if (aLength) {
+                var tupleSize = getTupleSize(entry);
+                entry.staticSize = aLength / tupleSize;
+            } else {
+                // Do not allow a array of size 0, remove entry instead
+                // TODO(ksons): Remove once we can check array size in shade.js
+                delete result[global];
+            }
+        }
+
+    }
+    return result;
+}
+
+/**
+ * @param {{}} desc Object type descriptor
+ * @returns {number}
+ */
+function getTupleSize(desc) {
+    if(desc.type == "array") {
+        var elements = desc.elements;
+        if (elements.type == "object") {
+            switch(elements.kind) {
+                case "texture":
+                case "float": return 1;
+                case "float2": return 2;
+                case "float3": return 3;
+                case "float4": return 4;
+                case "matrix4": return 16;
+                default: throw ("Unknown array element kind:" + elements.kind);
+            }
+        }
+    }
+    return 1;
+}
+
 module.exports = JSShaderClosure;
 
 
-},{"../../../../utils/options.js":132,"../../../../xflow/interface/constants.js":136,"../../system/system-notifier.js":118,"./../abstractshaderclosure.js":81,"./jsshadercomposer.js":85,"./jssystemconfiguration.js":86}],85:[function(require,module,exports){
+},{"../../../../utils/options.js":145,"../../../../xflow/interface/constants.js":149,"../../system/system-notifier.js":131,"./../abstractshaderclosure.js":94,"./jsshadercomposer.js":98,"./jssystemconfiguration.js":99}],98:[function(require,module,exports){
 var AbstractShaderComposer = require("./../abstractshadercomposer.js").AbstractShaderComposer;
 var JSShaderClosure = require("./jsshaderclosure.js");
 var VSConfig = require("../../../../xflow/processing/vs-connect.js").VSConfig;
@@ -18688,7 +20339,8 @@ JSShaderComposer.convertSysName = function (name) {
 XML3D.createClass(JSShaderComposer, AbstractShaderComposer, {
     setShaderInfo: function (config) {
         try {
-            this.extractedParams = Shade.extractParameters(this.sourceTemplate, {implementation: "xml3d-glsl-forward"}).shaderParameters;
+            var ast = Shade.parse(this.sourceTemplate, {loc: true});
+            this.extractedParams = Shade.extractParameters(ast, {implementation: "xml3d-glsl-forward"}).shaderParameters;
             // FIXME: Shader.js should always request position (in case
         } catch (e) {
             // We ignore errors here. They will reoccur when updating connected mesh closures
@@ -18760,12 +20412,11 @@ module.exports = JSShaderComposer;
 
 
 
-},{"../../../../xflow/interface/constants.js":136,"../../../../xflow/interface/request.js":139,"../../../../xflow/processing/vs-connect.js":186,"./../abstractshadercomposer.js":82,"./jsshaderclosure.js":84}],86:[function(require,module,exports){
+},{"../../../../xflow/interface/constants.js":149,"../../../../xflow/interface/request.js":152,"../../../../xflow/processing/vs-connect.js":199,"./../abstractshadercomposer.js":95,"./jsshaderclosure.js":97}],99:[function(require,module,exports){
 var GLContext = require("../../base/context.js");
 var singleton = null;
 
-var SYSTEM_CONTEXT_TEMPLATE = {
-    "type": "object", "kind": "any", "info": {
+var SYSTEM_CONTEXT_TEMPLATE =  {
         "coords": {"type": "object", "kind": "float3", "source": "uniform"},
         "cameraPosition": {"type": "object", "kind": "float3", "source": "uniform"},
         "viewMatrix": {"type": "object", "kind": "matrix4", "source": "uniform"},
@@ -18876,16 +20527,15 @@ var SYSTEM_CONTEXT_TEMPLATE = {
         },
         "ssaoMap": {"type": "object", "kind": "texture", "source": "uniform"},
         "environment": {"type": "object", "kind": "texture", "source": "uniform"}
-    }
 };
 
 function createSystemConfiguration(context) {
     var result = SYSTEM_CONTEXT_TEMPLATE;
     var ext = context.getExtensionByName(GLContext.EXTENSIONS.STANDARD_DERIVATES);
     if (ext) {
-        result.info.fwidth = {type: Shade.TYPES.FUNCTION};
-        result.info.dx = {type: Shade.TYPES.FUNCTION};
-        result.info.dy = {type: Shade.TYPES.FUNCTION};
+        result.fwidth = {type: Shade.TYPES.FUNCTION};
+        result.dx = {type: Shade.TYPES.FUNCTION};
+        result.dy = {type: Shade.TYPES.FUNCTION};
     }
     return result;
 }
@@ -18901,7 +20551,7 @@ module.exports = function (context) {
 
 
 
-},{"../../base/context.js":73}],87:[function(require,module,exports){
+},{"../../base/context.js":86}],100:[function(require,module,exports){
 var JSShaderComposer = require("./js/jsshadercomposer.js");
 var URNShaderComposer = require("./urn/urnshadercomposer.js");
 var DefaultComposer = require("./abstractshadercomposer.js").DefaultComposer;
@@ -18998,7 +20648,7 @@ module.exports = ShaderComposerFactory;
 
 
 
-},{"./abstractshadercomposer.js":82,"./js/jsshadercomposer.js":85,"./urn/urnshadercomposer.js":96}],88:[function(require,module,exports){
+},{"./abstractshadercomposer.js":95,"./js/jsshadercomposer.js":98,"./urn/urnshadercomposer.js":109}],101:[function(require,module,exports){
 var EVENT_TYPE = require("../../renderer/scene/constants.js").EVENT_TYPE;
 var Targets = require("../base/rendertarget");
 
@@ -19135,7 +20785,7 @@ function mergeShadowParameters(shadowMapInfos) {
 
 module.exports = ShadowMapService;
 
-},{"../../renderer/scene/constants.js":59,"../base/rendertarget":77,"../render-passes/light-pass":102,"../render-passes/pointlight-pass":106}],89:[function(require,module,exports){
+},{"../../renderer/scene/constants.js":72,"../base/rendertarget":90,"../render-passes/light-pass":115,"../render-passes/pointlight-pass":119}],102:[function(require,module,exports){
 XML3D.shaders.register("diffuse", {
 
     vertex : [
@@ -19313,7 +20963,7 @@ XML3D.shaders.register("diffuse", {
     }
 });
 
-},{}],90:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 XML3D.shaders.register("matte", {
 
     vertex: [
@@ -19356,7 +21006,7 @@ XML3D.shaders.register("matte", {
 
 XML3D.shaders.register("flat", XML3D.shaders.getScript("matte"));
 
-},{}],91:[function(require,module,exports){
+},{}],104:[function(require,module,exports){
 XML3D.shaders.register("phong", {
 
     vertex : [
@@ -19692,7 +21342,7 @@ XML3D.shaders.register("phong", {
     }
 });
 
-},{}],92:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 XML3D.shaders.register("point", {
 
     vertex : [
@@ -19784,7 +21434,7 @@ XML3D.shaders.register("point", {
     }
 });
 
-},{}],93:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 var ShaderDescriptor = function () {
     this.uniforms = {};
     this.samplers = {};
@@ -19801,7 +21451,7 @@ ShaderDescriptor.prototype.hasTransparency = function () {
 
 module.exports = ShaderDescriptor;
 
-},{}],94:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 var c_globalScripts = {};
 
 module.exports = {
@@ -19816,7 +21466,7 @@ module.exports = {
     }
 };
 
-},{}],95:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 var AbstractShaderClosure = require("./../abstractshaderclosure.js");
 var SystemNotifier = require("../../system/system-notifier.js");
 
@@ -19885,7 +21535,7 @@ XML3D.extend(ShaderClosure.prototype, {
 module.exports = ShaderClosure;
 
 
-},{"../../system/system-notifier.js":118,"./../abstractshaderclosure.js":81}],96:[function(require,module,exports){
+},{"../../system/system-notifier.js":131,"./../abstractshaderclosure.js":94}],109:[function(require,module,exports){
 var AbstractShaderComposer = require("../abstractshadercomposer.js").AbstractShaderComposer;
 var URNShaderClosure= require("./urnshaderclosure.js");
 var ShaderDescriptor = require("./shader-descriptor.js");
@@ -19996,7 +21646,7 @@ module.exports = URNShaderComposer;
 
 
 
-},{"../../../../xflow/interface/request.js":139,"../../shader/shader-utils.js":117,"../abstractshadercomposer.js":82,"./diffuse.js":89,"./matte.js":90,"./phong.js":91,"./point.js":92,"./shader-descriptor.js":93,"./urnshaderclosure.js":95,"./utility.js":97}],97:[function(require,module,exports){
+},{"../../../../xflow/interface/request.js":152,"../../shader/shader-utils.js":130,"../abstractshadercomposer.js":95,"./diffuse.js":102,"./matte.js":103,"./phong.js":104,"./point.js":105,"./shader-descriptor.js":106,"./urnshaderclosure.js":108,"./utility.js":110}],110:[function(require,module,exports){
 XML3D.shaders.register("pickobjectid", {
     vertex : [
         "attribute vec3 position;",
@@ -20289,7 +21939,7 @@ XML3D.shaders.register("ssao", {
     }
 });
 
-},{}],98:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 // Note: This context should only be used to access GL constants
 var GL = window.WebGLRenderingContext;
 var ForwardRenderTree = require("./render-trees/forward.js");
@@ -20330,7 +21980,7 @@ XML3D.extend(GLRenderInterface.prototype, {
 module.exports = GLRenderInterface;
 
 
-},{"./render-trees/forward.js":111}],99:[function(require,module,exports){
+},{"./render-trees/forward.js":124}],112:[function(require,module,exports){
 /**
  * @constructor
  */
@@ -20420,7 +22070,7 @@ XML3D.extend(BaseRenderPass.prototype, {
 module.exports = BaseRenderPass;
 
 
-},{}],100:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 var BaseRenderPass = require("./base.js");
 var FullscreenQuad = require("../base/fullscreenquad.js");
 
@@ -20477,7 +22127,7 @@ XML3D.extend(BoxBlurPass.prototype, {
 module.exports = BoxBlurPass;
 
 
-},{"../base/fullscreenquad.js":74,"./base.js":99}],101:[function(require,module,exports){
+},{"../base/fullscreenquad.js":87,"./base.js":112}],114:[function(require,module,exports){
 var SceneRenderPass = require("./scene-pass.js");
 var ObjectSorter = require("../../renderer/tools/objectsorter.js");
 
@@ -20559,7 +22209,7 @@ XML3D.extend(ForwardRenderPass.prototype, {
 module.exports = ForwardRenderPass;
 
 
-},{"../../renderer/tools/objectsorter.js":71,"./scene-pass.js":107}],102:[function(require,module,exports){
+},{"../../renderer/tools/objectsorter.js":84,"./scene-pass.js":120}],115:[function(require,module,exports){
 var SceneRenderPass = require("./scene-pass.js");
 var ObjectSorter = require("../../renderer/tools/objectsorter.js");
 
@@ -20630,7 +22280,7 @@ XML3D.createClass(LightPass, SceneRenderPass, {
 module.exports = LightPass;
 
 
-},{"../../renderer/tools/objectsorter.js":71,"./scene-pass.js":107}],103:[function(require,module,exports){
+},{"../../renderer/tools/objectsorter.js":84,"./scene-pass.js":120}],116:[function(require,module,exports){
 var BaseRenderPass = require("./base.js");
 
 var PickNormalRenderPass = function (renderInterface, output, opt) {
@@ -20711,7 +22361,7 @@ XML3D.createClass(PickNormalRenderPass, BaseRenderPass, {
 module.exports = PickNormalRenderPass;
 
 
-},{"./base.js":99}],104:[function(require,module,exports){
+},{"./base.js":112}],117:[function(require,module,exports){
 var BaseRenderPass = require("./base.js");
 
 var PickObjectRenderPass = function (renderInterface, output, opt) {
@@ -20799,7 +22449,7 @@ XML3D.extend(PickObjectRenderPass.prototype, {
 module.exports = PickObjectRenderPass;
 
 
-},{"./base.js":99}],105:[function(require,module,exports){
+},{"./base.js":112}],118:[function(require,module,exports){
 var BaseRenderPass = require("./base.js");
 
 var PickPositionRenderPass = function (renderInterface, output, opt) {
@@ -20876,7 +22526,7 @@ XML3D.createClass(PickPositionRenderPass, BaseRenderPass, {
 module.exports = PickPositionRenderPass;
 
 
-},{"./base.js":99}],106:[function(require,module,exports){
+},{"./base.js":112}],119:[function(require,module,exports){
 var SceneRenderPass = require("./scene-pass.js");
 var ObjectSorter = require("../../renderer/tools/objectsorter.js");
 
@@ -21027,7 +22677,7 @@ XML3D.createClass(PointLightPass, SceneRenderPass, {
 module.exports = PointLightPass;
 
 
-},{"../../renderer/tools/objectsorter.js":71,"./scene-pass.js":107}],107:[function(require,module,exports){
+},{"../../renderer/tools/objectsorter.js":84,"./scene-pass.js":120}],120:[function(require,module,exports){
 var BaseRenderPass = require("./base.js");
 var Options = require("../../../utils/options.js");
 
@@ -21193,7 +22843,7 @@ function getGlobalFaceCullingSetter(mode) {
 
 module.exports = SceneRenderPass;
 
-},{"../../../utils/options.js":132,"./base.js":99}],108:[function(require,module,exports){
+},{"../../../utils/options.js":145,"./base.js":112}],121:[function(require,module,exports){
 var BaseRenderPass = require("./base.js");
 var VertexAttributePass = require("./vertexattribute-pass.js");
 var GLRenderTarget = require("../base/rendertarget.js").GLRenderTarget;
@@ -21333,7 +22983,7 @@ XML3D.extend(SSAOPass.prototype, {
 module.exports = SSAOPass;
 
 
-},{"../../../utils/options.js":132,"../base/fullscreenquad.js":74,"../base/rendertarget.js":77,"./base.js":99,"./vertexattribute-pass.js":109}],109:[function(require,module,exports){
+},{"../../../utils/options.js":145,"../base/fullscreenquad.js":87,"../base/rendertarget.js":90,"./base.js":112,"./vertexattribute-pass.js":122}],122:[function(require,module,exports){
 var SceneRenderPass = require("./scene-pass.js");
 
 var VertexAttributePass = function (renderInterface, output, opt) {
@@ -21370,7 +23020,7 @@ XML3D.extend(VertexAttributePass.prototype, {
 module.exports = VertexAttributePass;
 
 
-},{"./scene-pass.js":107}],110:[function(require,module,exports){
+},{"./scene-pass.js":120}],123:[function(require,module,exports){
 var BaseRenderTree = function (renderInterface) {
     this.mainRenderPass = null;
     this.renderInterface = renderInterface;
@@ -21385,7 +23035,7 @@ XML3D.extend(BaseRenderTree.prototype, {
 module.exports = BaseRenderTree;
 
 
-},{}],111:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 var BaseRenderTree = require("./base.js");
 var GLRenderTarget = require("../base/rendertarget.js").GLRenderTarget;
 var GLCubeMapRenderTarget = require("../base/rendertarget.js").GLCubeMapRenderTarget;
@@ -21512,7 +23162,7 @@ XML3D.extend(ForwardRenderTree.prototype, {
 module.exports = ForwardRenderTree;
 
 
-},{"../../renderer/scene/constants.js":59,"../base/rendertarget.js":77,"../materials/events.js":83,"../render-passes/boxblur.js":100,"../render-passes/forward.js":101,"../render-passes/light-pass.js":102,"../render-passes/pointlight-pass.js":106,"../render-passes/ssao-pass.js":108,"../render-passes/vertexattribute-pass.js":109,"./base.js":110}],112:[function(require,module,exports){
+},{"../../renderer/scene/constants.js":72,"../base/rendertarget.js":90,"../materials/events.js":96,"../render-passes/boxblur.js":113,"../render-passes/forward.js":114,"../render-passes/light-pass.js":115,"../render-passes/pointlight-pass.js":119,"../render-passes/ssao-pass.js":121,"../render-passes/vertexattribute-pass.js":122,"./base.js":123}],125:[function(require,module,exports){
 var GLContext = require("./base/context.js");
 var GLScene = require("./scene/glscene.js");
 var GLScaledRenderTarget = require("./base/rendertarget.js").GLScaledRenderTarget;
@@ -21867,7 +23517,7 @@ XML3D.extend(GLRenderer.prototype, {
 
 module.exports = GLRenderer;
 
-},{"../../base/formathandler.js":9,"../../contrib/glu.js":12,"../../utils/options.js":132,"../renderer/tools/datachangelistener.js":69,"./base/context.js":73,"./base/rendertarget.js":77,"./render-interface.js":98,"./render-passes/pick-normal.js":103,"./render-passes/pick-object.js":104,"./render-passes/pick-position.js":105,"./render-trees/forward.js":111,"./scene/glscene.js":115}],113:[function(require,module,exports){
+},{"../../base/formathandler.js":22,"../../contrib/glu.js":25,"../../utils/options.js":145,"../renderer/tools/datachangelistener.js":82,"./base/context.js":86,"./base/rendertarget.js":90,"./render-interface.js":111,"./render-passes/pick-normal.js":116,"./render-passes/pick-object.js":117,"./render-passes/pick-position.js":118,"./render-trees/forward.js":124,"./scene/glscene.js":128}],126:[function(require,module,exports){
 var XflowMesh = require("../xflow/xflow-mesh.js");
 
 /**
@@ -21893,7 +23543,7 @@ module.exports = DrawableFactory;
 
 
 
-},{"../xflow/xflow-mesh.js":120}],114:[function(require,module,exports){
+},{"../xflow/xflow-mesh.js":133}],127:[function(require,module,exports){
 var lightModels = {
     point: {
         parameters: [ "pointLightPosition", "pointLightAttenuation", "pointLightIntensity", "pointLightOn", "pointLightCastShadow", "pointLightMatrix", "pointLightShadowBias", "pointLightNearFar", "pointLightShadowMap"]
@@ -21912,7 +23562,7 @@ module.exports = {
     ALL_PARAMETERS: ALL_PARAMETERS
 };
 
-},{}],115:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
 var Scene = require("./../../renderer/scene/scene.js");
 var DrawableFactory = require("./drawable-factory.js");
 var C = require("./../../renderer/scene/constants.js");
@@ -22169,7 +23819,7 @@ XML3D.extend(GLScene.prototype, {
 module.exports = GLScene;
 
 
-},{"../../../utils/options.js":132,"../materials/shadercomposerfactory.js":87,"../materials/shadowmap-service":88,"./../../renderer/scene/constants.js":59,"./../../renderer/scene/scene.js":68,"./../../renderer/tools/frustum.js":70,"./drawable-factory.js":113}],116:[function(require,module,exports){
+},{"../../../utils/options.js":145,"../materials/shadercomposerfactory.js":100,"../materials/shadowmap-service":101,"./../../renderer/scene/constants.js":72,"./../../renderer/scene/scene.js":81,"./../../renderer/tools/frustum.js":83,"./drawable-factory.js":126}],129:[function(require,module,exports){
 var ShaderUtils = require("./shader-utils.js");
 var ShaderDescriptor = require("../materials/urn/shader-descriptor.js");
 var URNShaderClosure = require("../materials/urn/urnshaderclosure.js");
@@ -22248,7 +23898,7 @@ XML3D.extend(ProgramFactory.prototype, {
 module.exports = ProgramFactory;
 
 
-},{"../materials/urn/shader-descriptor.js":93,"../materials/urn/urnshaderclosure.js":95,"./shader-utils.js":117}],117:[function(require,module,exports){
+},{"../materials/urn/shader-descriptor.js":106,"../materials/urn/urnshaderclosure.js":108,"./shader-utils.js":130}],130:[function(require,module,exports){
 var FRAGMENT_HEADER = ["#ifdef GL_FRAGMENT_PRECISION_HIGH", "precision highp float;", "#else", "precision mediump float;", "#endif // GL_FRAGMENT_PRECISION_HIGH", "\n"].join("\n");
 
 module.exports = {
@@ -22257,7 +23907,7 @@ module.exports = {
     }
 };
 
-},{}],118:[function(require,module,exports){
+},{}],131:[function(require,module,exports){
 var SystemNotifier = {
     node: null,
 
@@ -22277,8 +23927,7 @@ var SystemNotifier = {
 
 module.exports = SystemNotifier;
 
-},{}],119:[function(require,module,exports){
-var GLContext = require("../base/context.js");
+},{}],132:[function(require,module,exports){
 var XC = require("../../../xflow/interface/constants.js");
 
 function convertToJSArray(value) {
@@ -22305,7 +23954,7 @@ var createElementBuffer = function (context, data, maxIndex) {
     } else if (maxIndex < (1 << 16)) {
         glType = gl.UNSIGNED_SHORT;
         bufferData = new Uint16Array(data);
-    } else if (!context.extensions[GLContext.EXTENSIONS.UINT32_INDICES]) {
+    } else if (!context.extensions["OES_element_index_uint"]) {
         XML3D.debug.logError("Trying to use index data with indices larger than 65535, but this is not supported on your platform. Indexing errors will occur.");
         glType = gl.UNSIGNED_SHORT;
         bufferData = new Uint16Array(data);
@@ -22509,7 +24158,7 @@ module.exports = {
     }
 };
 
-},{"../../../xflow/interface/constants.js":136,"../base/context.js":73}],120:[function(require,module,exports){
+},{"../../../xflow/interface/constants.js":149}],133:[function(require,module,exports){
 var DrawableClosure = require("../../renderer/scene/drawableclosure.js");
 var GLMesh = require("../base/mesh.js");
 var XflowUtils = require("./utils.js");
@@ -22914,7 +24563,7 @@ XML3D.createClass(XflowMesh, DrawableClosure, {
 module.exports = XflowMesh;
 
 
-},{"../../../xflow/interface/constants.js":136,"../../../xflow/interface/request.js":139,"../../renderer/scene/constants.js":59,"../../renderer/scene/drawableclosure.js":60,"../base/mesh.js":75,"../materials/events.js":83,"./utils.js":119}],121:[function(require,module,exports){
+},{"../../../xflow/interface/constants.js":149,"../../../xflow/interface/request.js":152,"../../renderer/scene/constants.js":72,"../../renderer/scene/drawableclosure.js":73,"../base/mesh.js":88,"../materials/events.js":96,"./utils.js":132}],134:[function(require,module,exports){
 
 /**
  * Creates an instance of XML3DBox. XML3DBox represents an axis-aligned box,
@@ -23082,7 +24731,7 @@ XML3DBox.prototype.extend = function(that)
 
 module.exports = XML3DBox;
 
-},{}],122:[function(require,module,exports){
+},{}],135:[function(require,module,exports){
 var XC = require("../xflow/interface/constants.js");
 var Resource = require("../base/resourcemanager.js").Resource;
 
@@ -23255,7 +24904,7 @@ module.exports = {
     XML3DDataResult: XML3DDataResult,
     XML3DDataObserver: XML3DDataObserver
 };
-},{"../base/resourcemanager.js":10,"../xflow/interface/constants.js":136}],123:[function(require,module,exports){
+},{"../base/resourcemanager.js":23,"../xflow/interface/constants.js":149}],136:[function(require,module,exports){
 
 /**
  * Configure array properties
@@ -23542,7 +25191,7 @@ p.translate = function(x, y, z) {
 module.exports = XML3DMatrix;
 
 
-},{}],124:[function(require,module,exports){
+},{}],137:[function(require,module,exports){
 
 /** returns an XML3DRay that has an origin and a direction.
 *
@@ -23621,7 +25270,7 @@ p.toString = function() {
 
 module.exports = XML3DRay;
 
-},{}],125:[function(require,module,exports){
+},{}],138:[function(require,module,exports){
 
 function orthogonal(v) {
     if ((Math.abs(v._data[1]) >= 0.9*Math.abs(v._data[0])) && (Math.abs(v._data[2]) >= 0.9*Math.abs(v._data[0])))
@@ -23912,7 +25561,7 @@ p.setFromBasis = function(xAxis, yAxis, zAxis) {
 };
 
 module.exports = XML3DRotation;
-},{}],126:[function(require,module,exports){
+},{}],139:[function(require,module,exports){
 
 /**
  * Configure array properties
@@ -24141,7 +25790,7 @@ p.normalize = function() {
 };
 
 module.exports = XML3DVec3;
-},{}],127:[function(require,module,exports){
+},{}],140:[function(require,module,exports){
 // Add convienent array methods if non-existant
 if (!Array.forEach) {
     Array.forEach = function(array, fun, thisp) {
@@ -24206,7 +25855,7 @@ if (!Array.isArray) {
     };
 }
 
-},{}],128:[function(require,module,exports){
+},{}],141:[function(require,module,exports){
 var CSSMatrix = require("./cssMatrix.js");
 
 var css = {};
@@ -24296,7 +25945,7 @@ css.convertCssToMat4 = function (cssMatrix, m) {
 module.exports = css;
 
 
-},{"./cssMatrix.js":129}],129:[function(require,module,exports){
+},{"./cssMatrix.js":142}],142:[function(require,module,exports){
 
 /**
  *  class FirminCSSMatrix
@@ -25123,7 +26772,7 @@ FirminCSSMatrix.prototype.toString = function() {
 module.exports = FirminCSSMatrix;
 
 
-},{}],130:[function(require,module,exports){
+},{}],143:[function(require,module,exports){
 var printStackTrace = require("../contrib/stacktrace-0.4.js");
 var Options = require("./options.js");
 
@@ -25254,7 +26903,7 @@ var Options = require("./options.js");
 
 }(module));
 
-},{"../contrib/stacktrace-0.4.js":13,"./options.js":132}],131:[function(require,module,exports){
+},{"../contrib/stacktrace-0.4.js":26,"./options.js":145}],144:[function(require,module,exports){
 // utils/misc.js
 
 window.requestAnimFrame = (function(){
@@ -25409,7 +27058,7 @@ window.requestAnimFrame = (function(){
     };
 }(module.exports));
 
-},{}],132:[function(require,module,exports){
+},{}],145:[function(require,module,exports){
 (function (ns) {
 
     /**
@@ -25516,7 +27165,7 @@ window.requestAnimFrame = (function(){
 
 }(module));
 
-},{}],133:[function(require,module,exports){
+},{}],146:[function(require,module,exports){
 (function(exports) {
     /**
      * Class URI
@@ -25716,7 +27365,7 @@ window.requestAnimFrame = (function(){
 
 }(module.exports));
 
-},{}],134:[function(require,module,exports){
+},{}],147:[function(require,module,exports){
 //TODO: Helpful API methods concerning WebCL will be added when needed. Please provide feedback!
 
 /**
@@ -26586,7 +28235,9 @@ window.requestAnimFrame = (function(){
 
 }(module.exports));
 
-},{}],135:[function(require,module,exports){
+},{}],148:[function(require,module,exports){
+var assert = require("assert");
+
 // Error Callbacks:
 var c_errorCallbacks = [];
 
@@ -26651,6 +28302,7 @@ module.exports = {
      * @private
      */
     _queueResultCallback: function (requestOrResult, resultState) {
+        assert(resultState !== undefined);
         var index;
         if (( index = c_listedCallbacks.indexOf(requestOrResult)) == -1) {
             index = c_listedCallbacks.length;
@@ -26681,7 +28333,7 @@ module.exports = {
 
 
 
-},{}],136:[function(require,module,exports){
+},{"assert":11}],149:[function(require,module,exports){
 var C = {};
 
 C.EPSILON = 0.000001;
@@ -26914,7 +28566,7 @@ C.PROCESS_STATE = {
 
 module.exports = C;
 
-},{}],137:[function(require,module,exports){
+},{}],150:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("./constants.js");
 require("../../utils/array.js");
@@ -27586,7 +29238,7 @@ module.exports = {
     DataChangeNotifier: DataChangeNotifier
 };
 
-},{"../../utils/array.js":127,"../base.js":135,"./constants.js":136}],138:[function(require,module,exports){
+},{"../../utils/array.js":140,"../base.js":148,"./constants.js":149}],151:[function(require,module,exports){
 var C = require("./constants.js");
 var Mapping = require("./../processing/mapping.js");
 require("../../utils/array.js");
@@ -27990,6 +29642,13 @@ Object.defineProperty(DataNode.prototype, "userData", {
 DataNode.prototype.setLoading = function(loading){
     if(this._loading != loading){
         this._loading = loading;
+        this._channelNode.setStructureOutOfSync();
+        this._channelNode.loading = loading;
+        for (var sub in this._substitutionNodes) {
+            var subNode = this._substitutionNodes[sub];
+            subNode.setStructureOutOfSync();
+            subNode.loading = loading;
+        }
         updateProgressLevel(this);
         Base._flushResultCallbacks();
     }
@@ -28570,7 +30229,7 @@ module.exports = {
     getComputeDataflowUrl: getComputeDataflowUrl
 };
 
-},{"../../utils/array.js":127,"../base.js":135,"../processing/channel-node.js":179,"../utils/utils.js":187,"./../processing/mapping.js":183,"./constants.js":136}],139:[function(require,module,exports){
+},{"../../utils/array.js":140,"../base.js":148,"../processing/channel-node.js":192,"../utils/utils.js":200,"./../processing/mapping.js":196,"./constants.js":149}],152:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("./constants.js");
 var DataNode = require("./graph.js").DataNode;
@@ -28754,7 +30413,7 @@ VertexShaderRequest.prototype.getVertexShader = function(){
     return this._vertexShader;
 };
 
-VertexShaderRequest.prototype._onResultChanged = function(result, notification){
+VertexShaderRequest.prototype._onResultChanged = function(notification){
     this._onDataNodeChange(notification);
 };
 
@@ -28801,7 +30460,7 @@ module.exports = {
     VertexShaderRequest: VertexShaderRequest
 };
 
-},{"../base.js":135,"./constants.js":136,"./graph.js":138}],140:[function(require,module,exports){
+},{"../base.js":148,"./constants.js":149,"./graph.js":151}],153:[function(require,module,exports){
 var C =require("../interface/constants.js");
 
 /**
@@ -29534,7 +31193,7 @@ function computeWorkGroupSize(targetInput) {
 
 module.exports = CLProgram;
 
-},{"../interface/constants.js":136}],141:[function(require,module,exports){
+},{"../interface/constants.js":149}],154:[function(require,module,exports){
 Xflow.registerOperator("xflow.add", {
     outputs: [  {type: 'float3', name: 'result'}],
     params:  [  {type: 'float3', source: 'value1'},
@@ -29549,7 +31208,7 @@ Xflow.registerOperator("xflow.add", {
     }
 });
 
-},{}],142:[function(require,module,exports){
+},{}],155:[function(require,module,exports){
 Xflow.registerOperator("xflow.bufferSelect", {
     outputs: [  {type: 'float3', name: 'result', noAlloc: true}],
     params:  [  {type: 'float3', source: 'trueOption', array: true},
@@ -29562,7 +31221,7 @@ Xflow.registerOperator("xflow.bufferSelect", {
     }
 });
 
-},{}],143:[function(require,module,exports){
+},{}],156:[function(require,module,exports){
 Xflow.registerOperator("xflow.clampImage", {
     outputs: [ {type: 'texture', name : 'result', sizeof : 'image', formatType: 'ImageData'} ],
     params:  [ {type: 'texture', source : 'image'},
@@ -29585,7 +31244,7 @@ Xflow.registerOperator("xflow.clampImage", {
     }
 });
 
-},{}],144:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 // Code portions from http://www.html5rocks.com/en/tutorials/canvas/imagefilters/
 
 (function() {
@@ -29659,7 +31318,7 @@ Xflow.registerOperator("xflow.clampImage", {
 
 })();
 
-},{}],145:[function(require,module,exports){
+},{}],158:[function(require,module,exports){
 Xflow.registerOperator("xflow.createIGIndex", {
     outputs:[
         //{type:'int', name:'index', customAlloc:true },
@@ -29697,7 +31356,7 @@ Xflow.registerOperator("xflow.createIGIndex", {
     }
 });
 
-},{}],146:[function(require,module,exports){
+},{}],159:[function(require,module,exports){
 Xflow.registerOperator("xflow.createTransform", {
     outputs: [  {type: 'float4x4', name: 'result'}],
     params:  [  {type: 'float3', source: 'translation', optional: true},
@@ -29720,7 +31379,7 @@ Xflow.registerOperator("xflow.createTransform", {
     }
 });
 
-},{}],147:[function(require,module,exports){
+},{}],160:[function(require,module,exports){
 Xflow.registerOperator("xflow.createTransformInv", {
     outputs: [  {type: 'float4x4', name: 'result'}],
     params:  [  {type: 'float3', source: 'translation', optional: true},
@@ -29742,7 +31401,7 @@ Xflow.registerOperator("xflow.createTransformInv", {
     }
 });
 
-},{}],148:[function(require,module,exports){
+},{}],161:[function(require,module,exports){
 (function(){
 
 var c_CubePositions =  [
@@ -29832,7 +31491,7 @@ Xflow.registerOperator("xflow.debug.createSkinCubes", {
 
 }());
 
-},{}],149:[function(require,module,exports){
+},{}],162:[function(require,module,exports){
 Xflow.registerOperator("xflow.flipNormal", {
     outputs: [  {type: 'float3', name: 'result'}],
     params:  [  {type: 'float3', source: 'value'}],
@@ -29842,7 +31501,7 @@ Xflow.registerOperator("xflow.flipNormal", {
     }
 });
 
-},{}],150:[function(require,module,exports){
+},{}],163:[function(require,module,exports){
 Xflow.registerOperator("xflow.flipVerticalImage", {
     outputs: [ {type: 'texture', name : 'result', sizeof : 'image'} ],
     params:  [ {type: 'texture', source : 'image'} ],
@@ -29868,7 +31527,7 @@ Xflow.registerOperator("xflow.flipVerticalImage", {
     }
 });
 
-},{}],151:[function(require,module,exports){
+},{}],164:[function(require,module,exports){
 Xflow.registerOperator("xflow.forwardKinematics", {
     outputs: [  {type: 'float4x4',  name: 'result', customAlloc: true}],
     params:  [  {type: 'int',       source: 'parent', array: true },
@@ -29918,7 +31577,7 @@ Xflow.registerOperator("xflow.forwardKinematics", {
     }
 });
 
-},{}],152:[function(require,module,exports){
+},{}],165:[function(require,module,exports){
 Xflow.registerOperator("xflow.forwardKinematicsInv", {
     outputs: [  {type: 'float4x4',  name: 'result', customAlloc: true}],
     params:  [  {type: 'int',       source: 'parent', array: true },
@@ -29969,7 +31628,7 @@ Xflow.registerOperator("xflow.forwardKinematicsInv", {
     }
 });
 
-},{}],153:[function(require,module,exports){
+},{}],166:[function(require,module,exports){
 // Based on: http://web.archive.org/web/20100310063925/http://dem.ocracy.org/libero/photobooth/
 
 Xflow.registerOperator("xflow.funMirrorImage", {
@@ -30031,7 +31690,7 @@ Xflow.registerOperator("xflow.funMirrorImage", {
     }
 });
 
-},{}],154:[function(require,module,exports){
+},{}],167:[function(require,module,exports){
 
 function fetch(result, value, index, components){
     for(var i = 0; i < index.length; ++i) {
@@ -30128,7 +31787,7 @@ Xflow.registerOperator("xflow.get", {
     }
 });
 
-},{}],155:[function(require,module,exports){
+},{}],168:[function(require,module,exports){
 Xflow.registerOperator("xflow.grayscaleImage", {
     outputs: [ {type: 'texture', name : 'result', sizeof : 'image'} ],
     params:  [ {type: 'texture', source : 'image'} ],
@@ -30153,7 +31812,7 @@ Xflow.registerOperator("xflow.grayscaleImage", {
     }
 });
 
-},{}],156:[function(require,module,exports){
+},{}],169:[function(require,module,exports){
 require("./add.js");
 require("./bufferSelect.js");
 require("./clampImage.js");
@@ -30187,7 +31846,7 @@ require("./slerpseq.js");
 require("./sobelImage.js");
 require("./sub3.js");
 
-},{"./add.js":141,"./bufferSelect.js":142,"./clampImage.js":143,"./convoluteImage.js":144,"./createIGIndex.js":145,"./createTransform.js":146,"./createTransformInv.js":147,"./debug.js":148,"./flipNormal.js":149,"./flipVerticalImage.js":150,"./forwardKinematics.js":151,"./forwardKinematicsInv.js":152,"./funMirrorImage.js":153,"./get.js":154,"./grayscaleImage.js":155,"./lerp3seq.js":157,"./magnitudeImage.js":158,"./merge3.js":159,"./morph3.js":160,"./mul4x4.js":161,"./noiseImage.js":162,"./normalize3.js":163,"./popartImage.js":164,"./rgbePNGtoFloat.js":165,"./selectBool.js":166,"./selectTransform.js":167,"./sepiaImage.js":168,"./skinDirection.js":169,"./skinPosition.js":170,"./slerpseq.js":171,"./sobelImage.js":172,"./sub3.js":173}],157:[function(require,module,exports){
+},{"./add.js":154,"./bufferSelect.js":155,"./clampImage.js":156,"./convoluteImage.js":157,"./createIGIndex.js":158,"./createTransform.js":159,"./createTransformInv.js":160,"./debug.js":161,"./flipNormal.js":162,"./flipVerticalImage.js":163,"./forwardKinematics.js":164,"./forwardKinematicsInv.js":165,"./funMirrorImage.js":166,"./get.js":167,"./grayscaleImage.js":168,"./lerp3seq.js":170,"./magnitudeImage.js":171,"./merge3.js":172,"./morph3.js":173,"./mul4x4.js":174,"./noiseImage.js":175,"./normalize3.js":176,"./popartImage.js":177,"./rgbePNGtoFloat.js":178,"./selectBool.js":179,"./selectTransform.js":180,"./sepiaImage.js":181,"./skinDirection.js":182,"./skinPosition.js":183,"./slerpseq.js":184,"./sobelImage.js":185,"./sub3.js":186}],170:[function(require,module,exports){
 var binarySearch = require("../../utils/utils").binarySearch;
 var XC = require("../../interface/constants.js");
 
@@ -30264,7 +31923,7 @@ Xflow.registerOperator("xflow.lerpKeys", {
 
 
 
-},{"../../interface/constants.js":136,"../../utils/utils":187}],158:[function(require,module,exports){
+},{"../../interface/constants.js":149,"../../utils/utils":200}],171:[function(require,module,exports){
 Xflow.registerOperator("xflow.magnitudeImage", {
     outputs: [ {type: 'texture', name : 'result', sizeof : 'image1'} ],
     params:  [
@@ -30286,7 +31945,7 @@ Xflow.registerOperator("xflow.magnitudeImage", {
     }
 });
 
-},{}],159:[function(require,module,exports){
+},{}],172:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.merge3", {
     outputs: [{name: 'result', tupleSize: '16'}],
@@ -30331,7 +31990,7 @@ Xflow.registerOperator("xflow.merge8", {
     }
 });
 
-},{}],160:[function(require,module,exports){
+},{}],173:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.morph", {
     outputs: [{type: 'float3', name: 'result'}],
@@ -30356,7 +32015,7 @@ Xflow.registerOperator("xflow.morph", {
     }
 });
 
-},{}],161:[function(require,module,exports){
+},{}],174:[function(require,module,exports){
 Xflow.registerOperator("xflow.mul", {
     outputs: [  {type: 'float4x4', name: 'result'}],
     params:  [  {type: 'float4x4', source: 'value1'},
@@ -30371,7 +32030,7 @@ Xflow.registerOperator("xflow.mul", {
     }
 });
 
-},{}],162:[function(require,module,exports){
+},{}],175:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.noiseImage", {
     outputs: [ {type: 'texture', name : 'image', customAlloc: true} ],
@@ -30450,7 +32109,7 @@ Xflow.registerOperator("xflow.noiseImage", {
     }
 });
 
-},{}],163:[function(require,module,exports){
+},{}],176:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.normalize", {
     outputs: [  {type: 'float3', name: 'result'}],
@@ -30469,7 +32128,7 @@ Xflow.registerOperator("xflow.normalize", {
     }
 });
 
-},{}],164:[function(require,module,exports){
+},{}],177:[function(require,module,exports){
 
 // Based on http://kodemongki.blogspot.de/2011/06/kameraku-custom-shader-effects-example.html
 Xflow.registerOperator("xflow.popartImage", {
@@ -30509,7 +32168,7 @@ Xflow.registerOperator("xflow.popartImage", {
     }
 });
 
-},{}],165:[function(require,module,exports){
+},{}],178:[function(require,module,exports){
 var SamplerConfig = require("../../interface/data.js").SamplerConfig;
 var XC = require("../../interface/constants.js");
 
@@ -30553,7 +32212,7 @@ Xflow.registerOperator("xflow.rgbePNGtoFloat", {
     }
 });
 
-},{"../../interface/constants.js":136,"../../interface/data.js":137}],166:[function(require,module,exports){
+},{"../../interface/constants.js":149,"../../interface/data.js":150}],179:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.selectBool", {
     outputs: [ {type: 'bool', name : 'result', customAlloc: true} ],
@@ -30572,7 +32231,7 @@ Xflow.registerOperator("xflow.selectBool", {
     }
 });
 
-},{}],167:[function(require,module,exports){
+},{}],180:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.selectTransform", {
     outputs: [ {type: 'float4x4', name : 'result', customAlloc: true} ],
@@ -30621,7 +32280,7 @@ Xflow.registerOperator("xflow.selectTransform", {
     }
 });
 
-},{}],168:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.sepiaImage", {
     outputs: [ {type: 'texture', name : 'result', sizeof : 'image'} ],
@@ -30649,7 +32308,7 @@ Xflow.registerOperator("xflow.sepiaImage", {
     }
 });
 
-},{}],169:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.skinDirection", {
     outputs: [  {type: 'float3', name: 'result' }],
@@ -30684,7 +32343,7 @@ Xflow.registerOperator("xflow.skinDirection", {
     }
 });
 
-},{}],170:[function(require,module,exports){
+},{}],183:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.skinPosition", {
     outputs: [  {type: 'float3', name: 'result' }],
@@ -30718,7 +32377,7 @@ Xflow.registerOperator("xflow.skinPosition", {
     }
 });
 
-},{}],171:[function(require,module,exports){
+},{}],184:[function(require,module,exports){
 var binarySearch = require("../../utils/utils").binarySearch;
 var XC = require("../../interface/constants.js");
 
@@ -30769,7 +32428,7 @@ Xflow.registerOperator("xflow.slerpKeys", {
     }
 });
 
-},{"../../interface/constants.js":136,"../../utils/utils":187}],172:[function(require,module,exports){
+},{"../../interface/constants.js":149,"../../utils/utils":200}],185:[function(require,module,exports){
 
 // Code portions from http://www.html5rocks.com/en/tutorials/canvas/imagefilters/
 (function() {
@@ -31088,7 +32747,7 @@ Xflow.registerOperator("xflow.sobelImage", {
     }
 });
 
-},{}],173:[function(require,module,exports){
+},{}],186:[function(require,module,exports){
 
 Xflow.registerOperator("xflow.sub", {
     outputs: [  {type: 'float3', name: 'result'}],
@@ -31110,7 +32769,7 @@ Xflow.registerOperator("xflow.sub", {
     }
 });
 
-},{}],174:[function(require,module,exports){
+},{}],187:[function(require,module,exports){
 /**
  * One operator execution within the @see{OperatorList}.
  * @param operator
@@ -31249,7 +32908,7 @@ OperatorEntry.prototype.getKey = function () {
 
 module.exports = OperatorEntry;
 
-},{}],175:[function(require,module,exports){
+},{}],188:[function(require,module,exports){
 var C = require("../interface/constants.js");
 var Base = require("../base.js");
 
@@ -31482,7 +33141,7 @@ OperatorList.prototype.allocateOutput = function (programData, async) {
 
 module.exports = OperatorList;
 
-},{"../base.js":135,"../interface/constants.js":136}],176:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149}],189:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 
@@ -31594,7 +33253,7 @@ module.exports = {
     getOperators: getOperators
 };
 
-},{"../base.js":135,"../interface/constants.js":136}],177:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149}],190:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 var VSProgram = require("./vs-program.js");
@@ -31892,7 +33551,7 @@ module.exports = {
     ProgramInputConnection: ProgramInputConnection
 };
 
-},{"../base.js":135,"../interface/constants.js":136,"./cl-program.js":140,"./vs-program.js":178}],178:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149,"./cl-program.js":153,"./vs-program.js":191}],191:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 var Utils = require("../utils/utils.js");
@@ -32167,7 +33826,7 @@ function getGLSLType(xflowType){
 
 module.exports = VSProgram;
 
-},{"../base.js":135,"../interface/constants.js":136,"../processing/vs-connect.js":186,"../utils/utils.js":187}],179:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149,"../processing/vs-connect.js":199,"../utils/utils.js":200}],192:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 var Channels = require("./channel.js");
@@ -32728,7 +34387,7 @@ module.exports = {
     Substitution: Substitution
 };
 
-},{"../base.js":135,"../interface/constants.js":136,"../operator/operator.js":176,"./channel.js":180,"./data-slot.js":181,"./process-node.js":184}],180:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149,"../operator/operator.js":189,"./channel.js":193,"./data-slot.js":194,"./process-node.js":197}],193:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 var BufferEntry = require("../interface/data.js").BufferEntry;
@@ -33110,7 +34769,7 @@ module.exports = {
     ChannelMap: ChannelMap
 };
 
-},{"../base.js":135,"../interface/constants.js":136,"../interface/data.js":137}],181:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149,"../interface/data.js":150}],194:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 
@@ -33165,7 +34824,7 @@ DataSlot.prototype.notifyOnChange = function(state){
 
 module.exports = DataSlot;
 
-},{"../base.js":135,"../interface/constants.js":136}],182:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149}],195:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 var OperatorList = require("../operator/operator-list.js");
@@ -33590,7 +35249,7 @@ function blockSubtree(cData, node){
 
 module.exports = Executor;
 
-},{"../base.js":135,"../interface/constants.js":136,"../operator/operator-entry.js":174,"../operator/operator-list.js":175,"../operator/operator.js":176,"../operator/program.js":177,"../utils/utils.js":187}],183:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149,"../operator/operator-entry.js":187,"../operator/operator-list.js":188,"../operator/operator.js":189,"../operator/program.js":190,"../utils/utils.js":200}],196:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("./../interface/constants.js");
 
@@ -33948,7 +35607,7 @@ module.exports = {
     Mapping: Mapping
 };
 
-},{"../base.js":135,"./../interface/constants.js":136}],184:[function(require,module,exports){
+},{"../base.js":148,"./../interface/constants.js":149}],197:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("../interface/constants.js");
 var utils = require("../utils/utils.js");
@@ -34446,7 +36105,7 @@ module.exports = {
 };
 
 
-},{"../base.js":135,"../interface/constants.js":136,"../interface/data.js":137,"../operator/operator.js":176,"../processing/data-slot.js":181,"../utils/utils.js":187,"./executor.js":182,"./result.js":185}],185:[function(require,module,exports){
+},{"../base.js":148,"../interface/constants.js":149,"../interface/data.js":150,"../operator/operator.js":189,"../processing/data-slot.js":194,"../utils/utils.js":200,"./executor.js":195,"./result.js":198}],198:[function(require,module,exports){
 var Base = require("../base.js");
 require("../../utils/array.js");
 
@@ -34586,7 +36245,7 @@ module.exports = {
     VSDataResult: VSDataResult
 };
 
-},{"../../utils/array.js":127,"../base.js":135}],186:[function(require,module,exports){
+},{"../../utils/array.js":140,"../base.js":148}],199:[function(require,module,exports){
 var Base = require("../base.js");
 var C = require("./../interface/constants.js");
 
@@ -34751,7 +36410,7 @@ module.exports = {
     VertexShader: VertexShader
 };
 
-},{"../base.js":135,"../operator/operator.js":176,"./../interface/constants.js":136}],187:[function(require,module,exports){
+},{"../base.js":148,"../operator/operator.js":189,"./../interface/constants.js":149}],200:[function(require,module,exports){
 require("../../utils/array.js");
 var set = {};
 
@@ -34873,7 +36532,7 @@ module.exports = {
     nameset: nameset,
     binarySearch: binarySearch
 }
-},{"../../utils/array.js":127}],188:[function(require,module,exports){
+},{"../../utils/array.js":140}],201:[function(require,module,exports){
 
 module.exports = require("./init.js");
-},{"./init.js":30}]},{},[188]);
+},{"./init.js":43}]},{},[201]);
