@@ -73,9 +73,9 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         items=(('http://www.xml3d.org/xml3d/scripts/xml3d', "Latest Stable (online)", "Latest Stable from xml3d.org"),
                ('http://www.xml3d.org/xml3d/scripts/xml3d-dev', "Development (online)", "Development Snapshot from xml3d.org"),
                ('./common/scripts/xml3d/xml3d-4.8', "4.8", "Local version 4.8"),
-               ('./common/scripts/xml3d/xml3d-4.7', "4.7", "Local version 4.8"),
+               ('./common/scripts/xml3d/xml3d-4.9', "4.9", "Local version 4.9"),
                ),
-        default='./common/scripts/xml3d/xml3d-4.8',
+        default='./common/scripts/xml3d/xml3d-4.9',
     )
 
     transform_representation = EnumProperty(
@@ -124,6 +124,12 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         default=True,
     )
 
+    mesh_export_barycentric_coordinates = BoolProperty(
+        name="Export Barycentric Coordinates",
+        description="Export barycentric coordinates as vertex attributes. Required for instance for wireframe rendering.",
+        default=False
+    )
+
     def draw(self, context):
         layout = self.layout
 
@@ -158,6 +164,10 @@ class ExportXML3D(bpy.types.Operator, ExportHelper):
         scene_box = layout.box()
         scene_box.label("Scene Options:", icon="SCENE_DATA")
         scene_box.prop(self, "transform_representation")
+
+        mesh_box = layout.box()
+        mesh_box.label("Mesh Options:", icon="OUTLINER_DATA_MESH")
+        mesh_box.prop(self, "mesh_export_barycentric_coordinates")
 
     def execute(self, context):
         from . import export_xml3d

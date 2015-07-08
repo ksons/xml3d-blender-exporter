@@ -8,7 +8,7 @@ from . import tools
 from .data import write_generic_entry_html
 from shutil import copytree
 
-VERSION = "0.2.0"
+VERSION = "0.4.0"
 ASSETDIR = "assets"
 LIGHTMODELMAP = {
     "POINT": ("point", "intensity = xflow.blenderPoint(color, energy)"),
@@ -243,6 +243,10 @@ class XML3DExporter():
                 self._writer.element("float", name="falloffAngle", _content="%.4f" % (lamp_data.spot_size / 2.0))
                 # TODO: How do spot light softness and blend correlate?
                 self._writer.element("float", name="softness", _content="%.4f" % lamp_data.spot_blend)
+
+                if lamp_data.shadow_method != 'NOSHADOW':
+                    self._writer.element("bool", name="castShadow", _content="true")
+                    self._writer.element("float", name="shadowBias", _content="%4f" % (lamp_data.shadow_buffer_bias / 100.0))
 
             if lamp_data.type in {"POINT", "SPOT"}:
                 attens = [1.0, 0.0, 0.0]
