@@ -219,7 +219,7 @@ class AssetCollection:
             material_url = self.add_material(material)
 
             asset.meshes.append(
-                {"name": submeshName, "includes": meshName, "data": data, "shader": material_url})
+                {"name": submeshName, "includes": meshName, "data": data, "material": material_url})
 
     def saveXML(self, f, stats):
         doc = Document()
@@ -273,8 +273,8 @@ class AssetCollection:
             asset_mesh = doc.createElement("assetmesh")
             asset_mesh.setAttribute("name", mesh["name"])
             asset_mesh.setAttribute("includes", mesh["includes"])
-            if mesh['shader']:
-                asset_mesh.setAttribute("shader", mesh["shader"])
+            if mesh['material']:
+                asset_mesh.setAttribute("material", mesh["material"])
             if "transform" in mesh:
                 asset_mesh.setAttribute("style", "transform: %s;" % mesh["transform"])
 

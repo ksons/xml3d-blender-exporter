@@ -13,7 +13,7 @@ TEXTURE_EXTENSION_MAP = dict(REPEAT="repeat", EXTEND="clamp")
 class Material:
     context = None
     id = ""
-    script = "urn:xml3d:shader:phong"
+    model = "urn:xml3d:material:phong"
     data = None
     compute = None
     dir = None
@@ -142,15 +142,16 @@ class MaterialLibrary:
 
     @staticmethod
     def save_material_xml(material, parent):
-        shader = parent.ownerDocument.createElement("shader")
-        shader.setAttribute("id", material.id)
-        shader.setAttribute("script", material.script)
+        material_element = parent.ownerDocument.createElement("material")
+        material_element.setAttribute("id", material.id)
+        material_element.setAttribute("model", material.model)
+
         if material.compute:
-            shader.setAttribute("compute", material.compute)
+            material_element.setAttribute("compute", material.compute)
         for entry in material.data:
-            entry_element = write_generic_entry(shader.ownerDocument, entry)
-            shader.appendChild(entry_element)
-        parent.appendChild(shader)
+            entry_element = write_generic_entry(material_element.ownerDocument, entry)
+            material_element.appendChild(entry_element)
+        parent.appendChild(material_element)
         pass
 
     def save(self):
