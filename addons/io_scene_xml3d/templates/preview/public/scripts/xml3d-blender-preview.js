@@ -92,10 +92,7 @@ $(function() {
         });
         if (data.views.length) {
             var firstView = data.views[0];
-            view.attr("position", firstView.translation.join(" "));
-            var rot = new XML3DRotation();
-            rot.setQuaternion(new XML3DVec3(firstView.rotation[1],firstView.rotation[2],firstView.rotation[3]), firstView.rotation[0])
-            view.get(0).orientation.set(rot);
+            group.css("transform", firstView.view_matrix);
         }
         updateLayers();
         if(data["render-settings"]) {
@@ -203,9 +200,14 @@ $(function() {
         }
     });
 
-    var view = $("<view id='v_pview'></view>");
-    xml3d.appendChild(view.get(0));
-    xml3d.setAttribute("activeView", "#v_pview");
+    var group = $("<group><view id='v_pview'></view></group>");
+    var view = group.children();
+    xml3d.appendChild(group.get(0));
+    xml3d.setAttribute("view", "#v_pview");
+
+    new XML3D.StandardCamera(view.get(0), {
+        mode:"examine"
+    });
 
 
 });

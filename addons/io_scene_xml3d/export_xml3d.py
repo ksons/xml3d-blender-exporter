@@ -318,7 +318,7 @@ def create_active_views(blender_context):
     camera = blender_context.scene.camera
     if camera:
         result.append({
-            "view_matrix": tools.matrix_to_ccs_matrix3d(camera.matrix_world.inverted()),
+            "view_matrix": tools.matrix_to_ccs_matrix3d(camera.matrix_world),
             "perspective_matrix": "",  # TODO: Perspective matrix
             "translation": [e for e in camera.matrix_world.translation],
             "rotation": [e for e in camera.matrix_world.to_quaternion()]
