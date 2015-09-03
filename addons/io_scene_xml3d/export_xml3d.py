@@ -274,7 +274,7 @@ class XML3DExporter():
 
         self._writer.start_element("xml3d", id=scene.name)
         if scene.camera:
-            self._writer.attribute("activeView", "#v_%s" % tools.escape_html_id(scene.camera.name))
+            self._writer.attribute("view", "#v_%s" % tools.escape_html_id(scene.camera.name))
         else:
             self.warning("Scene '{0:s}' has no active camera set.".format(scene.name), "camera")
 
