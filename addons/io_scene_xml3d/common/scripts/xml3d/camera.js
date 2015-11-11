@@ -20,6 +20,20 @@
     /*                                                                       */
     /*************************************************************************/
 
+    /**
+     * This simple camera controller provides two interaction modes:
+     *      examine : The camera revolves around the examinePoint
+     *      fly     : The camera has free movement through the scene
+     *
+     * Available options are:
+     *      {string} mode The interaction mode as described above. Defaults to 'examine'
+     *      {Vec3} examinePoint The point the camera revolves around if in examine mode
+     *      {number} rotateSpeed The rotation speed! Default: 3
+     *      {number} zoomSpeed The zoom speed in some arbitrary units, Default: 20
+     *      {bool} useKeys Toggle WSAD keyboard control, Default: false
+     *
+     */
+
     if(!XML3D)
         throw("XML3D not found, please ensure the camera script is included after xml3d.js");
 
@@ -31,24 +45,30 @@
      * @constructor
      */
     XML3D.StandardCamera = function(element, opt) {
-        if (!element) {
+        if (!element || !element.tagName) {
             throw("Must provide an element to control when initializing the StandardCamera!");
         }
         if (element.hasAttribute("style")) {
             XML3D.debug.logWarning("This camera controller does not support CSS transforms, unexpected things may happen! Try using a <transform> element instead.");
         }
+        if (XML3D.StandardCamera.Instance) {
+            XML3D.StandardCamera.Instance.detach();
+        }
+        XML3D.StandardCamera.Instance = false; // Prevent the camera from self-initializing 
+
         opt = opt || {};
         this.element = element;
         this.xml3d = this.getXML3DForElement(element);
 
         this.mode = opt.mode || "examine";
         this.touchTranslateMode = opt.touchTranslateMode || "twofinger";
-        //Note: The examine point is relative to the element's parent coordinate space.
+
         this.examinePoint = opt.examinePoint || this.getInverseTranslationOfParent(element);
         this.rotateSpeed = opt.rotateSpeed || 3;
         this.zoomSpeed = opt.zoomSpeed || 20;
         this.useKeys = opt.useKeys !== undefined ? opt.useKeys : false;
         this.mousemovePicking = true;
+        this.activeKeys = {};
 
         this.transformInterface = new TransformInterface(this.element, this.xml3d);
         this.prevPos = {x: -1, y: -1};
@@ -102,6 +122,14 @@
     };
 
     /**
+     * Sets the examine point of the camera. This has no effect if the camera is in "fly" mode.
+     * @param p The new examine point
+     */
+    XML3D.StandardCamera.prototype.setExaminePoint = function(p) {
+        this.examinePoint = p;
+    };
+
+    /**
      * Orient the camera to look at the given point
      *
      * @param {XML3D.Vec3} point
@@ -119,7 +147,8 @@
         this._evt_mouseup = function(e) {self.mouseReleaseEvent(e);};
         this._evt_mousemove = function(e) {self.mouseMoveEvent(e);};
         this._evt_contextmenu = function(e) {self.stopEvent(e);};
-        this._evt_keydown = function(e) {self.keyHandling(e);};
+        this._evt_keydown = function(e) {self.keyHandling.call(self, e, "down");};
+        this._evt_keyup = function(e) {self.keyHandling.call(self, e, "up");};
 
         this._evt_touchstart = function(e) {self.touchStartEvent(e);};
         this._evt_touchmove = function(e) {self.touchMoveEvent(e);};
@@ -137,8 +166,10 @@
         document.addEventListener("touchcancel", this._evt_touchend, false);
 
         this.xml3d.addEventListener("contextmenu", this._evt_contextmenu, false);
-        if (this.useKeys)
+        if (this.useKeys) {
             document.addEventListener("keydown", this._evt_keydown, false);
+            document.addEventListener("keyup", this._evt_keyup, false);
+        }
     };
 
     /**
@@ -155,8 +186,10 @@
         document.removeEventListener("touchcancel", this._evt_touchend, false);
 
         this.xml3d.removeEventListener("contextmenu", this._evt_contextmenu, false);
-        if (this.useKeys)
+        if (this.useKeys) {
             document.removeEventListener("keydown", this._evt_keydown, false);
+            document.removeEventListener("keyup", this._evt_keyup, false);
+        }
     };
 
 
@@ -179,11 +212,11 @@
 
     XML3D.StandardCamera.prototype.getInverseTranslationOfParent = function(element) {
         if (!element.parentElement.getWorldMatrix) {
-            return XML3D.Vec3.fromValues(0,0,0);
+            return new XML3D.Vec3(0,0,0);
         }
         var tmat = element.parentElement.getWorldMatrix();
         tmat = tmat.invert();
-        return XML3D.Vec3.fromValues(tmat.m41, tmat.m42, tmat.m43);
+        return new XML3D.Vec3(tmat.m41, tmat.m42, tmat.m43);
     };
 
     XML3D.StandardCamera.prototype.stopEvent = function(ev) {
@@ -254,12 +287,12 @@
                 var f = 2.0* Math.tan(this.transformInterface.fieldOfView/2.0) / this.height;
                 dx = f*(ev.pageX - this.prevPos.x) * this.zoomSpeed;
                 dy = f*(ev.pageY - this.prevPos.y) * this.zoomSpeed;
-                var trans = XML3D.Vec3.fromValues(-dx, dy, 0.0);
+                var trans = new XML3D.Vec3(-dx, dy, 0.0);
                 this.transformInterface.translate(this.transformInterface.inverseTransformOf(trans));
                 break;
             case(this.DOLLY):
                 dy = this.zoomSpeed * (ev.pageY - this.prevPos.y) / this.height;
-                this.transformInterface.translate(this.transformInterface.inverseTransformOf(XML3D.Vec3.fromValues(0, 0, dy)));
+                this.transformInterface.translate(this.transformInterface.inverseTransformOf(new XML3D.Vec3(0, 0, dy)));
                 break;
             case(this.ROTATE):
                 dx = -this.rotateSpeed*0.1 * (ev.pageX - this.prevPos.x) * 2.0 * Math.PI / this.width;
@@ -377,7 +410,7 @@
                     f = 2.0* Math.tan(this.transformInterface.fieldOfView/2.0) / this.height;
                     dx = f*(ev.touches[0].pageX - this.prevTouchPositions[0].x);
                     dy = f*(ev.touches[0].pageY - this.prevTouchPositions[0].y);
-                    trans = XML3D.Vec3.fromValues(-dx*this.zoomSpeed, dy*this.zoomSpeed, 0.0);
+                    trans = new XML3D.Vec3(-dx*this.zoomSpeed, dy*this.zoomSpeed, 0.0);
                     this.transformInterface.translate(this.transformInterface.inverseTransformOf(trans));
                 }
                 break;
@@ -397,7 +430,7 @@
                         f = 2.0* Math.tan(this.transformInterface.fieldOfView/2.0) / this.height;
                         dx = f*(curMidpoint.x - prevMidpoint.x);
                         dy = f*(curMidpoint.y - prevMidpoint.y);
-                        trans = XML3D.Vec3.fromValues(-dx*this.zoomSpeed, dy*this.zoomSpeed, 0.0);
+                        trans = new XML3D.Vec3(-dx*this.zoomSpeed, dy*this.zoomSpeed, 0.0);
                         this.transformInterface.translate(this.transformInterface.inverseTransformOf(trans));
                     }
                 }
@@ -407,7 +440,7 @@
                     var currLength = Math.sqrt(dv.x*dv.x + dv.y*dv.y);
 
                     dy = this.zoomSpeed * (currLength - this.prevZoomVectorLength) / this.height;
-                    this.transformInterface.translate(this.transformInterface.inverseTransformOf(XML3D.Vec3.fromValues(0, 0, -dy)));
+                    this.transformInterface.translate(this.transformInterface.inverseTransformOf(new XML3D.Vec3(0, 0, -dy)));
 
                     this.prevZoomVectorLength = currLength;
                 } else {
@@ -454,65 +487,69 @@
     // key movement
     // -----------------------------------------------------
 
-    XML3D.StandardCamera.prototype.keyHandling = function(e) {
+    XML3D.StandardCamera.prototype.keyHandling = function(e, action) {
         var KeyID = e.keyCode;
-        if (KeyID == 0) {
-            switch (e.which) {
-            case 119:
-                KeyID = 87;
-                break; // w
-            case 100:
-                KeyID = 68;
-                break; // d
-            case 97:
-                KeyID = 65;
-                break; // a
-            case 115:
-                KeyID = 83;
-                break; // s
-            }
+        switch (KeyID) {
+            case 38: //up
+            case 87: //w
+            case 39: //right
+            case 68: //d
+            case 37: //left
+            case 65: //a
+            case 40: //down
+            case 83: //s
+                break;
+            default:
+                return; //Not a key we're interested in
         }
 
-        var xml3d = this.xml3d;
-        var element = this.transformInterface;
-        var dir = element.direction;
-        var np;
-        if (xml3d) {
-            switch (KeyID) {
+        if (action === "up") {
+            delete this.activeKeys[KeyID];
+            return;
+        } else if (this.activeKeys[KeyID] !== undefined) {
+            //Already animating this direction
+            return;
+        }
+
+        //This is a new key press so we need to start a camera animation interval for it
+        this.activeKeys[KeyID] = Date.now();
+        window.requestAnimationFrame(this.moveTick.bind(this, KeyID));
+    };
+
+    XML3D.StandardCamera.prototype.moveTick = function(keyID) {
+        if (this.activeKeys[keyID] === undefined) {
+            //This key was released, returning without requesting a new animation frame will stop movement in this direction
+            return;
+        }
+
+        var elementDir = this.transformInterface.direction;
+        var np = this.transformInterface.position;
+
+        switch (keyID) {
             case 38: // up
             case 87: // w
-                np = element.position;
-                np.z += dir.z * this.zoomSpeed * 0.05;
-                np.x += dir.x * this.zoomSpeed * 0.05;
-                element.position = np;
                 break;
             case 39: // right
             case 68: // d
-                np = element.position;
-                np.x -= dir.z * this.zoomSpeed * 0.05;
-                np.z += dir.x * this.zoomSpeed * 0.05;
-                element.position = np;
+                elementDir = elementDir.cross(new XML3D.Vec3(0, 1, 0));
                 break;
             case 37: // left
             case 65: // a
-                np = element.position;
-                np.x += dir.z * this.zoomSpeed * 0.05;
-                np.z -= dir.x * this.zoomSpeed * 0.05;
-                element.position = np;
+                elementDir = elementDir.cross(new XML3D.Vec3(0, -1, 0));
                 break;
             case 40: // down
             case 83: // s
-                np = element.position;
-                np.z -= dir.z * this.zoomSpeed * 0.05;
-                np.x -= dir.x * this.zoomSpeed * 0.05;
-                element.position = np;
+                elementDir = elementDir.negate();
                 break;
-
             default:
                 return;
-            }
         }
-        this.stopEvent(e);
+        var timeScale = (Date.now() - this.activeKeys[keyID]) / 16.67; //try to keep the same movement speed over time regardless of framerate
+        np = np.add(elementDir.scale(this.zoomSpeed * 0.02 * timeScale));
+        this.transformInterface.position = np;
+
+        this.activeKeys[keyID] = Date.now();
+        window.requestAnimationFrame(this.moveTick.bind(this, keyID));
     };
 
 
@@ -530,68 +567,103 @@
         return this.createTransformForView(element);
     };
 
-    TransformInterface.prototype.createTransformForView = (function() {
-        var elementCount = 0;
-        return function(element) {
-            var transform = document.createElement("transform");
-            var tid = "Generated_Camera_Transform_" + elementCount++;
-            transform.setAttribute("id", tid);
-            element.parentElement.appendChild(transform);
-            element.setAttribute("transform", "#"+tid);
-            return transform;
-        }
-    })();
+    var elementCount = 0;
+    TransformInterface.prototype.createTransformForView = function(element) {
+        var transform = document.createElement("transform");
+        var tid = "Generated_Camera_Transform_" + elementCount++;
+        transform.setAttribute("id", tid);
+        element.parentElement.appendChild(transform);
+        element.setAttribute("transform", "#"+tid);
+        return transform;
+    };
 
-    TransformInterface.prototype.__defineGetter__("orientation", function() {
-        return XML3D.Quat.fromAxisAngle(this.transform.rotation);
-    });
-    TransformInterface.prototype.__defineGetter__("position", function() {
-        return this.transform.translation;
-    });
-    TransformInterface.prototype.__defineSetter__("orientation", function(orientation) {
-        var aa = XML3D.AxisAngle.fromQuat(orientation);
-        this.transform.setAttribute("rotation", aa.toDOMString());
-    });
-    TransformInterface.prototype.__defineSetter__("position", function(position) {
-        this.transform.setAttribute("translation", position.toDOMString());
-    });
-    TransformInterface.prototype.__defineGetter__("direction", function() {
-        var dir = new XML3D.Vec3.fromValues(0, 0, -1);
-        return dir.transformQuat(this.orientation);
-    });
-    TransformInterface.prototype.__defineGetter__("upVector", function() {
-        var up = new XML3D.Vec3.fromValues(0, 1, 0);
-        return up.transformQuat(this.orientation);
-    });
-    TransformInterface.prototype.__defineGetter__("fieldOfView", function() {
-        var fovh = this.element.querySelector("float[name=fovHorizontal]");
-        if (fovh) {
-            var h = fovh.getValue();
-            return 2 * Math.atan(Math.tan(h / 2.0) * this.xml3d.width / this.xml3d.height);
+    Object.defineProperty(TransformInterface.prototype, "orientation", {
+        get: function() {
+            return XML3D.Quat.fromAxisAngle(this.transform.rotation);
+        },
+
+        set: function(orientation) {
+            var aa = XML3D.AxisAngle.fromQuat(orientation);
+            this.transform.setAttribute("rotation", aa.toDOMString());
         }
-        var fovv = this.element.querySelector("float[name=fovVertical]");
-        if (fovv) {
-            return fovv.getValue();
-        }
-        return (45 * Math.PI / 180); //Default FOV
     });
 
-    TransformInterface.prototype.rotateAroundPoint = (function() {
-        var tmpQuat = new XML3D.Quat();
+    Object.defineProperty(TransformInterface.prototype, "position", {
+        get: function() {
+            return this.transform.translation;
+        },
 
-        return function(q0, p0) {
-            this.orientation = this.orientation.mul(q0).normalize();
-            var aa = XML3D.AxisAngle.fromQuat(q0);
-            var axis = this.inverseTransformOf(aa.axis);
-            tmpQuat = XML3D.Quat.fromAxisAngle(axis, aa.angle);
-            this.position = this.position.subtract(p0).transformQuat(tmpQuat).add(p0);
+        set: function(position) {
+            this.transform.setAttribute("translation", position.toDOMString());
         }
-    })();
+    });
+
+    Object.defineProperty(TransformInterface.prototype, "direction", {
+        get: function() {
+            var dir = new XML3D.Vec3(0, 0, -1);
+            return dir.mul(this.orientation);
+        },
+
+        set: function(dir) {
+            throw("Direction cannot be set directly.");
+        }
+    });
+
+    Object.defineProperty(TransformInterface.prototype, "upVector", {
+        get: function() {
+            var up = new XML3D.Vec3(0, 1, 0);
+            return up.mul(this.orientation);
+        },
+
+        set: function(up) {
+            throw("Up vector cannot be set directly");
+        }
+    });
+
+    /**
+     *  This is always the VERTICAL field of view in radians
+     */
+    Object.defineProperty(TransformInterface.prototype, "fieldOfView", {
+        get: function() {
+            var fovh = this.element.querySelector("float[name=fovHorizontal]");
+            if (fovh) {
+                var h = fovh.getValue();
+                return 2 * Math.atan(Math.tan(h / 2.0) * this.xml3d.width / this.xml3d.height);
+            }
+            var fovv = this.element.querySelector("float[name=fovVertical]");
+            if (fovv) {
+                return fovv.getValue();
+            }
+            return (45 * Math.PI / 180); //Default FOV
+        },
+
+        set: function(fov) {
+            var fovh = this.element.querySelector("float[name=fovHorizontal]");
+            if (fovh) {
+                fovh.parentNode.removeChild(fovh);
+            }
+            var fovv = this.element.querySelector("float[name=fovVertical]");
+            if (!fovv) {
+                fovv = document.createElement("float");
+                fovv.setAttribute("name", "fovVertical");
+                this.element.appendChild(fovv);
+            }
+            fovv.setValue(fov);
+        }
+    });
+
+    TransformInterface.prototype.rotateAroundPoint = function(q0, p0) {
+        this.orientation = this.orientation.mul(q0).normalize();
+        var aa = XML3D.AxisAngle.fromQuat(q0);
+        var axis = this.inverseTransformOf(aa.axis);
+        var tmpQuat = XML3D.Quat.fromAxisAngle(axis, aa.angle);
+        this.position = this.position.subtract(p0).mul(tmpQuat).add(p0);
+    };
 
     TransformInterface.prototype.lookAround = function(rotSide, rotUp, upVector) {
         var check = rotUp.mul(this.orientation);
 
-        var tmp = XML3D.Vec3.fromValues(0,0,-1).transformQuat(check);
+        var tmp = new XML3D.Vec3(0,0,-1).mul(check);
         var rot = rotSide.clone();
         if (Math.abs(upVector.dot(tmp)) <= 0.95) {
             rot = rot.mul(rotUp);
@@ -610,19 +682,35 @@
     };
 
     TransformInterface.prototype.inverseTransformOf = function(vec) {
-        return vec.transformQuat(this.orientation);
+        return vec.mul(this.orientation);
     };
 
     TransformInterface.prototype.lookAt = function(point) {
         var dir = point.sub(this.position).normalize();
-        var up = XML3D.Vec3.fromValues(0,1,0);
+        var up = new XML3D.Vec3(0,1,0);
         var orientation = this.orientation;
         var basisX = new XML3D.Vec3(dir).cross(up);
         if (!basisX.length()) {
-            basisX = XML3D.Vec3.fromValues(1,0,0).transformQuat(orientation);
+            basisX = new XML3D.Vec3(1,0,0).mul(orientation);
         }
         var basisY = basisX.clone().cross(dir);
         var basisZ = new XML3D.Vec3(dir).negate();
         this.orientation = XML3D.Quat.fromBasis(basisX, basisY, basisZ);
     };
 })();
+
+// Automatically creates a camera instance using the first view element on the page
+window.addEventListener("load", function() {
+    var xml3d = document.querySelector("xml3d");
+    var init = function() {
+        var view = document.querySelector("view");
+        if (view && XML3D.StandardCamera.Instance !== false)
+            XML3D.StandardCamera.Instance = new XML3D.StandardCamera(view, {mode: "fly", useKeys: true});
+    };
+    if (xml3d) {
+        if (xml3d.complete)
+            init();
+        else
+            xml3d.addEventListener("load", init);
+    }
+});
