@@ -1,6 +1,5 @@
 import os
 import io
-import bpy
 import math
 import json
 from . import xml_writer, export_asset, context
@@ -8,7 +7,7 @@ from . import tools
 from .data import write_generic_entry_html
 from shutil import copytree
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 ASSETDIR = "assets"
 LIGHTMODELMAP = {
     "POINT": ("point", "intensity = xflow.blenderPoint(color, energy)"),
@@ -261,8 +260,6 @@ class XML3DExporter():
 
     def create_def(self):
         self._writer.start_element("defs")
-
-
         self._writer.end_element("defs")
 
     def check_scene(self, scene):
@@ -288,7 +285,7 @@ class XML3DExporter():
         self._writer.attribute("style", style)
 
         self.create_def()
-        self._writer.element("view", id="v_view")
+
         hierarchy = self.build_hierarchy(scene.objects)
         for obj, children in hierarchy:
             self.create_object(obj, None, children)
