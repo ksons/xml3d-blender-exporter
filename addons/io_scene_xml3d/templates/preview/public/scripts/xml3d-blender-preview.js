@@ -20,11 +20,11 @@ $(function() {
             if (c_layers[i].active) {
                 this.classList.add("active");
                 //console.log("TRUE: group.layer-" + i + " > model)", document.querySelectorAll("group.layer-" + i + " > model"));
-                $("group.layer-" + i + " > model").attr("visible", "true");
+                $("group.layer-" + i + " > model").show();
             } else {
                 this.classList.remove("active");
                 //console.log("FALSE: group.layer-" + i + " > model)", document.querySelectorAll("group.layer-" + i + " > model"));
-                $("group.layer-" + i + " > model").attr("visible", "false");
+                $("group.layer-" + i + " > model").hide();
             }
         });
     }
