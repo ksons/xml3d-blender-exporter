@@ -84,8 +84,7 @@ def write_generic_entry(doc, entry):
     elif entry_type == DataType.texture:
 
         if entry.wrap_type is not None:
-            entry_element.setAttribute("wrapS", entry.wrap_type)
-            entry_element.setAttribute("wrapT", entry.wrap_type)
+            entry_element.setAttribute("wrap", entry.wrap_type)
 
         img_element = doc.createElement("img")
         img_element.setAttribute("src", entry.src)
