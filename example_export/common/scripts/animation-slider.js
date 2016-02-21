@@ -8,17 +8,31 @@
 var mytime = 0.0;
 var lastTime = Date.now();
 
+//reference to the selectable animation handle
 var divid;
+//reference to container
+var container;
+//reference to the play/pause button
 var playPauseButton;
+//current mode (automatic play or manual srubbing)
 var manualMove = false;
+// movement speed on manual drag
 var xFactor = 0.0;
+// maximum offset of animation handle
 var maxX;
+// y postion of container
+var divLeft;
+// slider width
+var eWi;
+// handle width
+var cWi;
+// current state (play or pause)
 var pause = false;
 
 var reqAniFrame = (window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame).bind(window);
 
 
-//set multiple attributes of an html element
+//helper function to set multiple attributes of an html element at once
 Element.prototype.setAttributes = function (attrs) {
     for (var idx in attrs) {
         if ((idx === 'styles' || idx === 'style') && typeof attrs[idx] === 'object') {
@@ -40,7 +54,7 @@ window.addEventListener("load", function()
 	caption.setAttribute('style' , 'height:30px; width:280px; z-index:2; position:fixed; right:100px; bottom:130px;');
 	document.body.appendChild(caption);
 	
-	var container = document.createElement('div');
+	container = document.createElement('div');
 	container.setAttribute('style' , 'height:30px; width:280px; z-index:2; position:fixed; right:70px; bottom:100px; -webkit-user-select: none; -moz-user-select: none; -o-user-select: none; -ms-user-select: none; -khtml-user-select: none; user-select: none;');
 	container.setAttribute('id', 'dragContainer');
 	document.body.appendChild(container);
@@ -83,8 +97,9 @@ window.addEventListener("load", function()
 	document.getElementById("dragContainer").appendChild(playPauseButton);
 	
 	//initialize variables
-	maxX = parseInt(document.getElementById("dragContainer").style.width);
-
+	maxX = parseInt(container.style.width);
+	eWi = parseInt(divid.style.width);
+	cWi = parseInt(container.style.width);
 });
 
 //change the color of the playbutton
@@ -117,7 +132,9 @@ function updateAnim() {
   var value;
   var newPos;
   var stop = 0;
-  for(var id in docAnims){
+  //loop through all registered objects
+  for(var id in docAnims)
+  {
 	var entry = docAnims[id];
 	if(!manualMove)
 	{
@@ -128,17 +145,23 @@ function updateAnim() {
 		mytime = ((xFactor)*entry.max)/entry.factor;
 	}
 	value = (mytime * entry.factor + entry.off) % entry.max;
-	if(stop == 0) {newPos = Math.floor(((value + 0.0) / (entry.max + 0.0))*(maxX + 0.0)); stop = 1;}
+	if(stop == 0) 
+	{
+		newPos = Math.floor(((value + 0.0) / (entry.max + 0.0))*(maxX + 0.0)); 
+		stop = 1;
+	}
 	document.getElementsByClassName(id)[0].innerHTML = value;
   }
+  //and set the new position for the animation handle
   if(divid)
   {
 	divid.style.left = newPos + 'px';
   }
+  // register this function to be executed when the next frame is requested
   reqAniFrame(updateAnim);
 }
 
-
+  // initial registration of updateAnim function for the first frame
 reqAniFrame(updateAnim);
 
 
@@ -146,29 +169,18 @@ reqAniFrame(updateAnim);
 function startMoving(divid,container,evt){
 	
 	evt = evt || window.event;
-	var posX = evt.clientX,
-		posY = evt.clientY,
-	divTop = divid.style.top,
-	divLeft = divid.style.left,
-	eWi = parseInt(divid.style.width),
-	eHe = parseInt(divid.style.height),
-	cWi = parseInt(document.getElementById(container).style.width),
-	cHe = parseInt(document.getElementById(container).style.height);
+	var posX = evt.clientX;
+	var posY = evt.clientY;
+	divLeft = divid.style.left;
 	document.getElementById(container).style.cursor='move';
-	divTop = divTop.replace('px','');
 	divLeft = divLeft.replace('px','');
-	var diffX = posX - divLeft,
-		diffY = posY - divTop;
+	var diffX = posX - divLeft;
 	document.onmousemove = function(evt){
 		evt = evt || window.event;
-		var posX = evt.clientX,
-			posY = evt.clientY,
-			aX = posX - diffX,
-			aY = posY - diffY;
-			if (aX < 0) aX = 0;
-			if (aY < 0) aY = 0;
-			if (aX + eWi > cWi) aX = cWi - eWi;
-			if (aY + eHe > cHe) aY = cHe -eHe;
+		var posX = evt.clientX;
+		var	aX = posX - diffX;
+		if (aX < 0) aX = 0;
+		if (aX + eWi > cWi) aX = cWi - eWi;
 		xFactor = (aX  + 0.0)/(maxX + 0.0);
 		manualMove = true;
 	}
