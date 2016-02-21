@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xml3d>
+  <shader compute="(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)" id="BUTTEYE-001" script="urn:xml3d:shader:phong">
+    <float name="diffuse_intensity">1.0</float>
+    <float3 name="diffuse_color">0.10000000149011612 0.0 0.10000000149011612</float3>
+    <float name="specular_intensity">1.0</float>
+    <float3 name="specular_color">0.8999999761581421 0.8999999761581421 0.8999999761581421</float3>
+    <float name="specular_hardness">4</float>
+    <float name="alpha">1.0</float>
+  </shader>
+  <shader compute="(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)" id="BUTTBODY-001" script="urn:xml3d:shader:phong">
+    <float name="diffuse_intensity">1.0</float>
+    <float3 name="diffuse_color">0.06680850684642792 0.06680850684642792 0.06680850684642792</float3>
+    <float name="specular_intensity">1.0</float>
+    <float3 name="specular_color">0.8999999761581421 0.8999999761581421 0.8999999761581421</float3>
+    <float name="specular_hardness">3</float>
+    <float name="alpha">1.0</float>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTBODY.JPG"/>
+    </texture>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTBODY.JPG"/>
+    </texture>
+  </shader>
+  <shader compute="(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)" id="BUTTWIBA-001" script="urn:xml3d:shader:phong">
+    <float name="diffuse_intensity">1.0</float>
+    <float3 name="diffuse_color">0.6000000238418579 0.6000000238418579 0.20000000298023224</float3>
+    <float name="specular_intensity">1.0</float>
+    <float3 name="specular_color">0.8999999761581421 0.8999999761581421 0.8999999761581421</float3>
+    <float name="specular_hardness">6</float>
+    <float name="alpha">1.0</float>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTWIBA.JPG"/>
+    </texture>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTWIBA.JPG"/>
+    </texture>
+  </shader>
+  <shader compute="(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)" id="BUTTPIEZ-001" script="urn:xml3d:shader:phong">
+    <float name="diffuse_intensity">1.0</float>
+    <float3 name="diffuse_color">0.0 0.0 0.0</float3>
+    <float name="specular_intensity">1.0</float>
+    <float3 name="specular_color">0.8999999761581421 0.8999999761581421 0.8999999761581421</float3>
+    <float name="specular_hardness">6</float>
+    <float name="alpha">1.0</float>
+  </shader>
+  <shader compute="(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)" id="BUTTFACE-001" script="urn:xml3d:shader:phong">
+    <float name="diffuse_intensity">1.0</float>
+    <float3 name="diffuse_color">0.6000000238418579 0.20000000298023224 0.20000000298023224</float3>
+    <float name="specular_intensity">1.0</float>
+    <float3 name="specular_color">0.8999999761581421 0.8999999761581421 0.8999999761581421</float3>
+    <float name="specular_hardness">2</float>
+    <float name="alpha">1.0</float>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTFACE.JPG"/>
+    </texture>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTFACE.JPG"/>
+    </texture>
+  </shader>
+  <shader compute="(diffuseColor, specularColor, shininess, transparency) = xflow.blenderMaterial(diffuse_color, diffuse_intensity, specular_color, specular_intensity, specular_hardness, alpha)" id="BUTTWIFR-001" script="urn:xml3d:shader:phong">
+    <float name="diffuse_intensity">1.0</float>
+    <float3 name="diffuse_color">0.6000000238418579 0.6000000238418579 0.20000000298023224</float3>
+    <float name="specular_intensity">1.0</float>
+    <float3 name="specular_color">0.8999999761581421 0.8999999761581421 0.8999999761581421</float3>
+    <float name="specular_hardness">6</float>
+    <float name="alpha">1.0</float>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTWIFR.JPG"/>
+    </texture>
+    <texture name="diffuseTexture" wrapS="repeat" wrapT="repeat">
+      <img src="textures/BUTTWIFR.JPG"/>
+    </texture>
+  </shader>
+</xml3d>

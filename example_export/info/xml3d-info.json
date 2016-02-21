@@ -1,0 +1,55 @@
+{
+    "animations": [
+        {
+            "maxFrame": 250.0,
+            "minFrame": 1.0,
+            "name": "ArmatureAction"
+        }
+    ],
+    "armatures": [
+        {
+            "name": "armature.xml",
+            "size": 3366
+        }
+    ],
+    "assets": [
+        {
+            "name": "assets-4.xml",
+            "size": 22192355,
+            "url": "/Users/FaisalZ/Desktop/test/assets/assets-4.xml"
+        }
+    ],
+    "groups": 4,
+    "lights": 1,
+    "materials": [
+        {
+            "name": "shared-materials.xml",
+            "size": 4796
+        }
+    ],
+    "meshes": [],
+    "scene": {
+        "name": "untitled2.html",
+        "size": 4437
+    },
+    "textures": [
+        {
+            "name": "BUTTWIBA.JPG",
+            "size": 370459
+        },
+        {
+            "name": "BUTTFACE.JPG",
+            "size": 18813
+        },
+        {
+            "name": "BUTTBODY.JPG",
+            "size": 30514
+        },
+        {
+            "name": "BUTTWIFR.JPG",
+            "size": 335193
+        }
+    ],
+    "views": 1,
+    "warnings": []
+}
