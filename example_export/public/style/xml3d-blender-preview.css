@@ -1,0 +1,88 @@
+/* Disable display of xml3d elements */
+float,
+float2,
+float3,
+float4,
+float4x4,
+int,
+int4,
+bool,
+script  {
+   display: none;
+}
+
+html {
+	overflow: hidden;
+}
+
+.bottom-bar {
+	position: fixed;
+	bottom: 0px;
+	width: 100%;
+	margin-bottom: 0px;
+}
+
+/* Layer UI CSS */
+rect.layer {
+	fill:#999999;
+	fill-opacity:1;
+	stroke:#000000;
+	stroke-width: 1.0;
+}
+
+rect.layer.over {
+	fill:#CCCCCC;
+}
+
+rect.layer.active {
+	fill:#333333;
+}
+
+
+.message-parent {
+	position: relative;
+}
+
+.message-position {
+	position: absolute;
+	right: -3px;
+	top: -9px;
+}
+
+.message-position > .count {
+	background-color: #dc0d17;
+	background-image: -webkit-gradient(linear, center top, center bottom, from(#fa3c45), to(#dc0d17));
+	background-image: -webkit-linear-gradient(#fa3c45, #dc0d17);
+	color: #fff;
+	min-height: 13px;
+	padding: 1px 3px;
+	text-shadow: 0 -1px 0 rgba(0, 0, 0, .4);
+	font-family: 'Helvetica Neue', Helvetica, sans-serif;
+	font-size: 10px;
+	-webkit-border-radius: 2px;
+	-webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, .7);
+	border-radius: 2px;
+	box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.7);
+}
+
+.bbutton {
+	padding: 6px 14px;
+	margin-right: 4px;
+	background-position: left center;
+	background-image: url('../img/blender-icons.png');
+	background-repeat: no-repeat;
+}
+
+.bbutton.geometry {
+	background-position:0px 0px;
+}
+
+.bbutton.light {
+	background-position:-27px 0px;
+}
+
+.stats-container {
+    margin: 0px auto;
+    width: 50%;
+    min-width: 520px;
+}
